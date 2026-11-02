@@ -120,7 +120,7 @@ Run these from the same terminal, with the virtual environment active.
 | `python main.py parity` | The C++ core against Python on all 60 preset trips: identical results, and how much faster (about 3 minutes) |
 | `python main.py explore-bench` | Every preset at 5, 10 and 20 m: time lost to not knowing, D\* Lite's work against A\* from scratch (about a minute) |
 | `python main.py terrain-bench` | Hills, slope limit and obstacle sweep (about 25 seconds) |
-| `python -m pytest -q` | Run the 209 tests (30 of them hold the C++ core against Python; skipped until it's built) |
+| `python -m pytest -q` | Run the 214 tests (30 of them hold the C++ core against Python; skipped until it's built) |
 | `python main.py demo`, `python main.py benchmark` | The original 2D grid version |
 
 `python main.py course` writes the viewer twice: `output/course_3d.html` to open yourself, and
@@ -128,6 +128,11 @@ Run these from the same terminal, with the virtual environment active.
 
 ## Using the viewer
 
+- **The intro**: the page opens on a red laser BRUBUS sign on black, a white-hot core in a red glow like a
+  lightsaber blade, with a blacked-out US flag showing like a shadow in its glow and a black-metal bison charging
+  at you underneath. The blade ignites left to right and hums, then retracts as the bison rushes past, and the
+  black lifts as the map flies in. Click, tap or press any key to skip it, or add `?intro=0` to the address to
+  turn it off.
 - **Pick a map**: Grassland, Desert or Island (top left). Every map opens with a short fly-in to the
   Overview, empty, with the rover parked in the middle and no route on the board.
 - **More paths** (next to Set start & finish): 20 routes per map, all optional. Tick one and its quickest
@@ -456,6 +461,8 @@ Hand-drawn routes are scored by the same rules in both (`robotnav.terrain.evalua
 | `robotnav/replan.py` | Driving with a limited sensor: D\* Lite, the rover's belief about the terrain, roadblocks, and the A\*-from-scratch comparison |
 | `robotnav/airspace.py` | The air route: flight levels, watchtowers and their lines of sight, the stealth and direct flights |
 | `robotnav/scene3d.py` | Exports the three maps and their preset paths into the self-contained viewer (and the live demo page, with link previews) |
+| `robotnav/intro_art.py` | The intro's art: draws the blacked-out flag (official proportions, waving) as SVG and inlines the bison logo |
+| `tools/bison_logo.py` | Renders the bison logo (`robotnav/assets/bison.webp`): outlines in code, turned into a relief and shaded as black chrome |
 | `robotnav/viewer3d.html` | Three.js viewer: maps, sky, water, palms and trees, planners, D\* Lite and the air route in the browser, watching the search, the sensor drive, the drone and its watchtowers, preset paths, picking, drawing, drone camera, the spiked tank, the tour, links to a view, the frame-rate benchmark |
 | `cpp/` | The C++ core: planners, D\* Lite, the air route, map files, the `robotnav` tool, unit tests and the pybind11 module ([cpp/README.md](cpp/README.md)) |
 | `robotnav/cpp.py`, `parity.py`, `mapfile.py` | Run the C++ core from Python, compare it with the reference, and write the map files it reads |
@@ -463,7 +470,7 @@ Hand-drawn routes are scored by the same rules in both (`robotnav.terrain.evalua
 | `docs/` | The live demo served by GitHub Pages (`index.html`, built by `python main.py course`), its preview image, and the README's pictures |
 | `robotnav/terrain_bench.py` | Sweeps hill height, slope limit and obstacle density |
 | `robotnav/grid.py`, `visualize.py`, `benchmark.py` | Original 2D grid world, plots and benchmark |
-| `tests/` | 209 checks: optimality on every map, the shortest route, all 20 presets per map, the desert's oases, grade limit, water, route rules, D\* Lite (legal routes, optimal repairs, roadblocks), the air route (towers, lines of sight, hiding behind a ridge), the C++ core against Python, map rebuilds, the command line, the page head and link previews |
+| `tests/` | 214 checks: optimality on every map, the shortest route, all 20 presets per map, the desert's oases, grade limit, water, route rules, D\* Lite (legal routes, optimal repairs, roadblocks), the air route (towers, lines of sight, hiding behind a ridge), the C++ core against Python, map rebuilds, the command line, the page head and link previews, the intro's flag and logo |
 
 ## Findings
 

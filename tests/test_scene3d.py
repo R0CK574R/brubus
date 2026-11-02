@@ -21,3 +21,10 @@ def test_hosted_viewer_has_link_previews(tmp_path):
     assert '<meta property="og:image" content="https://example.github.io/demo/social.png">' in head
     assert '<meta name="twitter:card" content="summary_large_image">' in head
     assert '<link rel="canonical" href="https://example.github.io/demo/">' in head
+
+
+def test_intro_art_is_inlined(tmp_path):
+    page = _page(tmp_path)
+    assert "__FLAG__" not in page and "__BISON_URI__" not in page   # both placeholders were filled
+    assert page.count('<svg class="intro-flag"') == 1
+    assert 'src="data:image/webp;base64,' in page                  # the bison travels inside the page

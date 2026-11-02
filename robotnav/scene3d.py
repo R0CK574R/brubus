@@ -14,6 +14,7 @@ from pathlib import Path
 import numpy as np
 
 from .airspace import AIR, place_towers
+from .intro_art import bison_uri, flag_svg
 from .terrain import SHORTEST_TIE, Terrain, preset_routes
 
 TEMPLATE = Path(__file__).with_name("viewer3d.html")
@@ -57,7 +58,8 @@ def write_viewer(maps: list[Terrain], out: str | Path, scenes: list[dict] | None
     """
     scene = dict(cost=dict(uphill=maps[0].uphill_penalty, cell=maps[0].cell_size, short_tie=SHORTEST_TIE), air=AIR,
                  maps=scenes if scenes is not None else [map_scene(t) for t in maps])
-    body = TEMPLATE.read_text().replace("/*__SCENE__*/null", json.dumps(scene, separators=(",", ":")))
+    body = (TEMPLATE.read_text().replace("/*__SCENE__*/null", json.dumps(scene, separators=(",", ":")))
+            .replace("<!--__FLAG__-->", flag_svg()).replace("__BISON_URI__", bison_uri()))
     head = ["<!doctype html>", '<html lang="en">', '<meta charset="utf-8">',
             f'<meta name="description" content="{escape(DESCRIPTION)}">']
     if site_url:
