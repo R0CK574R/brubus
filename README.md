@@ -1,6 +1,6 @@
 # Rover Hill Course — 3D Off-Road Robot Navigation
 
-**[▶ Open the live demo](https://r0ck574r.github.io/Robot-Navigating-Obstacles/)**: it runs in your browser, on a laptop or a phone,
+**[▶ Open the live demo](https://r0ck574r.github.io/brubus/)**: it runs in your browser, on a laptop or a phone,
 with nothing to install. Press **▶ Tour** for a guided run through all three maps (under two minutes).
 
 A tracked rover, a matte-black rhomboid tank with a hedgehog coat of steel spikes, finds its way
@@ -24,7 +24,7 @@ report the same times, to the last bit.
 
 ## Show it to someone
 
-- **The live demo** (https://r0ck574r.github.io/Robot-Navigating-Obstacles/) is the same page as `output/course_3d.html`,
+- **The live demo** (https://r0ck574r.github.io/brubus/) is the same page as `output/course_3d.html`,
   served by GitHub Pages from `docs/`. Shared links show a preview card with a picture of the
   desert oasis.
 - **▶ Tour** (top left, or add `#tour` to the address) plays a guided loop: each map flies in and
@@ -34,10 +34,10 @@ report the same times, to the last bit.
   watchtowers. The overview lays every route side by side. A caption says what's happening at each
   step. Touch anything to take over; the tour doesn't change the paths your browser remembers.
 - **Links to a view**: the address keeps up with what's on screen, so you can copy it and send it.
-  [`#desert/p19/search`](https://r0ck574r.github.io/Robot-Navigating-Obstacles/#desert/p19/search) opens the search replay,
-  [`#island/p20/sensor`](https://r0ck574r.github.io/Robot-Navigating-Obstacles/#island/p20/sensor) the sensor drive,
-  [`#grassland/p15/air`](https://r0ck574r.github.io/Robot-Navigating-Obstacles/#grassland/p15/air) the air route,
-  [`#desert/p19/drone`](https://r0ck574r.github.io/Robot-Navigating-Obstacles/#desert/p19/drone) the desert's path P19 past
+  [`#desert/p19/search`](https://r0ck574r.github.io/brubus/#desert/p19/search) opens the search replay,
+  [`#island/p20/sensor`](https://r0ck574r.github.io/brubus/#island/p20/sensor) the sensor drive,
+  [`#grassland/p15/air`](https://r0ck574r.github.io/brubus/#grassland/p15/air) the air route,
+  [`#desert/p19/drone`](https://r0ck574r.github.io/brubus/#desert/p19/drone) the desert's path P19 past
   both oases with the drone camera, and `#tour/island` starts the tour on the island.
 - **How fast it runs**: add `#bench` to the address for a frame-rate benchmark on that device, or
   `?fps` (or press F) for a live frame counter. See [Frame rate](#frame-rate).
@@ -52,8 +52,8 @@ Paste the lines one block at a time into a terminal (Terminal on Mac, PowerShell
 **1. Download the project**
 
 ```bash
-git clone https://github.com/R0CK574R/Robot-Navigating-Obstacles.git
-cd Robot-Navigating-Obstacles
+git clone https://github.com/R0CK574R/brubus.git
+cd brubus
 ```
 
 **2. Install the packages** in a virtual environment
@@ -101,7 +101,7 @@ Or double-click `output/course_3d.html` in your file browser. The page needs int
 time to load the 3D library (Three.js). Pick a map at the top left, then click **More paths** or
 **Set start & finish** to send the tank driving.
 
-> Just want to look? Open the [live demo](https://r0ck574r.github.io/Robot-Navigating-Obstacles/), or download
+> Just want to look? Open the [live demo](https://r0ck574r.github.io/brubus/), or download
 > `output/course_3d.html` from the repo and open it. Neither needs Python.
 
 ### More commands
@@ -335,7 +335,7 @@ Every texture below is drawn in code when the page starts. The page still loads 
 
 ## Frame rate
 
-Add `#bench` to the address ([on the live demo](https://r0ck574r.github.io/Robot-Navigating-Obstacles/#bench))
+Add `#bench` to the address ([on the live demo](https://r0ck574r.github.io/brubus/#bench))
 and the viewer measures itself on that device, at full quality, in about a minute. On each map it
 drives the tour path and records the frame rate in the drone view, the overview and the split-screen
 search (the median and the slowest 1% of frames), then times drawing single frames while waiting for

@@ -30,7 +30,7 @@ from robotnav.visualize import animate_search, plot_comparison
 
 OUT = Path("output")
 ROOT = Path(__file__).resolve().parent
-PAGES_URL = "https://r0ck574r.github.io/Robot-Navigating-Obstacles/"   # where GitHub Pages serves docs/
+PAGES_URL = "https://r0ck574r.github.io/brubus/"   # where GitHub Pages serves docs/
 
 
 def demo(args) -> None:
