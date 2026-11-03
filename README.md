@@ -141,6 +141,10 @@ Run these from the same terminal, with the virtual environment active.
   stage board races the planners on it. Each row shows the quickest time against the shortest
   route's time (for example `1:21 vs 1:59`). **Add all** draws every path; **Remove all** clears
   the map again. Taking off the path being driven switches the rover to the last path you added.
+  In the air (**✈ Air**) the same 20 trips are flights: each row shows the stealth flight's time and
+  its seconds in a tower's sight against the direct flight's (for example `0:45 · 0.0 vs 7.8 s`),
+  ticked paths draw their stealth flights in the air, and **Fly** sends the drone along one. The
+  flights are worked out in the background as the list or the added paths need them.
 - **The shortest route** (dashed white): the least-distance route between the same two points,
   which is what a robot that ignores hills would drive. The board ranks it with the planners, and
   the green line under the table spells out the difference, such as "1:21 instead of 1:59 on the

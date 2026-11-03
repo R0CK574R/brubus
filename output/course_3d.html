@@ -446,7 +446,7 @@ input[type=range] { accent-color: var(--flag); width: 84px; }
       </span>
     </div>
     <ol class="paths-list" id="paths-list"></ol>
-    <p class="paths-note">Tick a path to draw its quickest route over the hills; the first one starts the rover. Drive sends the rover along a path and races the planners on it. Times: quickest route vs the shortest route, which ignores the hills.</p>
+    <p class="paths-note" id="paths-note">Tick a path to draw its quickest route over the hills; the first one starts the rover. Drive sends the rover along a path and races the planners on it. Times: quickest route vs the shortest route, which ignores the hills.</p>
   </section>
 
   <section class="board tele" id="tele" aria-label="Rover controls and telemetry">
@@ -2761,10 +2761,13 @@ void groundOverlay(inout vec3 col) {
     g.lineJoin = g.lineCap = "round";
     const driven = drivenPreset();
     for (const i of [...extraOn].sort((a, b) => (a === driven) - (b === driven))) {   // added paths; the driven one on top
-      const p = MAP.presets[i];
+      const p = MAP.presets[i], f = air.on ? airPathFlights(i) : null;
+      if (air.on && (!f || !f.stealth.found)) continue;
+      const cells = f ? f.stealth.cells : null, n = cells ? cells.length : p.path.length / 2;
       g.beginPath();
-      for (let k = 0; k < p.path.length; k += 2) {
-        const x = (p.path[k + 1] + 0.5) * MMS / C, y = (p.path[k] + 0.5) * MMS / R;
+      for (let k = 0; k < n; k++) {
+        const [r, c] = cells ? cells[k] : [p.path[2 * k], p.path[2 * k + 1]];
+        const x = (c + 0.5) * MMS / C, y = (r + 0.5) * MMS / R;
         if (k) g.lineTo(x, y); else g.moveTo(x, y);
       }
       g.globalAlpha = i === driven ? 1 : 0.85; g.lineWidth = i === driven ? 2.6 : 1.4;
@@ -3055,8 +3058,8 @@ void groundOverlay(inout vec3 col) {
       rt.mat.depthWrite = sel;
       if (!sel || rt.key !== DSTAR.key || planning) { rt.tube.geometry.setDrawRange(0, Infinity); rt.planTube.geometry.setDrawRange(0, Infinity); }
     });
-    if (extraGroup) {                               // keep the planner view clean (and the sky: those are ground routes)
-      extraGroup.visible = !planning && !replay.on && !air.on;
+    if (extraGroup) {                               // keep the planner view clean
+      extraGroup.visible = !planning && !replay.on;
       const hideFocus = !!current && current.key === DSTAR.key && !planning;
       extraGroup.children.forEach(o => { if (o.userData.lod) o.visible = o.userData.lod === (thick ? "far" : "near") && !(hideFocus && o.userData.focus); });
     }
@@ -4048,17 +4051,59 @@ void groundOverlay(inout vec3 col) {
   const PATH_COLORS = ["#33d6e6", "#a07cff", "#ff6fb1", "#22b8a0", "#ffd84a", "#5468ff", "#c6f36b", "#d4b3ff", "#ff9b85", "#9ff5d0",
                        "#00a0c8", "#7a3cff", "#ffa6d6", "#0f8f6f", "#e3ef4f", "#9aa8ff", "#e48cff", "#ffc29e", "#4fd3a0", "#ff4f7b"];
   const pathColor = i => PATH_COLORS[i % PATH_COLORS.length];
+  const NOTE_PATHS_GROUND = "Tick a path to draw its quickest route over the hills; the first one starts the rover. Drive sends the rover along a path and races the planners on it. Times: quickest route vs the shortest route, which ignores the hills.";
+  const NOTE_PATHS_AIR = "Tick a path to draw its stealth flight; the first one starts the drone. Fly sends the drone along a path and races the stealth and direct flights on it. Times: the stealth flight, then seconds in a tower's sight, stealth vs direct.";
   const moreBtn = $("more-btn"), pathsPanel = $("paths"), pathsList = $("paths-list");
   let extraOn = new Set(), extraGroup = null;      // added paths, in the order they were added
+  // In the air the same 20 trips are flown: each path is its stealth flight (and the direct one, for comparison).
+  // Flights are worked out in the background, a few per frame, only as the list or the added paths need them, so
+  // switching to the air never stalls; added paths get their lines as their flights arrive.
+  const airPaths = { map: null, flights: [], timer: 0, busy: false };
+  const airPathFlights = i => (airPaths.map === MAP ? airPaths.flights[i] : null);
+  function airPathsKick() {
+    if (!air.on || !MAP || airPaths.busy) return;
+    if (airPaths.map !== MAP) { clearTimeout(airPaths.timer); airPaths.timer = 0; airPaths.map = MAP; airPaths.flights = MAP.presets.map(() => null); }
+    if (!airPaths.timer && airPathsWanted().length) airPaths.timer = setTimeout(airPathsPump, 0);
+  }
+  function airPathsWanted() {                       // the added paths first, then the whole list while it's open
+    const want = new Set(extraOn);
+    if (!pathsPanel.hidden) MAP.presets.forEach((_, i) => want.add(i));
+    return [...want].filter(i => !airPaths.flights[i]);
+  }
+  function airPathsPump() {
+    airPaths.timer = 0;
+    if (!air.on || airPaths.map !== MAP) return;
+    const want = airPathsWanted();
+    if (!want.length) return;
+    airReady();
+    airPaths.busy = true;
+    const t0 = performance.now();
+    let k = 0, added = false;
+    while (k < want.length && (k === 0 || performance.now() - t0 < 10)) {
+      const i = want[k++], pr = MAP.presets[i];
+      airPaths.flights[i] = { stealth: airRoute(pr.start, pr.goal, true), direct: airRoute(pr.start, pr.goal, false) };
+      added = added || extraOn.has(i);
+    }
+    if (added) { buildExtras(); drawMapLayer(); }
+    renderPathsList();
+    airPaths.busy = false;
+    if (k < want.length) airPaths.timer = setTimeout(airPathsPump, 16);
+  }
   function drivenPreset() { return parked || !MAP ? -1 : MAP.presets.findIndex(p => sameCell(p.start, START) && sameCell(p.goal, GOAL)); }
   function buildExtras() {                          // a coloured line, end rings and a label for every added path
     if (extraGroup) { scene.remove(extraGroup); disposeTree(extraGroup); }
     extraGroup = new THREE.Group();
     extraGroup.visible = !plan.mode;
     const driven = drivenPreset();
+    if (air.on) airPathsKick();
     for (const i of extraOn) {
-      const p = MAP.presets[i], color = pathColor(i), pts = [], focus = i === driven;
-      for (let k = 0; k < p.path.length; k += 2) pts.push(new THREE.Vector3(toX(p.path[k + 1]), hAt(p.path[k], p.path[k + 1]) + 0.35, toZ(p.path[k])));
+      const p = MAP.presets[i], color = pathColor(i), focus = i === driven;
+      let pts = [];
+      if (air.on) {                                 // the stealth flight; not flown yet, it's drawn when it arrives
+        const f = airPathFlights(i);
+        if (!f || !f.stealth.found) continue;
+        pts = f.stealth.pts;
+      } else for (let k = 0; k < p.path.length; k += 2) pts.push(new THREE.Vector3(toX(p.path[k + 1]), hAt(p.path[k], p.path[k + 1]) + 0.35, toZ(p.path[k])));
       // drawn before the raced routes (renderOrder 4 < 4.5 / 5) so those stay on top where lines cross
       const mat = new THREE.MeshBasicMaterial({ color, transparent: true, depthWrite: false }); mat.color.convertSRGBToLinear();
       const curve = new THREE.CatmullRomCurve3(pts, false, "centripetal");
@@ -4085,15 +4130,31 @@ void groundOverlay(inout vec3 col) {
     $("paths-count").textContent = !n ? "None added yet" : n === total ? `All ${total} added` : `${n} of ${total} added`;
     $("paths-all").disabled = n === total; $("paths-none").disabled = !n && parked;
     pathsList.textContent = "";
+    if (air.on) airPathsKick();
+    $("paths-note").textContent = air.on ? NOTE_PATHS_AIR : NOTE_PATHS_GROUND;
     MAP.presets.forEach((p, i) => {
       const li = document.createElement("li"), active = i === driven, pct = Math.round((p.short_time / p.time - 1) * 100);
+      const ends = `Start (${p.start.join(", ")}) → destination (${p.goal.join(", ")})`;
+      let time;
       if (active) li.setAttribute("aria-current", "true");
-      li.title = `Start (${p.start.join(", ")}) → destination (${p.goal.join(", ")}) · ${Math.round(p.distance_m)} m. `
-        + `Quickest over the hills: ${fmtTime(p.time)}. The shortest route ignores the hills and takes ${fmtTime(p.short_time)} (+${pct}%).`;
+      if (!air.on) {
+        li.title = `${ends} · ${Math.round(p.distance_m)} m. `
+          + `Quickest over the hills: ${fmtTime(p.time)}. The shortest route ignores the hills and takes ${fmtTime(p.short_time)} (+${pct}%).`;
+        time = `${fmtTime(p.time)}<span class="paths-dist"> vs ${fmtTime(p.short_time)}</span>`;
+      } else {
+        const f = airPathFlights(i), st = f && f.stealth, di = f && f.direct;
+        if (!f) { li.title = `${ends}. Working out its flight…`; time = "…"; }
+        else if (!st.found) { li.title = `${ends}. No way through the airspace.`; time = "no route"; }
+        else {
+          li.title = `${ends}. Stealth flight: ${fmtTime(st.cost)}, ${st.seenS.toFixed(1)} s in a tower's sight. `
+            + (di.found ? `The direct flight takes ${fmtTime(di.cost)} and is seen for ${di.seenS.toFixed(1)} s.` : "");
+          time = `${fmtTime(st.cost)}<span class="paths-dist"> · ${st.seenS.toFixed(1)}${di.found ? ` vs ${di.seenS.toFixed(1)}` : ""} s</span>`;
+        }
+      }
       li.innerHTML = `<label><input type="checkbox" data-i="${i}"${extraOn.has(i) ? " checked" : ""}><i style="background:${pathColor(i)}"></i>`
         + `<b>P${i + 1}</b><span>${p.name}</span></label>`
-        + `<span class="paths-time">${fmtTime(p.time)}<span class="paths-dist"> vs ${fmtTime(p.short_time)}</span></span>`
-        + `<button class="chip" data-drive="${i}">${active ? "Driving" : "Drive"}</button>`;
+        + `<span class="paths-time">${time}</span>`
+        + `<button class="chip" data-drive="${i}">${air.on ? (active ? "Flying" : "Fly") : (active ? "Driving" : "Drive")}</button>`;
       pathsList.appendChild(li);
     });
   }
