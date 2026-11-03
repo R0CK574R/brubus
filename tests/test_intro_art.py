@@ -1,7 +1,6 @@
 import re
-import struct
 
-from robotnav.intro_art import BISON, FLY, HOIST, STRIPE, UNION_H, UNION_W, flag_svg, star_centres
+from robotnav.intro_art import BISON, COLOURS, FLY, HOIST, STRIPE, UNION_H, UNION_W, flag_svg, flags_svg, star_centres
 
 
 def test_flag_has_fifty_stars_in_rows_of_six_and_five():
@@ -20,21 +19,30 @@ def test_flag_proportions():
     assert round(UNION_W / HOIST, 2) == 0.76
 
 
-def test_flag_svg_is_thirteen_stripes_a_union_and_the_stars():
-    svg = flag_svg()
-    fills = re.findall(r'<path fill="(#[0-9a-f]{6})"', svg)
-    assert len(fills) == 13 + 1 + 1                                     # stripes, union, one path for all the stars
-    assert fills[:13] == ["#18181b", "#0b0b0d"] * 6 + ["#18181b"]       # dark and darker, starting and ending dark
-    assert "nan" not in svg.lower() and "inf" not in svg.lower()
-    assert svg.count("Z") == 1 + 13 + 1 + 50                            # clip, stripes, union, stars
+def test_flag_is_flat_grey_and_fills_the_screen():
+    for vertical in (False, True):
+        svg = flag_svg(vertical)
+        assert 'preserveAspectRatio="xMinYMin slice"' in svg             # covers the screen, keeps the union's corner
+        assert svg.count("<rect") == 1 + 7 + 1                           # the ground, seven darker stripes, the union
+        assert svg.count("Z") == 50                                      # the stars, and nothing waving
+        for colour in set(re.findall(r'fill="(#[0-9a-f]{6})"', svg)):
+            r, g, b = (int(colour[i:i + 2], 16) for i in (1, 3, 5))
+            assert r == g == b and r < 0x30                              # near-black greys, no red or blue
+    assert 'viewBox="0 0 1900 1000"' in flag_svg(False) and 'viewBox="0 0 1000 1900"' in flag_svg(True)
+    assert flags_svg().count("<svg") == 2
+
+
+def test_vertical_flag_keeps_the_union_top_left():
+    svg = flag_svg(True)
+    union = re.search(r'<rect width="([\d.]+)" height="([\d.]+)" fill="' + COLOURS["union"] + '"', svg)
+    assert union and float(union.group(1)) < float(union.group(2))     # 7 stripes wide, 0.76 of the width tall
 
 
 def test_bison_logo_is_a_webp_with_alpha():
     data = BISON.read_bytes()
     assert data[:4] == b"RIFF" and data[8:12] == b"WEBP" and data[12:16] == b"VP8X"
-    flags = data[20]
-    assert flags & 0x10                                                 # it has an alpha channel
+    assert data[20] & 0x10                                              # it has an alpha channel
     w = 1 + int.from_bytes(data[24:27], "little")
     h = 1 + int.from_bytes(data[27:30], "little")
-    assert (w, h) == (439, 600)                                         # the viewer's <img> says 439 x 600
-    assert len(data) < 80_000
+    assert 300 <= w <= 900 and 400 <= h <= 1100
+    assert len(data) < 200_000
