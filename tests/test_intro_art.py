@@ -38,11 +38,11 @@ def test_vertical_flag_keeps_the_union_top_left():
     assert union and float(union.group(1)) < float(union.group(2))     # 7 stripes wide, 0.76 of the width tall
 
 
-def test_bison_logo_is_a_webp_with_alpha():
+def test_bison_badge_is_a_round_webp_with_alpha():
     data = BISON.read_bytes()
     assert data[:4] == b"RIFF" and data[8:12] == b"WEBP" and data[12:16] == b"VP8X"
     assert data[20] & 0x10                                              # it has an alpha channel
     w = 1 + int.from_bytes(data[24:27], "little")
     h = 1 + int.from_bytes(data[27:30], "little")
-    assert 300 <= w <= 900 and 400 <= h <= 1100
-    assert len(data) < 200_000
+    assert w == h == 900                                                # a round badge; the viewer's <img> says 900 x 900
+    assert len(data) < 120_000

@@ -1,119 +1,192 @@
-"""Make the intro's bison logo (robotnav/assets/bison.webp).
+"""Make the intro's bison badge (robotnav/assets/bison.webp): a car-style emblem of a bison's head, head-on, in
+black chrome.
 
-1. Build and run tools/bison_logo.cpp, which models a charging bison as a signed-distance field and ray-marches
-   it as black metal (about 1.5 minutes on two cores).
-2. Crop to the bison, then add the dust it kicks up: billowing charcoal clouds from the hooves spreading out and
-   back, lit from the upper left with a faint red from the sign above, flung dirt, and a thin veil of dust in
-   front of the hooves. The cloud fades out before the picture's edges.
-3. Scale to 720 px tall (twice its size on screen) and save as WebP with alpha.
+1. Design: a few bold parts, like the pieces of a car emblem: the hump (an oval rising behind the head), the head
+   (a woolly mop in big tufts, cheek locks, tapering to a broad nose), two short horns curving up out of the sides
+   of the head, and the beard. A V across the forehead marks the mop's fringe over slanted eyes; two nostrils.
+   Each part is separated from the ones behind it by a gap, and a ring frames it all.
+2. Relief: every part stands proud of the badge's face with a rounded edge and a gentle dome; the ring is
+   half-round.
+3. Finish: polished black chrome for the ring, head, horns and beard, satin black for the hump, matte black for the
+   face. Chrome is all reflection, so it is seen through a slightly perspective camera (flat faces sweep through the
+   studio's gradient) and its edges catch a softbox overhead, a key light upper left, two rims behind and the red
+   sign above.
 
-Needs g++ with OpenMP, numpy, scipy and Pillow (Pillow comes with matplotlib).
-Usage: python tools/bison_logo.py [OUT.webp]
+Needs numpy, scipy and Pillow (Pillow comes with matplotlib). Takes about a minute.
+Usage: python tools/bison_logo.py [OUT.webp] [SIZE]
 """
-import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageDraw
 from scipy import ndimage as ndi
 
-HERE = Path(__file__).resolve().parent
-OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else HERE.parent / "robotnav" / "assets" / "bison.webp"
-HEIGHT = 720
+OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).resolve().parents[1] / "robotnav" / "assets" / "bison.webp"
+SIZE = int(sys.argv[2]) if len(sys.argv) > 2 else 900
+N, SS = 1000, 3                  # design units across the badge; supersampling while rendering
+RING = (480.0, 446.0)            # the ring's outer and inner radius
+GAP = 10.0                       # between a part and the parts behind it
+
+
+# ------------------------------------------------------------------------------------------- the design
+def bez(p0, p1, p2, p3, n=24):
+    t = np.linspace(0, 1, n)[:, None]
+    p0, p1, p2, p3 = (np.asarray(v, float) for v in (p0, p1, p2, p3))
+    return (1 - t) ** 3 * p0 + 3 * (1 - t) ** 2 * t * p1 + 3 * (1 - t) * t * t * p2 + t ** 3 * p3
+
+
+def outline(*pts, sharp=()):
+    """A closed smooth outline through the points (Catmull-Rom as cubic Beziers); indices in `sharp` are corners."""
+    pts = [np.asarray(p, float) for p in pts]
+    n, out = len(pts), [pts[0][None]]
+    for i in range(n):
+        p0, p1, p2, p3 = pts[i - 1], pts[i], pts[(i + 1) % n], pts[(i + 2) % n]
+        t1 = (p2 - p0) / 6 if i not in sharp else (p2 - p1) / 3
+        t2 = (p3 - p1) / 6 if (i + 1) % n not in sharp else (p2 - p1) / 3
+        out.append(bez(p1, p1 + t1, p2 - t2, p2)[1:])
+    return np.vstack(out)
+
+
+def mirror(pts):
+    return [(N - x, y) for x, y in pts]
+
+
+def symmetric(left):
+    """A left half, from the top of the centre line to the bottom, made whole."""
+    return left + mirror(left[::-1])[1:-1]
+
+
+HUMP = [(500, 124), (436, 130), (376, 156), (328, 200), (294, 258), (272, 326), (260, 400), (258, 476), (266, 546),
+        (286, 608), (320, 658), (380, 690), (500, 698)]
+HEAD = [(500, 226), (462, 228), (430, 236),                  # the top of the mop
+        (416, 222), (394, 240),                              # a tuft
+        (370, 240), (360, 262), (342, 274),                  # the corner tuft
+        (344, 300), (338, 334), (340, 366),                  # the side, where the horn comes out
+        (318, 392), (340, 410),                              # a cheek lock, swept down
+        (326, 440), (352, 456),                              # another
+        (372, 506), (396, 566), (418, 616),                  # tapering to the nose
+        (430, 640), (456, 656), (500, 660)]                  # the nose
+HEAD_CORNERS = (3, 4, 7, 11, 13, 25, 27, 31, 34, 35)
+HORN = [(360, 348), (322, 346), (286, 334), (262, 306), (254, 268), (262, 232), (278, 206),
+        (276, 236), (278, 268), (292, 292), (318, 308), (360, 312)]
+BEARD = [(500, 676), (466, 678), (450, 692), (448, 730), (434, 762), (462, 762), (472, 796), (500, 846)]
+EYE = [(372, 462), (392, 460), (414, 470), (430, 488), (408, 486), (386, 476)]
+NOSTRIL = [(440, 620), (446, 606), (460, 598), (470, 600), (458, 616), (448, 630)]
+FRINGE = ((356, 418), (400, 420), (460, 440), (500, 470))     # the V across the forehead (left half)
+
+
+def fill(pts):
+    im = Image.new("L", (N * SS, N * SS), 0)
+    ImageDraw.Draw(im).polygon([(x * SS, y * SS) for x, y in pts], fill=255)
+    return np.asarray(im) > 127
+
+
+def groove(pts, w0, w1):
+    """A cut along a curve, tapering from width w0 to w1."""
+    pts = np.asarray(pts, float)
+    s = np.concatenate([[0], np.cumsum(np.hypot(*np.diff(pts, axis=0).T))])
+    t = np.linspace(0, s[-1], max(2, int(s[-1] * 3)))
+    im = Image.new("L", (N * SS, N * SS), 0)
+    dr = ImageDraw.Draw(im)
+    for x, y, w in zip(np.interp(t, s, pts[:, 0]), np.interp(t, s, pts[:, 1]), np.linspace(w0, w1, len(t))):
+        r = w * SS / 2
+        dr.ellipse([x * SS - r, y * SS - r, x * SS + r, y * SS + r], fill=255)
+    return np.asarray(im) > 127
+
+
+def grow(m, r):
+    return ndi.binary_dilation(m, structure=np.ones((3, 3), bool), iterations=max(1, int(round(r * SS))))
+
+
+def parts():
+    """The badge's pieces as masks, each cut back by a gap where it passes behind another."""
+    m = {"horn": fill(outline(*HORN, sharp=(6,))) | fill(outline(*mirror(HORN), sharp=(6,))),
+         "head": fill(outline(*symmetric(HEAD), sharp=HEAD_CORNERS)),
+         "beard": fill(outline(*symmetric(BEARD), sharp=(4, 7, 10))),
+         "hump": fill(outline(*symmetric(HUMP)))}
+    shown, front = {}, np.zeros_like(m["hump"])
+    for k in ("horn", "head", "beard", "hump"):                 # front to back
+        shown[k] = m[k] & ~grow(front, GAP)
+        front |= m[k]
+    holes = fill(outline(*EYE)) | fill(outline(*mirror(EYE))) | fill(outline(*NOSTRIL)) | fill(outline(*mirror(NOSTRIL)))
+    v = bez(*FRINGE, 30)
+    holes |= groove(v, 3, 11) | groove(np.column_stack([N - v[:, 0], v[:, 1]]), 3, 11)
+    shown["head"] &= ~holes
+    return shown
+
+
+# ------------------------------------------------------------------------------------------- the render
+def raised(mask, height, fillet, dome=0.0, dome_blur=30.0):
+    """A part standing proud: a quarter-round edge into a flat top, plus a gentle dome."""
+    d = ndi.distance_transform_edt(mask).astype(np.float32) / SS
+    t = np.clip(d / fillet, 0, 1)
+    h = height * np.sqrt(1 - (1 - t) ** 2)
+    if dome:
+        g = ndi.gaussian_filter(mask.astype(np.float32), dome_blur * SS)
+        h = h + dome * g / (g[mask].max() + 1e-9) * t
+    return np.where(mask, h, 0.0).astype(np.float32)
+
+
+def unit(a):
+    a = np.asarray(a, np.float32)
+    return a / np.linalg.norm(a)
 
 
 def render() -> Image.Image:
-    with tempfile.TemporaryDirectory() as tmp:
-        exe, pam = Path(tmp) / "bison_logo", Path(tmp) / "bison.pam"
-        subprocess.run(["g++", "-O2", "-fopenmp", str(HERE / "bison_logo.cpp"), "-o", str(exe)], check=True)
-        subprocess.run([str(exe), str(pam)], check=True)
-        head, _, body = pam.read_bytes().partition(b"ENDHDR\n")
-    kv = dict(line.split(b" ", 1) for line in head.split(b"\n")[1:] if b" " in line)
-    w, h = int(kv[b"WIDTH"]), int(kv[b"HEIGHT"])
-    return Image.fromarray(np.frombuffer(body, np.uint8).reshape(h, w, 4).copy(), "RGBA")
+    yy, xx = (np.mgrid[0:N * SS, 0:N * SS].astype(np.float32) + 0.5) / SS
+    P = parts()
+    rr = np.hypot(xx - N / 2, yy - N / 2)
+    r_out, r_in = RING
+    mid, half = (r_out + r_in) / 2, (r_out - r_in) / 2
+    ring = (rr <= r_out) & (rr >= r_in - 1)
+    H = np.where(ring, 15.0 * np.sqrt(np.clip(1 - ((rr - mid) / half) ** 2, 0, 1)), 0.0).astype(np.float32)
+    H = np.maximum(H, raised(P["hump"], 10.0, 9.0, dome=16.0, dome_blur=60))
+    H = np.maximum(H, raised(P["beard"], 14.0, 10.0, dome=6.0, dome_blur=14))
+    H = np.maximum(H, raised(P["head"], 16.0, 11.0, dome=10.0, dome_blur=45))
+    H = np.maximum(H, raised(P["horn"], 16.0, 13.0, dome=3.0, dome_blur=8))
+    polished = ring | P["head"] | P["horn"] | P["beard"]
 
+    Hs = ndi.gaussian_filter(H, 0.4 * SS)
+    gy, gx = np.gradient(Hs, 1.0 / SS)
+    n = np.dstack([-gx, -gy, np.ones_like(Hs)])
+    n /= np.linalg.norm(n, axis=2, keepdims=True)
+    eye = (N / 2, 470.0, 1800.0)                              # a camera a little above the centre, close enough
+    v = np.dstack([eye[0] - xx, eye[1] - yy, eye[2] - Hs])    # for flat faces to sweep through the reflections
+    v /= np.linalg.norm(v, axis=2, keepdims=True)
+    ndv = np.clip(np.sum(n * v, axis=2), 0, 1)
+    r = 2 * ndv[..., None] * n - v
+    up = -r[..., 1]
 
-def crop(im: Image.Image) -> Image.Image:
-    ys, xs = np.nonzero(np.asarray(im)[:, :, 3] > 3)
-    return im.crop((xs.min() - 6, ys.min() - 6, xs.max() + 7, ys.max() + 7))
+    def lobe(d, w):
+        return np.clip(((r @ unit(d)) - (1 - w)) / w, 0, 1) ** 2
 
+    def studio(spread):
+        """What the metal reflects; spread > 1 blurs it (satin). A sky brightest near the horizon, a dark floor with
+        a soft bounce, a horizon glow, a softbox overhead, a key upper left, two rims behind, the red sign above."""
+        sky = 0.12 + 0.30 * np.exp(-np.clip(up, 0, None) / 0.35)
+        floor = 0.012 + 0.07 * np.exp(np.clip(up, None, 0) / (0.10 * spread))
+        white = (np.where(up > 0, sky, floor) + 0.35 * np.exp(-((up - 0.02) / (0.025 * spread)) ** 2)
+                 + 1.1 * lobe([0.0, -0.80, 0.60], 0.10 * spread) + 1.6 * lobe([-0.55, -0.55, 0.63], 0.05 * spread)
+                 + 0.9 * (lobe([-0.85, -0.15, -0.5], 0.10 * spread) + lobe([0.85, -0.15, -0.5], 0.10 * spread)))
+        red = 1.6 * lobe([0.0, -0.96, 0.28], 0.05 * spread) * np.clip(1 - np.abs(r[..., 0]) * 2.5, 0, 1)
+        return white[..., None] * np.array([0.82, 0.86, 0.95], np.float32) + red[..., None] * np.array([1.0, 0.07, 0.04], np.float32)
 
-def _vnoise(x, y, seed):
-    xi, yi = np.floor(x).astype(np.int64), np.floor(y).astype(np.int64)
-    fx, fy = x - xi, y - yi
-    fx, fy = fx * fx * (3 - 2 * fx), fy * fy * (3 - 2 * fy)
-    def h(a, b):
-        v = ((xi + a) * 374761393 + (yi + b) * 668265263 + seed * 2147483647) & 0xFFFFFFFF
-        v = (v ^ (v >> 13)) * 1274126177 & 0xFFFFFFFF
-        return ((v ^ (v >> 16)) & 0xFFFF) / 65535.0
-    return (h(0, 0) * (1 - fx) + h(1, 0) * fx) * (1 - fy) + (h(0, 1) * (1 - fx) + h(1, 1) * fx) * fy
-
-
-def _fbm(x, y, octaves, seed):
-    s, a, n = 0.0, 0.5, 0.0
-    for i in range(octaves):
-        s = s + a * _vnoise(x, y, seed + i); n += a; x, y = x * 2.02 + 3.1, y * 2.02 + 1.7; a *= 0.5
-    return s / n
-
-
-def add_dust(bison: Image.Image) -> Image.Image:
-    rng = np.random.default_rng(5)
-    bw, bh = bison.size
-    padx, pady = int(bw * 0.38), int(bh * 0.04)
-    W, H = bw + 2 * padx, bh + pady
-    Y, X = np.mgrid[0:H, 0:W].astype(np.float32)
-    ground = H - 1
-    hoof_l, hoof_r = (padx + bw * 0.27, H - pady - bh * 0.12), (padx + bw * 0.58, ground - bh * 0.015)
-    blobs = [(hoof_r[0], ground - bh * 0.05, bh * 0.10), (hoof_l[0], hoof_l[1] + bh * 0.03, bh * 0.08),
-             (padx * 0.55, ground - bh * 0.08, bh * 0.13), (W - padx * 0.55, ground - bh * 0.09, bh * 0.14),
-             (padx * 1.05, ground - bh * 0.18, bh * 0.12), (W - padx * 1.0, ground - bh * 0.20, bh * 0.12),
-             (W * 0.5, ground - bh * 0.06, bh * 0.11), (padx * 0.25, ground - bh * 0.03, bh * 0.08),
-             (W - padx * 0.2, ground - bh * 0.03, bh * 0.08), (padx + bw * 0.08, ground - bh * 0.30, bh * 0.09),
-             (padx + bw * 0.93, ground - bh * 0.32, bh * 0.09)]
-    shape = np.zeros((H, W), np.float32)
-    for cx, cy, r in blobs:                                   # where the cloud is: thick at the hooves, out and up behind
-        shape = np.maximum(shape, np.exp(-((X - cx) ** 2 + ((Y - cy) * 1.25) ** 2) / (2 * r * r)))
-    warp = _fbm(X / 60, Y / 60, 3, seed=11)
-    n = _fbm(X / 34 + warp * 2.2, Y / 34 + warp * 1.6, 5, seed=3)
-    dens = ndi.gaussian_filter(np.clip((shape * 1.15 - 0.25) + (n - 0.5) * 0.9, 0, 1), 1.2)
-    dens *= np.clip((ground + 2 - Y) / (bh * 0.02), 0, 1)
-    hgt = ndi.gaussian_filter(dens, 4.0) * 40                 # a billowy surface to light
-    gy, gx = np.gradient(hgt)
-    nrm = np.dstack([-gx, -gy, np.ones_like(hgt)]); nrm /= np.linalg.norm(nrm, axis=2, keepdims=True)
-    key = np.clip(nrm @ np.array([-0.55, -0.6, 0.58]), 0, 1)
-    top = np.clip(nrm @ np.array([0.0, -0.95, 0.3]), 0, 1)
-    col = 0.035 + 0.16 * key[..., None] * np.array([0.78, 0.80, 0.86]) + 0.10 * top[..., None] ** 2 * np.array([1.0, 0.10, 0.06])
-    edge = np.clip(np.minimum(X, W - 1 - X) / (padx * 0.55), 0, 1) * np.clip((H - 1 - Y) / (bh * 0.10), 0, 1)
-    alpha = np.clip(dens * 0.92, 0, 0.92) * edge ** 2.0      # fade out well before the picture's edges
-    rgb = (np.clip(col, 0, 1) ** (1 / 2.2) * 255).astype(np.uint8)
-    dust = Image.fromarray(np.dstack([rgb, (alpha * 255).astype(np.uint8)]), "RGBA")
-
-    specks = Image.new("RGBA", (W, H), (0, 0, 0, 0)); dr = ImageDraw.Draw(specks)
-    for (hx, hy), side in ((hoof_l, -1), (hoof_r, 1), (hoof_r, -1), (hoof_l, 1)):   # dirt flung out and up
-        for _ in range(70):
-            ang = np.radians(rng.uniform(15, 80)); dist = rng.gamma(2.0, bh * 0.06)
-            x = hx + side * np.cos(ang) * dist * 1.6; y = hy - np.sin(ang) * dist * 0.9
-            if not (0 <= x < W and 0 <= y < H): continue
-            r = max(0.8, rng.gamma(1.6, 1.3) * (1.4 - min(1.0, dist / (bh * 0.35))))
-            g = int(rng.uniform(20, 60))
-            dr.ellipse([x - r, y - r * rng.uniform(0.6, 1.0), x + r, y + r], fill=(g, g, g + 4, 235))
-            if r > 2.2 and rng.random() < 0.5:
-                dr.ellipse([x - r * 0.45 - 0.5, y - r * 0.6, x - r * 0.05, y - r * 0.2], fill=(150, 150, 160, 200))
-
-    out = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    out.alpha_composite(dust)
-    out.alpha_composite(specks)
-    out.alpha_composite(bison, (padx, 0))
-    veil = alpha * 0.55 * np.clip((Y - (ground - bh * 0.07)) / (bh * 0.05), 0, 1)   # the hooves sit in the cloud
-    out.alpha_composite(Image.fromarray(np.dstack([rgb, (veil * 255).astype(np.uint8)]), "RGBA"))
-    return out
+    fresnel = (1 - ndv) ** 5
+    chrome = studio(1.0) * (0.42 + 0.58 * fresnel)[..., None]                       # black chrome
+    satin = studio(2.6) * (0.30 + 0.70 * fresnel)[..., None] + 0.008               # the hump
+    grain = ndi.gaussian_filter(np.random.default_rng(3).standard_normal(rr.shape).astype(np.float32), 0.7 * SS)
+    matte = (0.006 + 0.003 * grain)[..., None] + studio(4.0) * (0.02 * (1 - ndv) ** 3)[..., None]   # the face
+    col = np.where(polished[..., None], chrome, np.where(P["hump"][..., None], satin, matte))
+    cav = np.clip(ndi.gaussian_filter(H, 3 * SS) - H, 0, None)                     # gaps and grooves shade themselves
+    col *= np.clip(1 - 0.05 * cav, 0.3, 1)[..., None]
+    alpha = np.clip(r_out + 0.5 - rr, 0, 1)
+    rgb = np.clip(col, 0, 1) ** (1 / 2.2)
+    return Image.fromarray(np.dstack([rgb * 255, alpha * 255]).astype(np.uint8), "RGBA")
 
 
 if __name__ == "__main__":
-    logo = add_dust(crop(render()))
-    logo = logo.resize((round(logo.width * HEIGHT / logo.height), HEIGHT), Image.LANCZOS)
+    badge = render().resize((SIZE, SIZE), Image.LANCZOS)
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    logo.save(OUT, "WEBP", quality=86, method=6, alpha_quality=90)
-    print(f"wrote {OUT} ({logo.width}x{logo.height}, {OUT.stat().st_size // 1024} KB)")
+    badge.save(OUT, "WEBP", quality=90, method=6, alpha_quality=95)
+    print(f"wrote {OUT} ({badge.width}x{badge.height}, {OUT.stat().st_size // 1024} KB)")

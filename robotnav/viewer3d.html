@@ -287,14 +287,14 @@ input[type=range] { accent-color: var(--flag); width: 84px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 /* The intro: a red laser sign on jet black, lit like a lightsaber blade: a white-hot core in a tight red edge and a
    wide red bloom. Behind it a blacked-out US flag, flat, in greys only, fills the screen (hung vertically on a
-   portrait screen); under it a black-metal bison charges at the screen. The blade ignites left to right, hums,
-   retracts; the bison rushes past and the black lifts.
+   portrait screen); under it a bison badge in black chrome, like a car emblem, comes toward the screen. The blade
+   ignites left to right, hums, retracts; the badge rushes past and the black lifts.
    The sweep is a soft-edged mask moved by one registered property (--reach), so the blade's tip glows as it runs;
    the sign's box is padded so the mask never cuts the glow. Without @property the blade simply appears. */
 @property --reach { syntax: "<length-percentage>"; inherits: false; initial-value: 0px; }
 .intro { position: fixed; inset: 0; z-index: 1000; background: #000; display: flex; align-items: center; overflow: hidden;
   justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: opacity 1.1s ease;
-  --logo-h: min(50vh, 92vw); --gap: clamp(4px, 1.4vh, 14px); }
+  --logo-h: min(44vh, 78vw); --gap: clamp(8px, 2.6vh, 26px); }
 .intro.gone { opacity: 0; pointer-events: none; }
 .intro-flag { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
 .intro-flag.v { display: none; }
@@ -307,7 +307,7 @@ input[type=range] { accent-color: var(--flag); width: 84px; }
   letter-spacing: 0.08em; margin-right: -0.08em; white-space: nowrap; user-select: none;
   text-shadow: 0 0 1px #fff, 0 0 2px #fff, 0 0 4px #ff4a4a, 0 0 8px #ff1414, 0 0 14px #ff0000, 0 0 26px #ff0000,
     0 0 52px #e80000, 0 0 100px #b00000, 0 0 150px #700000; }
-.intro-logo { display: block; height: var(--logo-h); width: auto; aspect-ratio: 742 / 720; opacity: 0;
+.intro-logo { display: block; height: var(--logo-h); width: auto; aspect-ratio: 1 / 1; opacity: 0;
   transform-origin: 50% 58%; user-select: none; -webkit-user-drag: none; }
 .intro-skip { position: absolute; left: 0; right: 0; bottom: max(26px, env(safe-area-inset-bottom)); text-align: center;
   font: 500 11px/1 var(--f-body); letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255, 255, 255, 0.34);
@@ -350,7 +350,7 @@ input[type=range] { accent-color: var(--flag); width: 84px; }
   <!--__FLAG__-->
   <div class="intro-stack">
     <div class="intro-sign"><div class="intro-word">BRUBUS</div></div>
-    <img class="intro-logo" id="intro-logo" src="__BISON_URI__" width="742" height="720" alt="" draggable="false">
+    <img class="intro-logo" id="intro-logo" src="__BISON_URI__" width="900" height="900" alt="" draggable="false">
   </div>
   <div class="intro-skip" aria-hidden="true">Click, tap or press a key to skip</div>
 </div>

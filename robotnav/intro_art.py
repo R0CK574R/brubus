@@ -1,4 +1,4 @@
-"""Art for the viewer's intro: a blacked-out US flag (generated here as inline SVG) and the bison logo
+"""Art for the viewer's intro: a blacked-out US flag (generated here as inline SVG) and the bison badge
 (robotnav/assets/bison.webp, rendered by tools/bison_logo.py), both inlined so the page stays one file.
 
 The flag is flat, at the official proportions (hoist 1, fly 1.9, 13 stripes, a union 7 stripes deep and 0.76

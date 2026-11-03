@@ -130,8 +130,8 @@ Run these from the same terminal, with the virtual environment active.
 
 - **The intro**: the page opens on a red laser BRUBUS sign, a white-hot core in a red glow like a lightsaber
   blade, over a blacked-out US flag that fills the screen (flat, greys only; hung vertically on a phone held
-  upright), with a black-metal bison charging at you underneath, kicking up dust. The blade ignites left to
-  right and hums, then retracts as the bison rushes past, and the black lifts as the map flies in. Click, tap or
+  upright), with a bison badge in black chrome underneath, like a car emblem. The blade ignites left to right
+  and hums, then retracts as the badge rushes toward you, and the black lifts as the map flies in. Click, tap or
   press any key to skip it, or add `?intro=0` to the address to turn it off.
 - **Pick a map**: Grassland, Desert or Island (top left). Every map opens with a short fly-in to the
   Overview, empty, with the rover parked in the middle and no route on the board.
@@ -461,8 +461,8 @@ Hand-drawn routes are scored by the same rules in both (`robotnav.terrain.evalua
 | `robotnav/replan.py` | Driving with a limited sensor: D\* Lite, the rover's belief about the terrain, roadblocks, and the A\*-from-scratch comparison |
 | `robotnav/airspace.py` | The air route: flight levels, watchtowers and their lines of sight, the stealth and direct flights |
 | `robotnav/scene3d.py` | Exports the three maps and their preset paths into the self-contained viewer (and the live demo page, with link previews) |
-| `robotnav/intro_art.py` | The intro's art: draws the blacked-out flag (official proportions, flat, greys only, horizontal and vertical) as SVG and inlines the bison logo |
-| `tools/bison_logo.cpp`, `bison_logo.py` | The bison logo (`robotnav/assets/bison.webp`): a 3-D distance-field model with curly, woolly and shaggy fur, ray-marched in C++ and lit as black metal; the script builds and runs it, then adds the dust |
+| `robotnav/intro_art.py` | The intro's art: draws the blacked-out flag (official proportions, flat, greys only, horizontal and vertical) as SVG and inlines the bison badge |
+| `tools/bison_logo.py` | The bison badge (`robotnav/assets/bison.webp`): a car-style emblem of a bison's head, head-on, drawn from a few bold outlines, raised in relief and rendered as black chrome |
 | `robotnav/viewer3d.html` | Three.js viewer: maps, sky, water, palms and trees, planners, D\* Lite and the air route in the browser, watching the search, the sensor drive, the drone and its watchtowers, preset paths, picking, drawing, drone camera, the spiked tank, the tour, links to a view, the frame-rate benchmark |
 | `cpp/` | The C++ core: planners, D\* Lite, the air route, map files, the `robotnav` tool, unit tests and the pybind11 module ([cpp/README.md](cpp/README.md)) |
 | `robotnav/cpp.py`, `parity.py`, `mapfile.py` | Run the C++ core from Python, compare it with the reference, and write the map files it reads |
