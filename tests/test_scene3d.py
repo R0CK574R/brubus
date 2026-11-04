@@ -23,6 +23,15 @@ def test_hosted_viewer_has_link_previews(tmp_path):
     assert '<link rel="canonical" href="https://example.github.io/demo/">' in head
 
 
+def test_viewer_has_the_console_look(tmp_path):
+    page = _page(tmp_path)
+    assert "family=Inter" in page and "JetBrains+Mono" in page and "Orbitron" not in page   # words and numbers
+    assert 'id="hud-compass-cv"' in page and 'id="hud-alt-cv"' in page               # the drone view's read-outs
+    assert "M 155,150 C 155,50 115,30 100,30 85,30 45,50 45,150" in page             # MIL-STD-2525 friendly air frame
+    assert "M 100,28 L 172,100 100,172 28,100 Z" in page                              # and the hostile ground one
+    assert "UAV-01" in page and "TWR-" in page and "TRACKING" in page                # callsign tags
+
+
 def test_intro_art_is_inlined(tmp_path):
     page = _page(tmp_path)
     assert "__FLAG__" not in page and "__BISON_URI__" not in page   # both placeholders were filled

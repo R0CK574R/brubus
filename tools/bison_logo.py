@@ -71,8 +71,8 @@ def badge():
     white = (np.where(up > 0, sky, floor) + 0.35 * np.exp(-((up - 0.02) / 0.025) ** 2)
              + 1.1 * lobe([0.0, -0.80, 0.60], 0.10) + 1.6 * lobe([-0.55, -0.55, 0.63], 0.05)
              + 0.9 * (lobe([-0.85, -0.15, -0.5], 0.10) + lobe([0.85, -0.15, -0.5], 0.10)))
-    red = 1.6 * lobe([0.0, -0.96, 0.28], 0.05) * np.clip(1 - np.abs(r[..., 0]) * 2.5, 0, 1)
-    chrome = (white[..., None] * np.array([0.82, 0.86, 0.95], np.float32) + red[..., None] * np.array([1.0, 0.07, 0.04], np.float32))
+    sign = 0.9 * lobe([0.0, -0.96, 0.28], 0.05) * np.clip(1 - np.abs(r[..., 0]) * 2.5, 0, 1)   # the off-white sign above
+    chrome = (white[..., None] * np.array([0.82, 0.86, 0.95], np.float32) + sign[..., None] * np.array([1.0, 0.93, 0.8], np.float32))
     chrome *= (0.42 + 0.58 * (1 - ndv) ** 5)[..., None]
     grain = ndi.gaussian_filter(np.random.default_rng(3).standard_normal(rr.shape).astype(np.float32), 0.7 * SS)
     face = ((0.007 + 0.003 * grain) * (1.0 + 0.6 * np.clip(1 - rr / r_in, 0, 1)))[..., None] * np.ones(3, np.float32)

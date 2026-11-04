@@ -6,14 +6,15 @@ with nothing to install. Press **▶ Tour** for a guided run through all three m
 A tracked rover, a matte-black rhomboid tank with a hedgehog coat of steel spikes, finds its way
 across three hilly maps (grassland, desert dunes with oasis ponds, and a tropical island) using five pathfinding
 algorithms. Each map opens empty: add any of its 20 preset routes, or set your own start and
-finish, and the rover works out the quickest path over the hills while a follow drone films it,
-at golden hour under a pastel sky.
+finish, and the rover works out the quickest path over the hills while a follow drone films it.
+The screen reads like an operations console: a dark contour map, standard military map symbols with
+callsign tags, and colour kept for meaning (blue is ours, red is the watchtowers and what they see).
 A dashed line shows the shortest route a robot that ignores hills would take, so you can see what
 reading the terrain buys you. You can **watch the search**: two planners side by side, cell by cell.
 And the rover can drive **seeing only a few metres around it**, re-planning with **D\* Lite** as it
-discovers the hills, the water and any roadblock you drop in its way. Press **✈ Air** and an attack drone
-with one glowing red eye flies to the finish through the sky instead, keeping **out of the watchtowers'
-sight** behind the hills.
+discovers the hills, the water and any roadblock you drop in its way. Press **✈ Air** and our drone,
+UAV-01, flies to the finish through the sky instead, keeping **out of the watchtowers' sight** behind
+the hills.
 
 Python generates the maps and picks the routes. The code that decides every route exists three times:
 in Python (the reference), in C++ (a core 27 to 68 times faster, with a command-line tool and a Python
@@ -26,11 +27,11 @@ report the same times, to the last bit.
 
 - **The live demo** (https://r0ck574r.github.io/brubus/) is the same page as `output/course_3d.html`,
   served by GitHub Pages from `docs/`. Shared links show a preview card with a picture of the
-  desert oasis.
+  air route over the grassland: the drone's flight, the watchtowers' symbols and their sight domes.
 - **▶ Tour** (top left, or add `#tour` to the address) plays a guided loop: each map flies in and
   five planners race its showcase path; then the desert watches Dijkstra and A* search side by side,
   the island drives with a 5 m sensor and meets a roadblock, and the grassland rides along with the
-  drone camera, then takes to the air: the attack drone flies its stealth route past the
+  drone camera, then takes to the air: our drone flies its stealth route past the
   watchtowers. The overview lays every route side by side. A caption says what's happening at each
   step. Touch anything to take over; the tour doesn't change the paths your browser remembers.
 - **Links to a view**: the address keeps up with what's on screen, so you can copy it and send it.
@@ -120,7 +121,7 @@ Run these from the same terminal, with the virtual environment active.
 | `python main.py parity` | The C++ core against Python on all 60 preset trips: identical results, and how much faster (about 3 minutes) |
 | `python main.py explore-bench` | Every preset at 5, 10 and 20 m: time lost to not knowing, D\* Lite's work against A\* from scratch (about a minute) |
 | `python main.py terrain-bench` | Hills, slope limit and obstacle sweep (about 25 seconds) |
-| `python -m pytest -q` | Run the 215 tests (30 of them hold the C++ core against Python; skipped until it's built) |
+| `python -m pytest -q` | Run the 216 tests (30 of them hold the C++ core against Python; skipped until it's built) |
 | `python main.py demo`, `python main.py benchmark` | The original 2D grid version |
 
 `python main.py course` writes the viewer twice: `output/course_3d.html` to open yourself, and
@@ -128,11 +129,23 @@ Run these from the same terminal, with the virtual environment active.
 
 ## Using the viewer
 
-- **The intro**: the page opens on a red laser BRUBUS sign, a white-hot core in a red glow like a lightsaber
-  blade, over a blacked-out US flag that fills the screen (flat, greys only; hung vertically on a phone held
-  upright), with a round badge underneath: a muscular bison charging toward you, sculpted in black chrome. The
-  blade ignites left to right and hums, then retracts as the badge rushes toward you, and the black lifts as the
-  map flies in. Click, tap or press any key to skip it, or add `?intro=0` to the address to turn it off.
+- **The intro**: the page opens on BRUBUS in heavy, flat off-white type, like a poster, over a blacked-out
+  US flag that fills the screen (flat, greys only; hung vertically on a phone held upright), with a round badge
+  underneath: a muscular bison charging toward you, sculpted in black chrome. The word is revealed left to
+  right, then wipes away as the badge rushes toward you, and the black lifts as the map flies in. Click, tap
+  or press any key to skip it, or add `?intro=0` to the address to turn it off.
+- **Reading the screen**: graphite panels over a dark map with contour lines (a thin one every metre, a
+  firmer one every 5 m), and colour only where it means something. Blue is ours: the rover, the drone, the
+  selected route and its dashed comparison. Red is the watchtowers and the ground they see; green means
+  hidden from them; amber is caution (slow ground, a roadblock, a plan that broke). Every other route is a
+  thin grey line. The controls share one neutral style, with a warm off-white for what's switched on.
+  Words are set in Inter, numbers in JetBrains Mono so columns line up.
+- **Map symbols and callsigns**: the rover, the drone and the towers wear the US military's standard map
+  symbols (MIL-STD-2525): a light-blue circle with a tank icon for the rover (friendly ground equipment), a
+  light-blue dome with the UAV icon for the drone (friendly aircraft) and a salmon diamond with the sensor
+  star for each watchtower (hostile ground sensor). Each carries a tag with its callsign and live data, such
+  as `UAV-01 · 3.1 m AGL · 5.0 m/s` (AGL: above ground level), or `TWR-2 · TRACKING` while a tower sees the
+  drone. The mini-map uses the same symbols.
 - **Pick a map**: Grassland, Desert or Island (top left). Every map opens with a short fly-in to the
   Overview, empty, with the rover parked in the middle and no route on the board.
 - **More paths** (next to Set start & finish): 20 routes per map, all optional. Tick one and its quickest
@@ -145,11 +158,12 @@ Run these from the same terminal, with the virtual environment active.
   its seconds in a tower's sight against the direct flight's (for example `0:45 · 0.0 vs 7.8 s`),
   ticked paths draw their stealth flights in the air, and **Fly** sends the drone along one. The
   flights are worked out in the background as the list or the added paths need them.
-- **The shortest route** (dashed white): the least-distance route between the same two points,
+- **The shortest route** (dashed): the least-distance route between the same two points,
   which is what a robot that ignores hills would drive. The board ranks it with the planners, and
-  the green line under the table spells out the difference, such as "1:21 instead of 1:59 on the
+  the line under the table spells out the difference, such as "1:21 instead of 1:59 on the
   shortest route, 39 s saved". The **Shortest route** chip hides the dashed line; **All planners**
-  shows every planner's route; **Search area** colours the ground the selected planner searched.
+  shows every planner's route (grey, the selected one blue); **Search area** colours the ground the
+  selected planner searched.
 - **▶ Watch the search** (on the stage board): see [below](#watch-the-search).
 - **The D\* Lite row**: the same trip, driven seeing only a few metres. See
   [Driving with a limited sensor](#driving-with-a-limited-sensor-d-lite).
@@ -174,9 +188,11 @@ Run these from the same terminal, with the virtual environment active.
   clicking points (each joins the last with a straight line). Lines that hit an obstacle or a
   too-steep slope are refused with the reason. **Drive it** ranks your route against the planners,
   and **Copy your route** gives JSON you can score in Python.
-- **Cameras**: Drone (follows from ~15 m up), Top-down, Chase, Overview. The Overview fits the whole
-  map into the space the panels leave free, so every path label stays visible. Far views draw
-  thicker lines, close views thin ones. Leaves and cacti between the camera and the rover dissolve,
+- **Cameras**: Drone (follows from ~15 m up), Top-down, Chase, Overview. The Drone view shows the
+  camera drone's own read-outs, as on a drone feed: a compass strip of where it looks, with the rover
+  or drone, the finish and the watchtowers marked at their bearings, and a tape of its height above
+  the ground. The Overview fits the whole map into the space the panels leave free, so every path
+  label stays visible. Far views draw thicker lines, close views thin ones. Leaves and cacti between the camera and the rover dissolve,
   so a plant never hides it. The added paths, the route being driven and a drawn route are
   remembered per map in your browser.
 
@@ -198,14 +214,14 @@ drawn twice with a scissor, sharing one shadow map. Dragging turns both.
 
 ## Driving with a limited sensor: D\* Lite
 
-![D* Lite on the desert with a 5 m sensor: unseen ground is dimmed, the ring is the sensor's reach, the dashed line is the current plan and the red one a plan that just broke; a roadblock is dropped ahead, and the panel counts the re-plans and the work against A* from scratch](docs/sensor.gif)
+![D* Lite on the desert with a 5 m sensor: unseen ground is dimmed, the blue ring is the sensor's reach, the dashed line is the current plan and the amber one a plan that just broke; a roadblock is dropped ahead, and the panel counts the re-plans and the work against A* from scratch](docs/sensor.gif)
 
 Pick the **D\* Lite** row on the stage board and the rover drives the same trip seeing only 5 m
 round itself (10 m and 20 m in its panel). It starts knowing nothing but where the finish is.
 Unseen ground is dimmed and assumed flat and open, the cheapest it could be, so its plan (dashed)
 is an optimistic guess. Each time it moves a cell it senses every cell within range, and anything
 new can only make moves dearer: a hill, soft sand, water, a rock. When that breaks the plan, the
-broken plan flashes red and [D\* Lite](https://cdn.aaai.org/AAAI/2002/AAAI02-072.pdf) (Koenig &
+broken plan flashes amber and [D\* Lite](https://cdn.aaai.org/AAAI/2002/AAAI02-072.pdf) (Koenig &
 Likhachev, 2002) repairs it. It searches backwards from the finish and re-examines only the cells
 whose cost to the finish the new ground changed, instead of planning again from scratch.
 **Drop a roadblock** puts a steel tank trap anywhere on the map. It exists from that moment, and
@@ -224,13 +240,14 @@ same cells, the same work at every step, the same plans and the same cells sense
 
 ## The air route: a drone that stays out of sight
 
-![Air mode on the grassland, from the chase camera: the attack drone flies the direct route (amber) in a watchtower's sight, a red sight line reaching it from the left; the hatched ground shows where the towers see even a low flight](docs/air.png)
+![Air mode on the grassland, seen from in front of the drone: UAV-01, tagged with its friendly-aircraft symbol, flies the direct route (dashed) inside a watchtower's red sight dome; a red sight line joins them, the telemetry reads Seen, and the hatched ground shows where the towers see even a low flight](docs/air.png)
 
-Press **✈ Air** (next to the map buttons) and the trip is flown instead: an attack drone, matte black
-with four rotors and one glowing red eye, takes off at the start and lands at the finish. Four
-watchtowers stand on the highest open ground, at least 30 m apart, each with a searchlight. A tower
+Press **✈ Air** (next to the map buttons) and the trip is flown instead: our drone, UAV-01, matte black
+with four rotors and a blue eye, takes off at the start and lands at the finish. Four watchtowers
+(TWR-1 to TWR-4) stand on the highest open ground, at least 30 m apart, each with a searchlight. A tower
 sees 24 m, but only along a clear line of sight: the hills and trees between it and the drone block
-the view, so a drone flying low behind a ridge is hidden (terrain masking, as with real radar).
+the view, so a drone flying low behind a ridge is hidden (terrain masking, as with real radar). Each
+tower's reach is a faint red dome, with a range ring where the dome meets the ground.
 
 The airspace is a stack of eight flight levels 3 m apart over the map's grid, the lowest just above
 the lowest ground. A cell of airspace is free if it clears the ground, water, trees and rocks below
@@ -239,14 +256,14 @@ sweeps past is free, so it can't clip a hillside or a treetop. A move takes its 
 plus 0.2 s per metre climbed. Two routes race on the board, both found with A\* and a straight-line
 estimate (which never overestimates, so both are optimal for what they weigh):
 
-- **Stealth A\*** (violet) also pays 10 s for every second inside a tower's sight, so it hugs the
+- **Stealth A\*** (solid line) also pays 10 s for every second inside a tower's sight, so it hugs the
   valleys and slips behind hills when it can.
-- **Direct A\*** (amber) ignores the towers and flies the quickest line.
+- **Direct A\*** (dashed line) ignores the towers and flies the quickest line.
 
 The ground shows where the danger is, hatched: red where a tower sees even the lowest flight, amber
-where flying low keeps you hidden. While a tower sees the drone, its searchlight turns to follow it
-and a red sight line joins them; the telemetry shows the height above the ground, the climb rate,
-and **Seen** or **Hidden**.
+where flying low keeps you hidden. While a tower sees the drone, its searchlight turns to follow it,
+a red sight line joins them and its tag reads TRACKING; the telemetry shows the height above the
+ground, the climb rate, and **Seen** (red) or **Hidden** (green).
 `robotnav/airspace.py` is the reference (`python main.py fly`), and the browser runs a line-for-line
 port: the same free cells, the same cells seen by each tower, and the same flights, checked in a
 headless browser on every map.
@@ -280,7 +297,7 @@ they read as steel on every map.
 | Desert | dune field: gentle windward slopes, steep slip faces, three oases | firm sand 1.0, soft sand 2.4, rocky ground 1.3, oasis grass 1.0 | cacti, sandstone boulders, oasis ponds and palms |
 | Island | ragged coast, beach, central peak | grass 1.0, sand 1.6, jungle 2.0 | palm trees, rocks, the sea |
 
-![The viewer on the desert map at golden hour: the tank drives its quickest route past an oasis of palms toward the finish flag on a dune, under a sky-blue and pink sky, with the planners ranked on the stage board](docs/screenshot.png)
+![The viewer on the desert map, in the drone view: the tank, tagged UGV-01, drives its quickest route (blue) past an oasis of palms, with the compass strip and altitude tape on screen and the planners ranked on the stage board](docs/screenshot.png)
 
 The desert's oases are carved in Python, so they are real obstacles: the planners route around them
 and the browser and Python still agree. Each sits in the lowest broad ground between the dunes, stretched
@@ -313,15 +330,18 @@ full effect costs under 1 ms more per frame than a plain surface.
 
 Every texture below is drawn in code when the page starts. The page still loads nothing but Three.js.
 
-- **Sky**: a dome round the camera with a pastel gradient (sky blue overhead, lavender, light pink at
-  the horizon), a warm glow toward a low sun about 35° up, the sun's disc, and a slow deck of soft
-  clouds from a tiling noise texture. The light matches: a warm sun and a lavender sky fill, so
-  shadows go cool. When the camera looks down at a floating map, the dome tips up, so the map
-  floats in front of sky rather than the empty haze below the horizon. The island's sea runs to the
-  real horizon instead.
+- **Sky**: a dome round the camera with a graphite gradient, a faint glow toward the sun and a slow
+  deck of faint cloud from a tiling noise texture. The light is a neutral sun and a grey sky fill;
+  each map keeps its own palette, muted to a dark map (most of the saturation and some brightness
+  taken out), so colour is left for what means something. When the camera looks down at a floating
+  map, the dome tips up, so the map floats in front of sky rather than the empty haze below the
+  horizon. The island's sea runs to the real horizon instead.
 - **Haze that matches the sky**: Three.js's fog shader chunks are replaced, so every material fades
-  toward the sky's colour in that direction, warmer toward the sun, and distant hills melt into the
-  horizon behind them. Water and the tank's steel reflect a small cube map of the same sky.
+  toward the sky's colour in that direction, and distant hills melt into the horizon behind them.
+  Water and the tank's steel reflect a small cube map of the same sky.
+- **Contour lines**: drawn by the ground's shader from each pixel's height, a thin line every metre
+  and a firmer one every 5 m, about a pixel wide at any distance (screen-space derivatives) and
+  fading out where they would crowd together, on steep faces and far away. None under the sea.
 - **Palms** on the island and round the oases are modelled on the Canary Island date palm: a stout
   trunk with diamond leaf scars, the "pineapple" knob under the crown, and 36 feathery fronds on a
   golden-angle spiral. Young fronds stand up and old ones hang down. Each frond is a V-shaped strip
@@ -467,14 +487,14 @@ Hand-drawn routes are scored by the same rules in both (`robotnav.terrain.evalua
 | `robotnav/scene3d.py` | Exports the three maps and their preset paths into the self-contained viewer (and the live demo page, with link previews) |
 | `robotnav/intro_art.py` | The intro's art: draws the blacked-out flag (official proportions, flat, greys only, horizontal and vertical) as SVG and inlines the bison badge |
 | `tools/bison_logo.cpp`, `bison_logo.py` | The bison badge (`robotnav/assets/bison.webp`): a muscular bison charging three-quarters toward you, sculpted as a 3-D distance field and ray-marched in C++ as black chrome; the script builds and runs it and sets it in the badge |
-| `robotnav/viewer3d.html` | Three.js viewer: maps, sky, water, palms and trees, planners, D\* Lite and the air route in the browser, watching the search, the sensor drive, the drone and its watchtowers, preset paths, picking, drawing, drone camera, the spiked tank, the tour, links to a view, the frame-rate benchmark |
+| `robotnav/viewer3d.html` | Three.js viewer: maps, sky, water, contour lines, palms and trees, planners, D\* Lite and the air route in the browser, watching the search, the sensor drive, the drone and its watchtowers, MIL-STD-2525 symbols and callsign tags, preset paths, picking, drawing, drone camera and its compass and altitude read-outs, the spiked tank, the tour, links to a view, the frame-rate benchmark |
 | `cpp/` | The C++ core: planners, D\* Lite, the air route, map files, the `robotnav` tool, unit tests and the pybind11 module ([cpp/README.md](cpp/README.md)) |
 | `robotnav/cpp.py`, `parity.py`, `mapfile.py` | Run the C++ core from Python, compare it with the reference, and write the map files it reads |
 | `maps/` | The live demo's three maps as map files, for the C++ tool |
 | `docs/` | The live demo served by GitHub Pages (`index.html`, built by `python main.py course`), its preview image, and the README's pictures |
 | `robotnav/terrain_bench.py` | Sweeps hill height, slope limit and obstacle density |
 | `robotnav/grid.py`, `visualize.py`, `benchmark.py` | Original 2D grid world, plots and benchmark |
-| `tests/` | 215 checks: optimality on every map, the shortest route, all 20 presets per map, the desert's oases, grade limit, water, route rules, D\* Lite (legal routes, optimal repairs, roadblocks), the air route (towers, lines of sight, hiding behind a ridge), the C++ core against Python, map rebuilds, the command line, the page head and link previews, the intro's flag and logo |
+| `tests/` | 216 checks: optimality on every map, the shortest route, all 20 presets per map, the desert's oases, grade limit, water, route rules, D\* Lite (legal routes, optimal repairs, roadblocks), the air route (towers, lines of sight, hiding behind a ridge), the C++ core against Python, map rebuilds, the command line, the page head and link previews, the console look (fonts, map symbols, tags, read-outs), the intro's flag and logo |
 
 ## Findings
 

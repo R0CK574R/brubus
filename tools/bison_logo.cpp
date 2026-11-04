@@ -9,7 +9,7 @@
 // nose, long locks falling from the hump over the cape, beard and forelegs.
 // Render: sphere tracing, normals from the field, ambient occlusion, a soft shadow from the key, shaded as black
 // chrome: almost no colour of its own, only reflections of a dark studio (a big soft box up left with a hard key in
-// it, a strip overhead, two tall strips behind for the silhouette, a dim fill, and the red sign above).
+// it, a strip overhead, two tall strips behind for the silhouette, a dim fill, and the off-white sign above).
 //
 // Build: g++ -O2 -fopenmp tools/bison_logo.cpp -o bison_logo   (tools/bison_logo.py builds and runs it)
 // Usage: bison_logo OUT.pam [SIZE SUPERSAMPLE]      writes RGBA (PAM), straight alpha
@@ -275,10 +275,10 @@ static V studio(V r, float spread) {
     float rim = smoothstep(0.84f - 0.05f * w, 0.88f, std::fabs(R)) * smoothstep(-0.1f, 0.35f, -B) * smoothstep(-0.3f, 0.1f, U);
     white += 2.6f * rim;
     white += 0.15f * lobe(r, v3(0.60f, -0.05f, 0.80f), 0.20f * w);                                  // a dim fill, low right
-    // the red sign above and in front: a thin red strip
-    float red = smoothstep(0.48f - 0.04f * w, 0.50f, U) * (1 - smoothstep(0.55f, 0.57f + 0.03f * w, U)) * smoothstep(0.4f, 0.75f, B)
-              * (1 - smoothstep(0.55f, 0.75f, std::fabs(R)));
-    return v3(0.84f, 0.87f, 0.95f) * white + v3(1.0f, 0.07f, 0.04f) * (1.5f * red);
+    // the sign above and in front (BRUBUS in off-white): a thin warm strip
+    float sign = smoothstep(0.48f - 0.04f * w, 0.50f, U) * (1 - smoothstep(0.55f, 0.57f + 0.03f * w, U)) * smoothstep(0.4f, 0.75f, B)
+               * (1 - smoothstep(0.55f, 0.75f, std::fabs(R)));
+    return v3(0.84f, 0.87f, 0.95f) * white + v3(1.0f, 0.93f, 0.8f) * (0.9f * sign);
 }
 static V camSpace(V w) { return v3(dot(w, CAM.cu), dot(w, CAM.cv), -dot(w, CAM.cw)); }
 static V worldFromCam(V c) { return CAM.cu * c.x + CAM.cv * c.y - CAM.cw * c.z; }

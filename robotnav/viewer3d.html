@@ -2,31 +2,34 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Orbitron:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..900&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
 <style>
-/* Layout: full-bleed 3D stage filmed by a follow drone. Title + map picker top-left, rally stage board top-right,
+/* Layout: full-bleed 3D stage filmed by a follow drone. Title + map picker top-left, stage board top-right,
    drone feed + course map bottom-left, telemetry or the route planner along the bottom; on phones the panels stack.
-   One committed dark HUD look over bright daylight scenes, so there is no light variant. */
+   One look, an operations console: graphite panels over a dark map, neutral controls with one warm off-white
+   accent, and colour kept for meaning (blue: ours; red: the watchtowers and what they see; green: hidden;
+   amber: caution). Inter for words, JetBrains Mono for numbers so columns line up. */
 :root {
-  --ink: #ece6d6;
-  --muted: #a7a291;
-  --panel: rgba(23, 27, 22, 0.84);
-  --edge: rgba(236, 230, 214, 0.14);
-  --hover: rgba(236, 230, 214, 0.06);
-  --flag: #f2a93b;
-  --flag-soft: rgba(242, 169, 59, 0.16);
-  --flag-ink: #1b1a14;
-  --accent: #39ff14;
-  --sense: #5ce1e6;
-  --start: #4fae6a;
-  --rec: #e2564b;
-  --map-bg: #2a2f25;
-  --bg: #20241d;
-  --good: #7fc28a;
-  --warn: #e7c35a;
-  --bad: #e2775c;
-  --f-display: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;   /* one typeface throughout */
-  --f-body: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --ink: #e6e7e8;
+  --muted: #9a9fa5;
+  --panel: rgba(13, 15, 18, 0.86);
+  --edge: rgba(230, 231, 232, 0.12);
+  --hover: rgba(230, 231, 232, 0.06);
+  --accent: #efe6d2;                                /* the one accent: pressed, primary, focus */
+  --accent-soft: rgba(239, 230, 210, 0.12);
+  --accent-ink: #111316;                            /* text on the accent */
+  --friend: #5cc2ff;                                /* ours: the rover, the drone, the selected route */
+  --friend-fill: #80e0ff;                           /* MIL-STD-2525 friendly fill */
+  --hostile: #ff5a52;                               /* the watchtowers and what they see */
+  --hostile-fill: #ff8080;                          /* MIL-STD-2525 hostile fill */
+  --hidden: #74d39a;                                /* out of every tower's sight */
+  --caution: #e2ad48;                               /* slow ground, roadblocks, a plan that broke */
+  --route: #8f969d;                                 /* routes that aren't selected */
+  --bad: #ff6a5f;                                   /* a message about something that can't be done */
+  --map-bg: #1a1d21;
+  --bg: #0d0f11;
+  --f-display: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --f-body: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --f-data: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
   color-scheme: dark;
 }
@@ -48,183 +51,179 @@ body { background: var(--bg); color: var(--ink); font-family: var(--f-body); ove
 }
 .board {
   pointer-events: auto; min-width: 0;
-  background: var(--panel); border: 1px solid var(--edge); border-radius: 6px;
+  background: var(--panel); border: 1px solid var(--edge); border-radius: 4px;
   backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
 }
 
 .title { grid-column: 1 / 3; grid-row: 1; justify-self: start; align-self: start; padding: 12px 16px; max-width: min(31rem, 100%); }
-.eyebrow { font-family: var(--f-data); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--flag); }
-h1 { font-family: var(--f-display); font-weight: 800; font-size: 25px; line-height: 1.05; margin: 4px 0 9px; letter-spacing: -0.02em; text-wrap: balance; }
-.maps { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.eyebrow { font-family: var(--f-body); font-weight: 600; font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--f-display); font-weight: 700; font-size: 24px; line-height: 1.05; margin: 5px 0 10px; letter-spacing: -0.015em; text-wrap: balance; }
+.maps { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 9px; }
 .maps button { display: inline-flex; align-items: center; gap: 7px; padding: 7px 11px; }
-.maps button[aria-pressed="true"] { border-color: var(--flag); color: var(--flag); background: var(--flag-soft); }
-.maps i { width: 10px; height: 10px; border-radius: 50%; flex: none; box-shadow: 0 0 0 1px var(--edge); }
-.maps .tour-btn { border-color: var(--accent); color: var(--accent); background: transparent; }
-.maps .air-btn { border-color: var(--rec); color: #ff8a7a; background: transparent; }
-.maps .air-btn[aria-pressed="true"] { border-color: var(--rec); background: var(--rec); color: var(--flag-ink); }
-.maps .tour-btn[aria-pressed="true"] { border-color: var(--accent); background: var(--accent); color: var(--flag-ink); }   /* not a map: never the map highlight */
+.maps button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-ink); background: var(--accent); }
 /* the free middle of the screen, above the controls: the sensor drive's panel and the tour's caption */
 .mid { grid-column: 2; grid-row: 2; align-self: end; justify-self: center; width: min(34rem, 100%); min-width: 0;
   display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
 .tour-cap { box-sizing: border-box; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 4px 12px; padding: 10px 12px 11px 16px; }
-.tour-step { font-family: var(--f-data); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+.tour-step { font-family: var(--f-body); font-weight: 600; font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
 .tour-text { grid-column: 1; margin: 0; font-size: 13px; line-height: 1.5; }
-.tour-text b { color: var(--flag); font-weight: 600; }
+.tour-text b { color: var(--accent); font-weight: 600; }
 #tour-stop { grid-column: 2; grid-row: 1 / 3; padding: 6px 10px; }
 /* driving with a limited sensor (D* Lite): reach, re-plans, work, roadblocks */
 .sense { box-sizing: border-box; display: grid; gap: 8px; padding: 10px 14px 12px 16px; }
 .sense-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; }
-.sense-title { display: inline-flex; align-items: center; gap: 8px; font-family: var(--f-display); font-weight: 700; font-size: 12.5px;
-  letter-spacing: 0.1em; text-transform: uppercase; color: var(--sense); }
-.sense-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sense); box-shadow: 0 0 0 3px rgba(92, 225, 230, 0.22); }
-.sense-range { display: inline-flex; align-items: center; gap: 4px; font-family: var(--f-data); font-size: 11px; color: var(--muted); }
+.sense-title { display: inline-flex; align-items: center; gap: 8px; font-family: var(--f-display); font-weight: 700; font-size: 11.5px;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--friend); }
+.sense-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--friend); box-shadow: 0 0 0 3px rgba(92, 194, 255, 0.22); }
+.sense-range { display: inline-flex; align-items: center; gap: 4px; font-family: var(--f-body); font-size: 11px; color: var(--muted); }
 .sense-range .chip { padding: 5px 8px; font-size: 12px; }
-.sense-range .chip[aria-pressed="true"] { border-color: var(--sense); color: var(--sense); }
 .sense-stats { display: flex; flex-wrap: wrap; gap: 6px 18px; font-variant-numeric: tabular-nums; }
 .sense-msg { margin: 0; min-height: 3em; font-size: 12px; line-height: 1.5; color: var(--muted); }
 .sense-msg b { color: var(--ink); font-weight: 600; }
 .sense-actions { display: flex; flex-wrap: wrap; gap: 6px; }
-#sn-block[aria-pressed="true"] { border-color: var(--bad); color: var(--bad); background: rgba(226, 119, 92, 0.12); }
+#sn-block[aria-pressed="true"] { border-color: var(--caution); color: var(--caution); background: rgba(226, 173, 72, 0.1); }
 /* the frame-rate benchmark (#bench) */
 .bench { box-sizing: border-box; display: grid; gap: 6px; padding: 10px 14px 12px 16px; max-height: min(30rem, 62vh); overflow: auto; }
-.bench-title { font-family: var(--f-display); font-weight: 700; font-size: 12.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--flag); }
+.bench-title { font-family: var(--f-display); font-weight: 700; font-size: 11.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
 .bench-prog { font-family: var(--f-data); font-size: 11.5px; color: var(--muted); }
 .bench-gpu, .bench-note { margin: 0; font-family: var(--f-data); font-size: 11px; line-height: 1.5; color: var(--muted); overflow-wrap: anywhere; }
 .bench-table td { padding: 5px 8px; font-size: 12px; }
 .bench-table th:first-child, .bench-table td:first-child { padding-left: 0; }
 .bench-table th:last-child, .bench-table td:last-child { padding-right: 0; }
 /* watch the search: two planners side by side; the bar that runs it replaces the controls */
-.watch-btn { border-color: var(--flag); color: var(--flag); }
 .replaybar { grid-column: 1 / -1; grid-row: 3; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; padding: 12px 16px; }
 .rp-text { display: grid; gap: 3px; flex: 1 1 26rem; min-width: 0; }
-.rp-title { font-family: var(--f-display); font-weight: 700; font-size: 12.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--flag); }
+.rp-title { font-family: var(--f-display); font-weight: 700; font-size: 11.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
 .rp-cap { margin: 0; font-size: 12.5px; line-height: 1.5; min-height: 3em; }
-.rp-cap b { color: var(--flag); font-weight: 600; }
-.rp-pick { display: flex; align-items: center; gap: 8px; font-family: var(--f-data); font-size: 12px; color: var(--muted); }
+.rp-cap b { color: var(--accent); font-weight: 600; }
+.rp-pick { display: flex; align-items: center; gap: 8px; font-family: var(--f-body); font-size: 12px; color: var(--muted); }
 .rp-pick select { font: 600 12px/1 var(--f-body); color: var(--ink); background: var(--map-bg); border: 1px solid var(--edge); border-radius: 4px; padding: 7px 8px; }
 .rp-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .rp-labels { position: fixed; inset: 0; pointer-events: none; }
 .rp-label { position: absolute; box-sizing: border-box; display: grid; gap: 4px; padding: 9px 12px 10px; max-width: calc(50vw - 32px);
-  background: var(--panel); border: 1px solid var(--edge); border-radius: 6px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
-.rp-name { display: inline-flex; align-items: center; gap: 9px; font-family: var(--f-display); font-weight: 800; font-size: 17px; line-height: 1; }
-.rp-name .swatch { width: 18px; height: 5px; }
+  background: var(--panel); border: 1px solid var(--edge); border-radius: 4px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.rp-name { display: inline-flex; align-items: center; gap: 9px; font-family: var(--f-display); font-weight: 700; font-size: 16px; line-height: 1; }
+.rp-name .swatch { width: 18px; height: 4px; background: var(--friend); }
 .rp-count { font-family: var(--f-data); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .rp-count b { color: var(--ink); font-weight: 600; }
-.rp-split { position: absolute; background: rgba(236, 230, 214, 0.6); }
-.specs { display: flex; flex-wrap: wrap; gap: 4px 14px; font-family: var(--f-data); font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.specs b { color: var(--ink); font-weight: 600; }
+.rp-split { position: absolute; background: rgba(230, 231, 232, 0.55); }
+.specs { display: flex; flex-wrap: wrap; gap: 4px 14px; font-family: var(--f-body); font-size: 11.5px; color: var(--muted); }
+.specs b { color: var(--ink); font-weight: 500; font-family: var(--f-data); font-size: 11px; font-variant-numeric: tabular-nums; }
 
 .times { grid-column: 3; grid-row: 1 / 3; align-self: start; width: 27.5rem; max-height: 100%; overflow: auto; padding-bottom: 8px; }
 .times:not([open]) { padding-bottom: 0; }
 .times summary { list-style: none; cursor: pointer; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 12px 16px 8px; }
 .times:not([open]) summary { padding-bottom: 12px; }
 .times summary::-webkit-details-marker { display: none; }
-.sum-title { display: inline-flex; align-items: center; gap: 10px; font-family: var(--f-display); font-weight: 700; font-size: 12.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.sum-title { display: inline-flex; align-items: center; gap: 10px; font-family: var(--f-display); font-weight: 700; font-size: 11.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
 .sum-title::before { content: ""; width: 6px; height: 6px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); transition: transform 0.2s; }
 .times[open] .sum-title::before { transform: translateY(-2px) rotate(45deg); }
 .sum-pick { font-family: var(--f-data); font-size: 12px; color: var(--ink); white-space: nowrap; }
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-th { font-family: var(--f-data); font-weight: 400; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); text-align: right; padding: 4px 8px; }
+th { font-family: var(--f-body); font-weight: 600; font-size: 9.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); text-align: right; padding: 4px 6px; white-space: nowrap; }
 th:first-child, td:first-child { text-align: left; padding-left: 16px; }
 th:last-child, td:last-child { padding-right: 16px; }
-td { font-family: var(--f-data); font-size: 12.5px; text-align: right; padding: 7px 8px; border-top: 1px solid var(--edge); }
+td { font-family: var(--f-data); font-size: 12px; text-align: right; padding: 7px 6px; border-top: 1px solid var(--edge); }
 tbody tr { cursor: pointer; }
 tbody tr:hover td { background: var(--hover); }
-tbody tr[aria-selected="true"] td { background: var(--flag-soft); }
-tbody tr:focus-visible { outline: 2px solid var(--flag); outline-offset: -2px; }
+tbody tr[aria-selected="true"] td { background: var(--accent-soft); }
+tbody tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 tbody tr.mine .alg { color: var(--accent); }
-.alg { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; font-family: var(--f-body); font-weight: 600; font-size: 12.5px; }
-.swatch { width: 14px; height: 4px; border-radius: 2px; flex: none; }
-.swatch.dashed { background: repeating-linear-gradient(90deg, currentColor 0 4px, transparent 4px 7px) !important; }
+.alg { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; font-family: var(--f-body); font-weight: 600; font-size: 12px; }
+/* a route's line on the map: grey unless it's the selected route or its dashed comparison, which are ours (blue) */
+.swatch { width: 14px; height: 3px; border-radius: 1px; flex: none; color: var(--route); background: currentColor; }
+.swatch.lit, tr[aria-selected="true"] .swatch { color: var(--friend); }
+.swatch.dashed { background: repeating-linear-gradient(90deg, currentColor 0 4px, transparent 4px 7px); }
 .board-empty { margin: 2px 16px 12px; font-size: 12.5px; line-height: 1.55; color: var(--muted); max-width: 46ch; }
 .board-empty b { color: var(--ink); font-weight: 600; }
-.board-save { margin: 10px 16px 0; padding: 8px 10px; border-left: 3px solid var(--accent); background: rgba(57, 255, 20, 0.07);
+.board-save { margin: 10px 16px 0; padding: 8px 10px; border-left: 2px solid var(--accent); background: var(--accent-soft);
   font-size: 12px; line-height: 1.5; max-width: 50ch; }
-.board-save b { color: var(--accent); font-weight: 600; }
-.pos { font-family: var(--f-display); font-weight: 700; color: var(--muted); width: 1.2em; display: inline-block; }
-tr[aria-selected="true"] .pos { color: var(--flag); }
+.board-save b { color: var(--accent); font-weight: 600; font-family: var(--f-data); font-size: 11.5px; }
+.pos { font-family: var(--f-data); font-weight: 600; color: var(--muted); width: 1.2em; display: inline-block; }
+tr[aria-selected="true"] .pos { color: var(--accent); }
 .delta { color: var(--muted); font-size: 11px; }
-.delta.best { color: var(--good); }
+.delta.best { color: var(--accent); }
 .toggles { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 16px 4px; }
 .note { margin: 8px 16px 2px; font-size: 12px; line-height: 1.45; color: var(--muted); max-width: 44ch; }
-.board-msg { margin: 8px 16px 0; font-family: var(--f-data); font-size: 11.5px; line-height: 1.5; color: var(--good); max-width: 46ch; }
+.board-msg { margin: 8px 16px 0; font-family: var(--f-body); font-size: 12px; line-height: 1.5; color: var(--ink); max-width: 46ch; }
 #route-json { display: block; box-sizing: border-box; width: calc(100% - 32px); margin: 6px 16px 0; height: 4.6em; font: 11px/1.4 var(--f-data);
   background: var(--map-bg); color: var(--ink); border: 1px solid var(--edge); border-radius: 4px; resize: vertical; }
 
 .drone { grid-column: 1; grid-row: 2; align-self: end; width: 14rem; padding: 10px 12px 12px; display: grid; gap: 8px; }
-.drone-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-family: var(--f-data); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-variant-numeric: tabular-nums; }
-.drone-head b { color: var(--ink); font-weight: 600; }
+.drone-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-family: var(--f-body); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-variant-numeric: tabular-nums; }
+.drone-head b { color: var(--ink); font-weight: 500; font-family: var(--f-data); font-size: 11px; letter-spacing: 0; }
 .drone-label { display: inline-flex; align-items: center; gap: 7px; color: var(--ink); font-weight: 600; margin-right: auto; }
-.rec { width: 8px; height: 8px; border-radius: 50%; background: var(--rec); animation: rec 1.4s steps(1, end) infinite; }
+.rec { width: 7px; height: 7px; border-radius: 50%; background: var(--friend); animation: rec 1.4s steps(1, end) infinite; }
 @keyframes rec { 50% { opacity: 0.2; } }
-#minimap { display: block; width: 100%; height: auto; aspect-ratio: 1 / 1; border-radius: 3px; background: var(--map-bg); }
-.map-key { display: flex; flex-wrap: wrap; gap: 4px 12px; font-family: var(--f-data); font-size: 10.5px; color: var(--muted); }
+#minimap { display: block; width: 100%; height: auto; aspect-ratio: 1 / 1; border-radius: 2px; background: var(--map-bg); }
+.map-key { display: flex; flex-wrap: wrap; gap: 4px 12px; font-family: var(--f-body); font-size: 10.5px; color: var(--muted); }
 .map-key span { display: inline-flex; align-items: center; gap: 5px; }
-.map-key i { width: 9px; height: 9px; display: inline-block; }
-.k-rover { background: var(--accent); clip-path: polygon(50% 0, 100% 100%, 50% 72%, 0 100%); }
-.k-drone { background: var(--ink); clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
-.k-start { background: var(--start); border-radius: 50%; }
-.k-finish { background: var(--ink); border-radius: 50%; }
+.map-key i { width: 9px; height: 9px; display: inline-block; box-sizing: border-box; }
+.k-rover { background: var(--friend-fill); border: 1px solid #000; border-radius: 50%; }              /* friendly ground equipment: a circle */
+.k-rover.air { border-radius: 50% 50% 0 0 / 80% 80% 0 0; }                                         /* friendly aircraft: a dome */
+.k-drone { background: var(--ink); clip-path: polygon(50% 100%, 0 0, 100% 0); }                       /* the camera and its view */
+.k-start { border: 1.5px solid var(--accent); border-radius: 50%; }
+.k-finish { background: var(--accent); border-radius: 50%; }
+.k-tower { background: var(--hostile-fill); border: 1px solid #000; transform: rotate(45deg) scale(0.8); }  /* hostile: a diamond */
 
 .tele, .drawbar { grid-column: 1 / -1; grid-row: 3; }
 .tele { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; padding: 10px 16px; }
 .controls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+/* every control looks the same; the accent marks what's on (pressed) and the one main action (primary) */
 button, .chip {
-  font: 600 12px/1 var(--f-body); color: var(--ink); background: transparent;
-  border: 1px solid var(--edge); border-radius: 4px; padding: 8px 11px; cursor: pointer;
+  font: 600 12px/1 var(--f-body); color: var(--ink); background: transparent; letter-spacing: 0.01em;
+  border: 1px solid var(--edge); border-radius: 3px; padding: 8px 11px; cursor: pointer;
 }
-button:hover, .chip:hover { border-color: var(--muted); }
-button:focus-visible, .chip:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--flag); outline-offset: 2px; }
+button:hover, .chip:hover { border-color: rgba(230, 231, 232, 0.4); background: var(--hover); }
+button:focus-visible, .chip:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 button:disabled { opacity: 0.4; cursor: not-allowed; }
-button.primary { background: var(--flag); color: var(--flag-ink); border-color: var(--flag); min-width: 5.2em; }
-button.go { background: var(--accent); color: var(--flag-ink); border-color: var(--accent); min-width: 5.2em; }
-.plan-btn { border-color: var(--accent); color: var(--accent); }
-.chip[aria-pressed="true"] { border-color: var(--flag); color: var(--flag); }
-.views { display: inline-flex; border: 1px solid var(--edge); border-radius: 4px; overflow: hidden; }
+button.primary, button.go { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); min-width: 5.2em; }
+button.primary:hover, button.go:hover { background: #fff8e8; border-color: #fff8e8; }
+.chip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-ink); background: var(--accent); }
+.views { display: inline-flex; border: 1px solid var(--edge); border-radius: 3px; overflow: hidden; }
 .views button { border: 0; border-radius: 0; border-left: 1px solid var(--edge); }
 .views button:first-child { border-left: 0; }
 .views button:hover { background: var(--hover); }
-.views button[aria-pressed="true"] { background: var(--flag-soft); color: var(--flag); }
+.views button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
 .gauges { display: flex; flex-wrap: wrap; gap: 6px 18px; font-variant-numeric: tabular-nums; flex: 1 1 22rem; min-width: 0; }   /* too little room: own line */
-.g { display: grid; gap: 2px; min-width: 4.4rem; }
-.g span { font-family: var(--f-data); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-.g output { font-family: var(--f-display); font-weight: 700; font-size: 16.5px; line-height: 1; white-space: nowrap; letter-spacing: -0.02em; }
+.g { display: grid; gap: 3px; min-width: 4.4rem; }
+.g span { font-family: var(--f-body); font-weight: 600; font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.g output { font-family: var(--f-data); font-weight: 600; font-size: 15.5px; line-height: 1; white-space: nowrap; letter-spacing: -0.02em; }
 .g output small { font-family: var(--f-data); font-size: 11px; color: var(--muted); margin-left: 2px; }
-.surf-good { color: var(--good); } .surf-warn { color: var(--warn); } .surf-bad { color: var(--bad); }
-.progress { flex-basis: 100%; height: 3px; background: var(--edge); border-radius: 2px; overflow: hidden; }
-.progress i { display: block; height: 100%; width: 0; background: var(--flag); }
-label.speed { display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-data); font-size: 11px; color: var(--muted); }
-label.speed output { color: var(--ink); min-width: 2.4em; }
-input[type=range] { accent-color: var(--flag); width: 84px; }
+.surf-good { color: var(--ink); } .surf-warn, .surf-bad { color: var(--caution); }
+.sight-hidden { color: var(--hidden); } .sight-seen { color: var(--hostile); }
+.progress { flex-basis: 100%; height: 2px; background: var(--edge); border-radius: 1px; overflow: hidden; }
+.progress i { display: block; height: 100%; width: 0; background: var(--accent); }
+label.speed { display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-body); font-size: 11px; color: var(--muted); }
+label.speed output { color: var(--ink); min-width: 2.4em; font-family: var(--f-data); }
+input[type=range] { accent-color: var(--accent); width: 84px; }
 
 .drawbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; padding: 12px 16px; }
 .draw-text { display: grid; gap: 3px; flex: 1 1 24rem; min-width: 0; }
-.draw-title { font-family: var(--f-display); font-weight: 700; font-size: 12.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+.draw-title { font-family: var(--f-display); font-weight: 700; font-size: 11.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
 .draw-hint { margin: 0; font-size: 12.5px; line-height: 1.45; }
-.draw-msg { margin: 0; min-height: 2.9em; font-family: var(--f-data); font-size: 12px; line-height: 1.45; color: var(--muted); }   /* 2 lines kept free: the bar doesn't jump */
+.draw-msg { margin: 0; min-height: 2.9em; font-family: var(--f-body); font-size: 12px; line-height: 1.45; color: var(--muted); }   /* 2 lines kept free: the bar doesn't jump */
 .draw-pointer { margin: 0; min-height: 1.45em; font-family: var(--f-data); font-size: 11.5px; line-height: 1.45; color: var(--muted);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
 .draw-msg[data-tone="bad"] { color: var(--bad); }
-.draw-msg[data-tone="good"] { color: var(--good); }
+.draw-msg[data-tone="good"] { color: var(--ink); }
 .draw-stats { display: flex; flex-wrap: wrap; gap: 6px 18px; font-variant-numeric: tabular-nums; }
 .draw-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 /* start & finish: pick which one the next click places, or type its row, col */
 .markers { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
 .marker { display: inline-flex; align-items: center; gap: 4px; }
 .marker-pick { display: inline-flex; align-items: center; gap: 7px; }
-.marker-pick i { width: 10px; height: 10px; border-radius: 50%; flex: none; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4); }
-.marker-pick[data-kind="start"] i { background: var(--start); }
-.marker-pick[data-kind="finish"] i { background: var(--ink); }
-.marker-pick[aria-pressed="true"] { background: var(--hover); }
-.marker-pick[data-kind="start"][aria-pressed="true"] { border-color: var(--start); color: #9fe0b0; }
-.marker-pick[data-kind="finish"][aria-pressed="true"] { border-color: var(--ink); }
+.marker-pick i { width: 10px; height: 10px; border-radius: 50%; flex: none; box-sizing: border-box; }
+.marker-pick[data-kind="start"] i { border: 1.5px solid currentColor; }
+.marker-pick[data-kind="finish"] i { background: currentColor; }
+.marker-pick[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-ink); background: var(--accent); }
 .marker-at { width: calc(8ch + 18px); box-sizing: border-box; padding: 7px 8px; font: 13px/1 var(--f-data); color: var(--ink); background: var(--map-bg);
   border: 1px solid var(--edge); border-radius: 4px; font-variant-numeric: tabular-nums; }
 .marker-at::placeholder { color: var(--muted); opacity: 0.8; }
 .marker-swap { padding: 6px 9px; font-size: 15px; }
 
-.more-btn[aria-expanded="true"] { border-color: var(--ink); background: var(--hover); }
-.more-btn.cta { background: var(--accent); color: var(--flag-ink); border-color: var(--accent); }   /* empty map: start here */
+.more-btn[aria-expanded="true"] { border-color: var(--accent); color: var(--accent-ink); background: var(--accent); }
+.more-btn.cta { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }   /* empty map: start here */
 .paths { grid-column: 1; grid-row: 2; align-self: end; width: min(24rem, calc(100vw - 31rem)); max-height: 100%; box-sizing: border-box;
   display: flex; flex-direction: column; overflow: hidden; padding-block: 12px; }
 .paths-head { flex: none; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px 10px; padding: 0 12px 10px 16px; }
@@ -232,17 +231,17 @@ input[type=range] { accent-color: var(--flag); width: 84px; }
 .paths-head .sum-title::before { content: none; }
 .paths-head .sum-title span { color: var(--ink); }
 #paths-close { justify-self: end; padding: 5px 9px; font-size: 15px; }
-.paths-count { font-family: var(--f-data); font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.paths-count { font-family: var(--f-body); font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .paths-actions { display: flex; gap: 6px; }
 .paths-actions .chip { padding: 6px 9px; white-space: nowrap; }
 .paths-list { list-style: none; margin: 0; padding: 0; flex: 1 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; }
 .paths-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 5px 12px 5px 16px; border-top: 1px solid var(--edge); }
-.paths-list li[aria-current="true"] { background: var(--flag-soft); }
-.paths-list label { display: flex; align-items: center; gap: 8px; min-width: 0; cursor: pointer; font-size: 13px; }
+.paths-list li[aria-current="true"] { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--friend); }
+.paths-list label { display: flex; align-items: center; gap: 9px; min-width: 0; cursor: pointer; font-size: 12.5px; }
 .paths-list label span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
 .paths-list input { accent-color: var(--accent); width: 15px; height: 15px; margin: 0; flex: none; }
-.paths-list i { width: 11px; height: 11px; border-radius: 50%; flex: none; }
-.paths-list b { font-family: var(--f-display); font-weight: 800; font-size: 13px; min-width: 2.2em; }
+.paths-list b { font-family: var(--f-data); font-weight: 600; font-size: 12.5px; min-width: 2.6em; }
+.paths-list li[aria-current="true"] b { color: var(--friend); }
 .paths-list .chip { padding: 6px 10px; }
 .paths-time { font-family: var(--f-data); font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .paths-note { flex: none; margin: 8px 16px 0; font-size: 12px; line-height: 1.45; color: var(--muted); max-width: 46ch; }
@@ -285,57 +284,55 @@ input[type=range] { accent-color: var(--flag); width: 84px; }
 }
 @media (max-width: 380px) { .paths-time { display: none; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
-/* The intro: a red laser sign on jet black, lit like a lightsaber blade: a white-hot core in a tight red edge and a
-   wide red bloom. Behind it a blacked-out US flag, flat, in greys only, fills the screen (hung vertically on a
-   portrait screen); under it a round badge holds a muscular bison in black chrome, charging toward the screen.
-   The blade ignites left to right, hums, retracts; the badge rushes past and the black lifts.
-   The sweep is a soft-edged mask moved by one registered property (--reach), so the blade's tip glows as it runs;
-   the sign's box is padded so the mask never cuts the glow. Without @property the blade simply appears. */
+/* The drone camera's own read-outs, in the Drone view: a compass strip across the top of the picture (where the
+   camera looks, with the rover or drone, the finish and any watchtowers marked at their bearings) and an altitude
+   tape on the right (the camera's height above the ground). Drawn on two canvases; nothing to click. */
+.hudx { grid-column: 2; grid-row: 2; pointer-events: none; min-width: 0; }
+.compass { align-self: start; justify-self: center; width: min(30rem, 100%); height: 58px; }
+.alt-tape { align-self: center; justify-self: end; width: 78px; height: min(220px, 46%); }
+.hudx canvas { display: block; width: 100%; height: 100%; }
+@media (max-width: 760px) { .hudx { grid-column: 1; } .compass { width: 100%; height: 54px; } .alt-tape { height: min(170px, 40%); width: 64px; } }
+/* The intro: BRUBUS in heavy, flat off-white type, like a poster, over a blacked-out US flag that is flat, in greys
+   only, and fills the screen (hung vertically on a portrait screen); under it a round badge holds a muscular bison in
+   black chrome, charging toward the screen. The word is revealed left to right behind a hard edge, the badge grows
+   toward the viewer, then the word wipes away, the badge rushes past and the black lifts. The wipe is a mask moved by
+   one registered property (--reach); without @property the word simply appears. */
 @property --reach { syntax: "<length-percentage>"; inherits: false; initial-value: 0px; }
 .intro { position: fixed; inset: 0; z-index: 1000; background: #000; display: flex; align-items: center; overflow: hidden;
   justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: opacity 1.1s ease;
-  --logo-h: min(44vh, 78vw); --gap: clamp(8px, 2.6vh, 26px); }
+  --logo-h: min(44vh, 78vw); --gap: clamp(10px, 3vh, 30px); }
 .intro.gone { opacity: 0; pointer-events: none; }
 .intro-flag { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
 .intro-flag.v { display: none; }
 @media (orientation: portrait) { .intro-flag.h { display: none; } .intro-flag.v { display: block; } }
 .intro-stack { position: relative; display: flex; flex-direction: column; align-items: center; gap: var(--gap); }
-.intro-sign { position: relative; opacity: 0; padding: 170px 180px; margin: -170px -180px; --reach: calc(100% + 40px);
-  -webkit-mask-image: linear-gradient(90deg, #000 calc(var(--reach) - 26px), transparent calc(var(--reach) + 26px));
-  mask-image: linear-gradient(90deg, #000 calc(var(--reach) - 26px), transparent calc(var(--reach) + 26px)); }
-.intro-word { font: 500 clamp(42px, 13.5vw, 172px)/1 "Orbitron", "Arial", sans-serif; color: #fff;
-  letter-spacing: 0.08em; margin-right: -0.08em; white-space: nowrap; user-select: none;
-  text-shadow: 0 0 1px #fff, 0 0 2px #fff, 0 0 4px #ff4a4a, 0 0 8px #ff1414, 0 0 14px #ff0000, 0 0 26px #ff0000,
-    0 0 52px #e80000, 0 0 100px #b00000, 0 0 150px #700000; }
+.intro-sign { position: relative; opacity: 0; padding: 24px 40px; margin: -24px -40px; --reach: calc(100% + 40px);
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(var(--reach) - 2px), transparent calc(var(--reach) + 2px));
+  mask-image: linear-gradient(90deg, #000 calc(var(--reach) - 2px), transparent calc(var(--reach) + 2px)); }
+.intro-word { font: 900 clamp(46px, 14.5vw, 184px)/0.9 "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif; color: #efe6d2;
+  letter-spacing: 0.015em; margin-right: -0.015em; white-space: nowrap; user-select: none; font-optical-sizing: auto; }
 .intro-logo { display: block; height: var(--logo-h); width: auto; aspect-ratio: 1 / 1; opacity: 0;
   transform-origin: 50% 58%; user-select: none; -webkit-user-drag: none; }
 .intro-skip { position: absolute; left: 0; right: 0; bottom: max(26px, env(safe-area-inset-bottom)); text-align: center;
-  font: 500 11px/1 var(--f-body); letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255, 255, 255, 0.34);
+  font: 600 10.5px/1 var(--f-body); letter-spacing: 0.18em; text-transform: uppercase; color: rgba(239, 230, 210, 0.38);
   opacity: 0; transition: opacity 0.6s ease 1.3s; pointer-events: none; }
-.intro.on .intro-sign { animation: saber-on 0.48s forwards; }
+.intro.on .intro-sign { animation: sign-on 0.62s forwards; }
 .intro.on .intro-flag { animation: flag-in 0.7s ease-out forwards; }
 .intro.on .intro-logo { animation: bison-in 3.3s cubic-bezier(0.2, 0.6, 0.35, 1) forwards; }
 .intro.on .intro-skip { opacity: 1; }
-.intro.lit .intro-word { animation: saber-shimmer 0.6s step-end infinite; }
-.intro.off .intro-sign { animation: saber-off 0.4s forwards; }
+.intro.off .intro-sign { animation: sign-off 0.38s forwards; }
 .intro.off .intro-flag { animation: flag-out 0.45s ease-in forwards; }
 .intro.off .intro-logo { animation: bison-out 0.45s cubic-bezier(0.5, 0, 0.9, 0.5) forwards; }
 .intro.off:not(.on) .intro-sign, .intro.off:not(.on) .intro-flag, .intro.off:not(.on) .intro-logo { animation: none; }
 .intro.off .intro-skip { opacity: 0; transition-delay: 0s; transition-duration: 0.2s; }
 .intro.calm .intro-sign, .intro.calm .intro-flag, .intro.calm .intro-logo { animation: none; opacity: 1; transition: opacity 0.5s ease; }
-.intro.calm .intro-word { animation: none; }
 .intro.calm.off .intro-sign, .intro.calm.off .intro-flag, .intro.calm.off .intro-logo { opacity: 0; }
-@keyframes saber-on {
-  0% { opacity: 1; --reach: -40px; animation-timing-function: linear; }
-  10% { --reach: 150px; animation-timing-function: cubic-bezier(0.3, 0.55, 0.4, 1); }
-  90% { --reach: calc(100% - 150px); animation-timing-function: linear; }
+@keyframes sign-on {
+  0% { opacity: 1; --reach: -40px; animation-timing-function: cubic-bezier(0.55, 0, 0.25, 1); }
   100% { opacity: 1; --reach: calc(100% + 40px); } }
-@keyframes saber-off {
-  0% { opacity: 1; --reach: calc(100% + 40px); animation-timing-function: linear; }
-  10% { --reach: calc(100% - 150px); animation-timing-function: cubic-bezier(0.5, 0, 0.75, 0.45); }
-  90% { --reach: 150px; animation-timing-function: linear; }
+@keyframes sign-off {
+  0% { opacity: 1; --reach: calc(100% + 40px); animation-timing-function: cubic-bezier(0.6, 0, 0.8, 0.4); }
   100% { opacity: 1; --reach: -40px; } }
-@keyframes saber-shimmer { 0% { opacity: 1; } 31% { opacity: 0.95; } 37% { opacity: 1; } 68% { opacity: 0.97; } 74% { opacity: 1; } }
 @keyframes flag-in { 0% { opacity: 0; } 100% { opacity: 1; } }
 @keyframes flag-out { 0% { opacity: 1; } 100% { opacity: 0; } }
 @keyframes bison-in {
@@ -391,8 +388,11 @@ input[type=range] { accent-color: var(--flag); width: 84px; }
       <span>Alt <b id="d-alt">0</b> m</span><span>Hdg <b id="d-hdg">000</b>°</span><span id="d-fps" hidden><b id="d-fps-n">0</b> fps</span>
     </div>
     <canvas id="minimap" role="img" aria-label="Map with the rover, the drone and the planned routes"></canvas>
-    <div class="map-key"><span><i class="k-rover"></i><span id="key-rover">Rover</span></span><span><i class="k-drone"></i><span id="key-cam">Drone</span></span><span><i class="k-start"></i>Start</span><span><i class="k-finish"></i>Finish</span></div>
+    <div class="map-key"><span><i class="k-rover" id="key-rover-icon"></i><span id="key-rover">Rover</span></span><span><i class="k-drone"></i><span id="key-cam">Drone</span></span><span><i class="k-start"></i>Start</span><span><i class="k-finish"></i>Finish</span><span id="key-tower" hidden><i class="k-tower"></i>Tower</span></div>
   </section>
+
+  <div class="hudx compass" id="hud-compass" hidden aria-hidden="true"><canvas id="hud-compass-cv"></canvas></div>
+  <div class="hudx alt-tape" id="hud-alt" hidden aria-hidden="true"><canvas id="hud-alt-cv"></canvas></div>
 
   <div class="mid" id="mid">
     <section class="board sense" id="sense" aria-label="Driving with a limited sensor" hidden>
@@ -541,12 +541,12 @@ const SCENE = /*__SCENE__*/null;
   const narrow = () => innerWidth <= 760;
   const tapWord = coarse ? "Tap" : "Click";
 
-  // ---------------------------------------------------------------- the intro: a red laser sign on jet black
-  // The page opens on a sign that ignites like a lightsaber blade in front of a blacked-out flag, with a black-metal
-  // bison charging underneath; the blade hums and retracts, the bison rushes past and the black lifts. Time
-  // stands still underneath until then (the map is built and drawn meanwhile, which hides the loading), so the
-  // opening fly-in, a tour or a link's drive starts as the black lifts. A click, tap or key skips it; ?intro=0 turns
-  // it off. Automated browsers (tests, screenshots) and the frame-rate benchmark skip it, unless ?intro=1.
+  // ---------------------------------------------------------------- the intro: BRUBUS over a blacked-out flag
+  // The page opens on the word BRUBUS in flat off-white poster type over a blacked-out flag, with a black-metal bison
+  // charging underneath; the word wipes away, the bison rushes past and the black lifts. Time stands still
+  // underneath until then (the map is built and drawn meanwhile, which hides the loading), so the opening fly-in, a
+  // tour or a link's drive starts as the black lifts. A click, tap or key skips it; ?intro=0 turns it off.
+  // Automated browsers (tests, screenshots) and the frame-rate benchmark skip it, unless ?intro=1.
   const introEl = $("intro"), introQ = new URLSearchParams(location.search).get("intro");
   let introHold = !!introEl && introQ !== "0"
     && (introQ === "1" || (!navigator.webdriver && !/(^#|\/)bench(\/|$)/.test(location.hash)));
@@ -559,7 +559,7 @@ const SCENE = /*__SCENE__*/null;
     const timers = [];
     const later = (ms, f) => timers.push(setTimeout(f, ms));
     const onKey = ev => { ev.preventDefault(); ev.stopImmediatePropagation(); fade(true); };
-    function fade(quick) {                          // power down, then lift the black and let time run
+    function fade(quick) {                          // wipe the word away, then lift the black and let time run
       if (fading) return;
       fading = true;
       timers.forEach(clearTimeout);
@@ -574,30 +574,34 @@ const SCENE = /*__SCENE__*/null;
     const ignite = () => {
       if (fading) return;
       introEl.classList.add("on");
-      later(500, () => introEl.classList.add("lit"));
       later(reduceMotion ? 1800 : 3400, () => fade(false));
     };
-    const font = document.fonts && document.fonts.load ? document.fonts.load('500 64px "Orbitron"') : Promise.resolve();
+    const font = document.fonts && document.fonts.load ? document.fonts.load('900 64px "Inter"') : Promise.resolve();
     const logo = $("intro-logo"), pic = logo && logo.decode ? logo.decode().catch(() => 0) : Promise.resolve();
     Promise.race([Promise.all([font, pic, warmed]), new Promise(res => setTimeout(res, 1500))])   // the face, the bison and
       .then(ignite, ignite);                                                                          // the warm-up frames
   }
   const navHint = coarse ? "Drag to move the map, pinch to zoom." : "Drag to move the map, scroll to zoom.";
-  const COST = SCENE.cost, RADIAL = 6, NEON_CSS = "#39ff14";
-  const PLANNERS = [
-    { key: "astar", name: "A*", color: "#f2a93b" }, { key: "dijkstra", name: "Dijkstra", color: "#4f8fd6" },
-    { key: "wastar", name: "Weighted A*", color: "#d96bd0" }, { key: "greedy", name: "Greedy", color: "#e2564b" },
-    { key: "bfs", name: "BFS", color: "#9aa3b5" },
+  // Colour means something, as in the CSS tokens of the same names: FRIEND is ours (the rover, the drone, the
+  // selected route and its dashed comparison), HOSTILE the watchtowers and what they see, CAUTION roadblocks and a
+  // plan that broke; ROUTE greys every other line; ACCENT, the warm off-white of the controls, marks what you are
+  // placing or drawing. The *_FILL colours are MIL-STD-2525's fills for friendly and hostile symbols.
+  const FRIEND = "#5cc2ff", FRIEND_FILL = "#80e0ff", HOSTILE = "#ff5a52", HOSTILE_FILL = "#ff8080",
+        CAUTION = "#e2ad48", ROUTE = "#8f969d", ACCENT = "#efe6d2", BAD = "#ff5a52";
+  const COST = SCENE.cost, RADIAL = 6;
+  const PLANNERS = [{ key: "astar", name: "A*" }, { key: "dijkstra", name: "Dijkstra" }, { key: "wastar", name: "Weighted A*" },
+    { key: "greedy", name: "Greedy" }, { key: "bfs", name: "BFS" },
     // not a planner: the route a robot that ignores hills would take (least distance), drawn dashed for comparison
-    { key: "short", name: "Shortest route", color: "#f4f1e8", dashed: true }];
+    { key: "short", name: "Shortest route", dashed: true }].map(p => Object.assign(p, { color: FRIEND }));
 
   // Look of each map. Costs and terrain come from Python; this is only how they are drawn.
-  // Skies are pastel, golden-hour skies: sky blue overhead, lavender, then light pink at the horizon, with a warm glow
-  // toward a low sun (about 35° up). Colours are sRGB, from the zenith down: zen, top, mid, low, hor; void is below
-  // the horizon (the haze round a map seen from above); glow is the sun's; cloud and shade light and shadow the clouds.
+  // The palettes below are each map's own (sRGB); muteTheme turns them into the console's dark map: colours lose
+  // most of their saturation and some brightness, under a graphite sky lit by a neutral sun. The sky's colours run
+  // from the zenith down: zen, top, mid, low, hor; void is below the horizon (the haze round a map seen from above);
+  // glow is round the sun; cloud and shade light and shadow the clouds (barely there on graphite).
   const THEMES = {
     grassland: {
-      swatch: "#5aa83c", skirt: "#4b3a28", ground: [0, 0], tufts: [[2, 0.26], [3.2, 0.5]],
+      skirt: "#4b3a28", ground: [0, 0], tufts: [[2, 0.26], [3.2, 0.5]],
       tour: { path: 14, intro: "Rolling green hills up to 12 m, with tall grass that slows the rover, trees and rock clusters.", slow: "tall grass" },         // ground detail per surface: 0 grass, 1 sand, 2 rock
       sky: { zen: "#4d8fe0", top: "#93bff0", mid: "#cdb6ec", low: "#ffbad5", hor: "#ffd3dc", void: "#e9b0d2", glow: "#ffd7ad",
              cloud: "#fff6f6", shade: "#cdb9e3" },
@@ -608,7 +612,7 @@ const SCENE = /*__SCENE__*/null;
              { rate: 16, col: "#5f9a3d", size: 0.12, grow: 0.05, life: 0.7, a: 0.9, grav: 6, up: 1.2, upR: 1.0 }],
     },
     desert: {
-      swatch: "#e0b46c", skirt: "#9a6a3c", ground: [1, 1, 2, 0], tufts: [null, null, null, [2.4, 0.3]],
+      skirt: "#9a6a3c", ground: [1, 1, 2, 0], tufts: [null, null, null, [2.4, 0.3]],
       tour: { path: 18, intro: "Dunes with steep slip faces, soft sand that slows the rover to less than half speed, and three oases.", slow: "soft sand" },
       sky: { zen: "#5295dc", top: "#99c2ee", mid: "#d4b7e6", low: "#ffbacb", hor: "#ffd3cf", void: "#edb2c6", glow: "#ffd09a",
              cloud: "#fff5ef", shade: "#d3bbdb" },
@@ -624,7 +628,7 @@ const SCENE = /*__SCENE__*/null;
              { rate: 12, col: "#7fa64a", size: 0.12, grow: 0.05, life: 0.7, a: 0.9, grav: 6, up: 1.1, upR: 0.9 }],
     },
     island: {
-      swatch: "#2bb3c0", skirt: "#7a6a4a", ground: [0, 1, 0], tufts: [[2, 0.26], null, [3.2, 0.45]],
+      skirt: "#7a6a4a", ground: [0, 1, 0], tufts: [[2, 0.26], null, [3.2, 0.45]],
       tour: { path: 19, intro: "A ragged coast, beaches, jungle and a central peak, with the sea all round.", slow: "sand and jungle" },
       sky: { zen: "#3d8de2", top: "#8ac0f3", mid: "#c8b5ef", low: "#ffb8d6", hor: "#ffd3de", void: "#dfaedb", glow: "#ffd4ae",
              cloud: "#fff6f8", shade: "#c8b7e4" },
@@ -637,6 +641,25 @@ const SCENE = /*__SCENE__*/null;
              { rate: 14, col: "#3f7a32", size: 0.12, grow: 0.05, life: 0.7, a: 0.9, grav: 6, up: 1.2, upR: 1.0 }],
     },
   };
+  // The console's dark map: every scenery colour keeps its hue but loses most of its saturation and some brightness,
+  // the sky turns graphite and the sun neutral, so colour is left for what means something.
+  const GRAPHITE = { zen: "#090b0e", top: "#0d1014", mid: "#11151a", low: "#161b21", hor: "#1b2128", void: "#0d1013",
+                     glow: "#20252a", cloud: "#181c21", shade: "#121519" };
+  function muteHex(s, sat = 0.42, val = 0.78) {
+    const c = new THREE.Color(s), hsl = c.getHSL({});
+    return "#" + c.setHSL(hsl.h, hsl.s * sat, hsl.l * val).getHexString();
+  }
+  function muteTheme(T) {
+    for (const k of ["skirt", "steep", "rock", "leaf", "trunk", "marks", "seabed", "wet"]) if (T[k]) T[k] = muteHex(T[k]);
+    T.surf = T.surf.map(pair => pair.map(c => muteHex(c)));
+    if (T.water) Object.assign(T.water, { shallow: muteHex(T.water.shallow, 0.45, 0.78), deep: muteHex(T.water.deep, 0.5, 0.78),
+                                         foam: muteHex(T.water.foam, 0.2, 0.75) });
+    if (T.oasis) for (const k of ["trunk", "leaf", "reed", "pad"]) T.oasis[k] = muteHex(T.oasis[k]);
+    T.dust.forEach(d => { d.col = muteHex(d.col, 0.4, 0.85); });
+    T.sky = Object.assign({}, GRAPHITE);
+    T.sun = ["#f2f0ea", 1.5, T.sun[2]]; T.hemi = ["#8a94a0", "#2a2926", 0.6];
+  }
+  Object.values(THEMES).forEach(muteTheme);
 
   // ---------------------------------------------------------------- the current map (reassigned by loadMap)
   let MAP = null, THEME = null, R = 0, C = 0, H = null, SURF = null, OBS = null, SCOST = null;
@@ -715,9 +738,9 @@ const SCENE = /*__SCENE__*/null;
   sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0002; sun.shadow.normalBias = 0.03;
   scene.add(sun, sun.target);
 
-  // The sky: a pastel gradient, the low sun's warm glow and a slow deck of soft clouds, drawn on a dome round the
-  // camera. Every fogged material shares the gradient (fog chunks below), so distant ground fades into exactly the
-  // sky behind it, warmer toward the sun. Looking down at the map, with no horizon in view, the dome tips up (uLift),
+  // The sky: a graphite gradient, a faint glow toward the sun and a slow deck of faint cloud, drawn on a dome round
+  // the camera. Every fogged material shares the gradient (fog chunks below), so distant ground fades into exactly the
+  // sky behind it. Looking down at the map, with no horizon in view, the dome tips up (uLift),
   // so the map floats in front of sky instead of the empty haze below the horizon. Colours are sRGB throughout:
   // three.js r128 applies fog after the output encoding.
   const SKY_U = { uSkyZen: { value: new THREE.Color() }, uSkyTop: { value: new THREE.Color() }, uSkyMid: { value: new THREE.Color() },
@@ -806,14 +829,12 @@ void main() {
   vec3 d = skyLift(normalize(vDir));
   vec3 c = skyBase(d);
   float sd = dot(d, uSunDir);
-  c = mix(c, vec3(1.0, 0.95, 0.86), pow(max(sd, 0.0), 160.0) * 0.6);         // a bright halo round the sun
-  c = mix(c, vec3(1.0, 0.985, 0.95), smoothstep(0.99955, 0.9998, sd));        // and its disc
-  if (d.y > 0.0) {                                   // a high deck of soft clouds drifting with the wind
+  if (d.y > 0.0) {                                   // a high deck of faint cloud drifting with the wind
     vec2 p = d.xz / (d.y + 0.1) * 0.085, w = uSkyTime * vec2(0.0021, 0.0008);
     float n = texture2D(uCloudTex, p + w).r * 0.64 + texture2D(uCloudTex, p * 2.7 - w * 1.6 + 0.37).g * 0.36;
     float a = smoothstep(0.53, 0.78, n) * smoothstep(0.015, 0.22, d.y);
-    vec3 lit = mix(uCloudLit, uSkyGlow, 0.25 + 0.5 * pow(max(sd, 0.0), 3.0));  // sunlit edges catch the glow
-    c = mix(c, mix(lit, uCloudShade, smoothstep(0.66, 0.95, n) * 0.6), a * 0.9);
+    vec3 lit = mix(uCloudLit, uSkyGlow, 0.25 + 0.5 * pow(max(sd, 0.0), 3.0));
+    c = mix(c, mix(lit, uCloudShade, smoothstep(0.66, 0.95, n) * 0.6), a * 0.55);
   }
   c += (fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) / 255.0;   // dither: no banding
   gl_FragColor = vec4(c, 1.0);
@@ -1418,7 +1439,12 @@ uniform vec4 uFogP;                                  // x: the rover's step on i
 uniform vec2 uRoverXZ, uGrid;                        // where the rover is; columns, rows
 uniform sampler2D uThreat;                           // air route: per cell, 2 if a tower sees even the lowest flight level,
 uniform float uThreatOn;                             // 1 if it sees only higher ones (so flying low hides), 0 if neither
+uniform vec2 uContour;                               // contour lines: x the interval (m), y the sea level (none below it)
 vec3 gEmit = vec3(0.0);                              // light the overlays add, so they read in shadow too
+float contourAt(float f, float px, float crowd) {    // 1 on a contour of f (one every whole number), about px pixels wide,
+  float w = max(fwidth(f), 1e-5), d = abs(fract(f + 0.5) - 0.5) / w;   // fading out where they come closer than 1/crowd px
+  return (1.0 - smoothstep(px * 0.5, px * 0.5 + 1.0, d)) * (1.0 - smoothstep(crowd * 0.5, crowd, w));
+}
 float dec16(vec2 v) { return floor(v.x * 255.0 + 0.5) * 256.0 + floor(v.y * 255.0 + 0.5); }
 float threatAt(vec2 cell) { return floor(texture2D(uThreat, (clamp(cell, vec2(0.0), uGrid - 1.0) + 0.5) / uGrid).r * 255.0 + 0.5); }
 float knownAt(vec2 cell) {                           // 1 once the rover has sensed this cell
@@ -1427,6 +1453,12 @@ float knownAt(vec2 cell) {                           // 1 once the rover has sen
 }
 void groundOverlay(inout vec3 col) {
   vec2 g = vWPos.xz + (uGrid - 1.0) * 0.5;           // grid coordinates: cell (row r, col c) is centred on (c, r)
+  {                                                  // the map's contour lines: a thin one every metre, firmer every 5 m
+    float k = max(contourAt(vWPos.y / uContour.x, 0.9, 0.12) * 0.1, contourAt(vWPos.y / (uContour.x * 5.0), 1.3, 0.3) * 0.22);
+    k *= smoothstep(uContour.y - 0.02, uContour.y + 0.12, vWPos.y);   // none under the sea
+    col = mix(col, vec3(0.78, 0.77, 0.72), k);
+    gEmit += vec3(0.78, 0.77, 0.72) * (k * 0.05);
+  }
   if (uSearchP.y > 0.5) {
     vec2 cell = floor(g + 0.5);
     vec4 t = texture2D(uSearch, (cell + 0.5) / uGrid);
@@ -1451,9 +1483,9 @@ void groundOverlay(inout vec3 col) {
     hi = smoothstep(0.25, 0.75, hi); any = smoothstep(0.25, 0.75, any);
     float st = fract((vWPos.x + vWPos.z) * 0.6), sa = fwidth((vWPos.x + vWPos.z) * 0.6);   // hatched, so it reads as a map overlay
     float hatch = smoothstep(0.5 - sa, 0.5 + sa, st) * (1.0 - smoothstep(0.15, 0.4, sa));
-    col = mix(col, vec3(0.62, 0.05, 0.04), hi * (0.36 + 0.14 * hatch));
-    col = mix(col, vec3(0.75, 0.38, 0.05), (any - hi) * (0.18 + 0.08 * hatch));
-    gEmit += vec3(0.35, 0.02, 0.01) * hi * 0.25;
+    col = mix(col, vec3(0.55, 0.06, 0.05), hi * (0.24 + 0.14 * hatch));
+    col = mix(col, vec3(0.6, 0.34, 0.07), (any - hi) * (0.12 + 0.08 * hatch));
+    gEmit += vec3(0.3, 0.02, 0.01) * hi * 0.18;
   }
   if (uFogP.y > 0.5) {
     vec2 i0 = floor(g), w = g - i0;                  // between the four nearest cells, so the edge of the known ground is soft
@@ -1470,8 +1502,8 @@ void groundOverlay(inout vec3 col) {
 `;
   const OVER = { uSearch: { value: null }, uSearchP: { value: new THREE.Vector4(0, 0, 40, 0) }, uSearchCol: { value: new THREE.Color() },
                  uKnown: { value: null }, uFogP: { value: new THREE.Vector4(0, 0, 5, 0) }, uRoverXZ: { value: new THREE.Vector2() },
-                 uGrid: { value: new THREE.Vector2(1, 1) }, uSenseCol: { value: lin("#5ce1e6") },
-                 uThreat: { value: null }, uThreatOn: { value: 0 } };
+                 uGrid: { value: new THREE.Vector2(1, 1) }, uSenseCol: { value: lin(FRIEND) },
+                 uThreat: { value: null }, uThreatOn: { value: 0 }, uContour: { value: new THREE.Vector2(1, -1e4) } };
   function groundMaterial() {
     const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 });
     m.onBeforeCompile = sh => {
@@ -1809,7 +1841,7 @@ void groundOverlay(inout vec3 col) {
   // The rover sees only `range` metres round itself; unsensed ground is assumed flat and open. D* Lite (Koenig &
   // Likhachev) repairs the plan as it learns. Same neighbour order, costs (sqrt, not hypot, so both languages round
   // alike), keys and first-in-first-out ties as Python, so both drive the same cells and do the same work.
-  const DSTAR = { key: "dstar", name: "D* Lite", color: "#5ce1e6" };
+  const DSTAR = { key: "dstar", name: "D* Lite", color: FRIEND };
   function makeBelief(prior) {                     // "none", "elevation" (no obstacles) or "map" (all but roadblocks)
     const N = R * C, known = new Uint8Array(N), blk = new Uint8Array(N);
     if (prior !== "none") known.fill(1);
@@ -2219,26 +2251,94 @@ void groundOverlay(inout vec3 col) {
 
   // ---------------------------------------------------------------- start and finish flags
   const flags = [], labelJobs = [], zoneRings = [];
-  function labelSprite(text, bg, fg, w = 256) {
+  const FONT_WORD = "'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif", FONT_NUM = "'JetBrains Mono', ui-monospace, monospace";
+  // a tag drawn on a canvas: words in Inter, ids and numbers in JetBrains Mono; repainted once its font has loaded
+  function labelSprite(text, bg, fg, w = 256, edge = null, mono = false) {
     const cv = document.createElement("canvas"); cv.width = w; cv.height = 96;
     const tex = new THREE.CanvasTexture(cv); tex.encoding = THREE.sRGBEncoding;
+    const font = mono ? `600 42px ${FONT_NUM}` : `700 38px ${FONT_WORD}`;
     const paint = () => {
       const g = cv.getContext("2d"); g.clearRect(0, 0, w, 96);
-      g.fillStyle = bg; roundRect(g, 4, 4, w - 8, 88, 14); g.fill();
-      g.fillStyle = fg; g.font = "800 44px 'JetBrains Mono', ui-monospace, monospace";
-      g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(text, w / 2, 52);
+      g.fillStyle = bg; roundRect(g, 5, 5, w - 10, 86, 8); g.fill();
+      if (edge) { g.lineWidth = 3; g.strokeStyle = edge; g.stroke(); }
+      g.fillStyle = fg; g.font = font;
+      if ("letterSpacing" in g) g.letterSpacing = mono ? "0px" : "3px";
+      g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(text, w / 2, 51);
       tex.needsUpdate = true;
     };
     paint(); labelJobs.push(paint);
+    if (document.fonts && document.fonts.load) document.fonts.load(font).then(paint, () => 0);
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, sizeAttenuation: false }));
     sp.center.set(0.5, 0); sp.scale.set(0.08 * w / 256, 0.03, 1); sp.renderOrder = 10;   // constant size on screen
     return sp;
   }
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => labelJobs.forEach(f => f()));
+
+  // ---------------------------------------------------------------- MIL-STD-2525 symbols and callsign tags
+  // Who's who, drawn as the standard draws it in its 200 x 200 box: the frame's shape and fill say friend or foe and
+  // air or ground; the icon inside says what it is. Ours: the drone is a friendly aircraft (a light-blue dome) with the
+  // UAV icon; the rover is friendly ground equipment (a circle) with the tank icon. Theirs: each watchtower is a hostile
+  // ground sensor (a salmon diamond) with the sensor icon, a four-pointed star. (Lattice's entities carry the same two
+  // fields that pick a frame: disposition, friend or hostile, and environment, air or surface.)
+  const circlePath = (cx, cy, r) => { const p = new Path2D(); p.arc(cx, cy, r, 0, Math.PI * 2); return p; };
+  const SYMBOLS = {
+    uav: { frame: new Path2D("M 155,150 C 155,50 115,30 100,30 85,30 45,50 45,150"), fill: FRIEND_FILL, top: 30, bottom: 150,
+           icon: new Path2D("m 60,84 40,20 40,-20 0,8 -40,25 -40,-25 z"), iconFill: true },
+    ugv: { frame: circlePath(100, 100, 60), fill: FRIEND_FILL, top: 40, bottom: 160,
+           icon: new Path2D("m 70,80 60,0 m -60,40 60,0 m -60,-50 0,60 m 60,-60 0,60"), iconFill: false },
+    tower: { frame: new Path2D("M 100,28 L 172,100 100,172 28,100 Z"), fill: HOSTILE_FILL, top: 28, bottom: 172,
+             icon: new Path2D("m 100,60 c 0,15 25,40 40,40 -15,0 -40,25 -40,40 0,-15 -25,-40 -40,-40 15,0 40,-25 40,-40 z"), iconFill: true },
+  };
+  // Draw a symbol with its centre (the box's 100, 100) at (x, y), `size` px for 150 units (about the frame's height);
+  // a dark halo keeps it readable on any ground.
+  function drawSymbol(g, kind, x, y, size) {
+    const S = SYMBOLS[kind], k = size / 150, lw = Math.max(4, 1.1 / k);
+    g.save(); g.translate(x - 100 * k, y - 100 * k); g.scale(k, k); g.lineJoin = "round";
+    g.lineWidth = lw + Math.max(7, 2.4 / k); g.strokeStyle = "rgba(0, 0, 0, 0.5)"; g.stroke(S.frame);
+    g.fillStyle = S.fill; g.fill(S.frame);
+    g.lineWidth = lw; g.strokeStyle = "#000"; g.stroke(S.frame);
+    g.fillStyle = "#000";
+    if (S.iconFill) g.fill(S.icon); else g.stroke(S.icon);
+    g.restore();
+  }
+  // A track's tag in the scene, as a C2 map labels it: the symbol on a short stem, then the callsign (Inter) and a
+  // line of data (JetBrains Mono). Constant size on screen; the stem's foot sits on the sprite's position.
+  const TAG_W = 768, TAG_H = 132, TAG_SYM = 74, TAG_X = 52;
+  function symbolTag(kind, callsign) {
+    const cv = document.createElement("canvas"); cv.width = TAG_W; cv.height = TAG_H;
+    const tex = new THREE.CanvasTexture(cv); tex.encoding = THREE.sRGBEncoding; tex.anisotropy = 4;
+    const S = SYMBOLS[kind], k = TAG_SYM / 150, cy = 8 + (100 - S.top) * k + 4;   // the symbol's centre
+    let data = "", tone = "", painted = null;
+    const paint = () => {
+      const g = cv.getContext("2d"); g.clearRect(0, 0, TAG_W, TAG_H);
+      const foot = cy + (S.bottom - 100) * k;      // the stem, from the frame down to the position
+      g.lineCap = "round"; g.lineWidth = 6; g.strokeStyle = "rgba(0, 0, 0, 0.5)";
+      g.beginPath(); g.moveTo(TAG_X, foot); g.lineTo(TAG_X, TAG_H - 4); g.stroke();
+      g.lineWidth = 2.5; g.strokeStyle = S.fill; g.stroke();
+      drawSymbol(g, kind, TAG_X, cy, TAG_SYM);
+      const head = `700 30px ${FONT_WORD}`, body = `500 25px ${FONT_NUM}`, x0 = TAG_X + 56, more = data ? `· ${data}` : "";
+      g.font = head; const w1 = g.measureText(callsign).width;
+      g.font = body; const w2 = more ? g.measureText(more).width : 0;
+      const w = w1 + (more ? 14 + w2 : 0) + 26;
+      g.fillStyle = "rgba(10, 12, 15, 0.74)"; roundRect(g, x0, cy - 22, Math.min(w, TAG_W - x0 - 4), 44, 6); g.fill();
+      g.textBaseline = "middle";
+      g.font = head; g.fillStyle = tone === "hostile" ? HOSTILE : "#f1ede4"; g.fillText(callsign, x0 + 13, cy + 1);
+      if (more) { g.font = body; g.fillStyle = tone === "hostile" ? HOSTILE : "#c9ced3"; g.fillText(more, x0 + 13 + w1 + 14, cy + 2); }
+      tex.needsUpdate = true; painted = data + tone;
+    };
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, sizeAttenuation: false, transparent: true }));
+    sp.center.set(TAG_X / TAG_W, 0); sp.scale.set(0.068 * TAG_W / TAG_H, 0.068, 1); sp.renderOrder = 11;
+    paint(); symbolJobs.push(paint);
+    return { sprite: sp, set(d, t = "") { data = d; tone = t; if (painted !== d + t) paint(); } };
+  }
+  const symbolJobs = [];
+  if (document.fonts && document.fonts.load) Promise.all([document.fonts.load(`700 30px ${FONT_WORD}`), document.fonts.load(`500 25px ${FONT_NUM}`)])
+    .then(() => symbolJobs.forEach(f => f()), () => 0);
+
   function checkerTex() {
     const cv = document.createElement("canvas"); cv.width = cv.height = 64;
     const g = cv.getContext("2d");
-    for (let y = 0; y < 4; y++) for (let x = 0; x < 6; x++) { g.fillStyle = (x + y) % 2 ? "#111" : "#f4f1e8"; g.fillRect(x * 64 / 6, y * 16, 64 / 6 + 1, 16); }
+    for (let y = 0; y < 4; y++) for (let x = 0; x < 6; x++) { g.fillStyle = (x + y) % 2 ? "#111" : ACCENT; g.fillRect(x * 64 / 6, y * 16, 64 / 6 + 1, 16); }
     const t = new THREE.CanvasTexture(cv); t.encoding = THREE.sRGBEncoding; return t;
   }
   const poleMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.3, roughness: 0.5 });
@@ -2280,16 +2380,17 @@ void groundOverlay(inout vec3 col) {
     for (const k of Object.keys(flagParts)) delete flagParts[k];
     flagGroup = new THREE.Group();
     for (const { cell, kind } of list) {
-      const finish = kind === "finish", tone = finish ? 0xf4f1e8 : 0x4fae6a;
-      const zone = groundRing(toX(cell[1]), toZ(cell[0]), 2.2, 2.55, tone, 0.8); zoneRings.push(zone); flagGroup.add(zone);
+      const finish = kind === "finish";              // both off-white: START an outlined tag and a plain flag, FINISH filled and chequered
+      const zone = groundRing(toX(cell[1]), toZ(cell[0]), 2.2, 2.55, ACCENT, finish ? 0.85 : 0.6); zoneRings.push(zone); flagGroup.add(zone);
       const g = new THREE.Group();
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 3.4, 8), poleMat);
       pole.position.y = 1.7; pole.castShadow = true; g.add(pole);
-      const cloth = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.95, 6, 1), new THREE.MeshStandardMaterial({
-        color: finish ? 0xffffff : tone, map: finish ? checkerTex() : null, side: THREE.DoubleSide, roughness: 0.8 }));
+      const clothMat = new THREE.MeshStandardMaterial({ color: finish ? 0xffffff : ACCENT, map: finish ? checkerTex() : null, side: THREE.DoubleSide, roughness: 0.8 });
+      if (!finish) clothMat.color.convertSRGBToLinear();
+      const cloth = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.95, 6, 1), clothMat);
       cloth.geometry.translate(0.75, 0, 0);
       cloth.position.set(0.03, 2.9, 0); cloth.castShadow = true; g.add(cloth);
-      const lab = labelSprite(finish ? "FINISH" : "START", finish ? "#f4f1e8" : "#4fae6a", "#1b1a14");
+      const lab = finish ? labelSprite("FINISH", ACCENT, "#111316") : labelSprite("START", "rgba(13, 15, 18, 0.88)", ACCENT, 256, ACCENT);
       lab.position.y = 3.6; g.add(lab);
       placePole(g, cell);
       g.userData.cloth = cloth; g.userData.label = lab;
@@ -2334,10 +2435,10 @@ void groundOverlay(inout vec3 col) {
   function ringTex() {
     const cv = document.createElement("canvas"); cv.width = cv.height = 256;
     const g = cv.getContext("2d");
-    g.strokeStyle = "rgba(57, 255, 20, 0.3)"; g.lineWidth = 24; g.beginPath(); g.arc(128, 128, 102, 0, Math.PI * 2); g.stroke();
-    g.strokeStyle = "rgba(57, 255, 20, 0.95)"; g.lineWidth = 8; g.beginPath(); g.arc(128, 128, 102, 0, Math.PI * 2); g.stroke();
+    g.strokeStyle = "rgba(92, 194, 255, 0.28)"; g.lineWidth = 24; g.beginPath(); g.arc(128, 128, 102, 0, Math.PI * 2); g.stroke();
+    g.strokeStyle = "rgba(92, 194, 255, 0.95)"; g.lineWidth = 7; g.beginPath(); g.arc(128, 128, 102, 0, Math.PI * 2); g.stroke();
     // heading notch: the canvas bottom maps to the rover's front
-    g.fillStyle = "rgba(57, 255, 20, 0.95)";
+    g.fillStyle = "rgba(92, 194, 255, 0.95)";
     g.beginPath(); g.moveTo(128, 252); g.lineTo(106, 218); g.lineTo(150, 218); g.closePath(); g.fill();
     const t = new THREE.CanvasTexture(cv); t.encoding = THREE.sRGBEncoding; return t;
   }
@@ -2606,6 +2707,7 @@ void groundOverlay(inout vec3 col) {
     };
   }
   const rover = buildRover(); scene.add(rover.group);
+  const roverTag = symbolTag("ugv", "UGV-01"); scene.add(roverTag.sprite);   // the tank's callsign tag
   const ringGeo = new THREE.PlaneGeometry(3.3, 3.3, 12, 12);      // the heading ring round the tank
   const ringBase = ringGeo.attributes.position.array.slice();
   const ringMat = new THREE.MeshBasicMaterial({ map: ringTex(), transparent: true, depthWrite: false, side: THREE.DoubleSide,
@@ -2733,8 +2835,12 @@ void groundOverlay(inout vec3 col) {
       const shade = water ? 1 : 0.6 + 0.55 * Math.max(0, n.dot(L));
       const col = water ? mix(PAL.water, PAL.waterDeep, clamp((WL[i] - H[i]) / 2.5, 0, 1) * 0.85)
         : OBS[i] === 2 ? treeC : OBS[i] === 1 ? rockC : groundRGB(i);
-      d[i * 4] = Math.min(255, col[0] * 255 * shade); d[i * 4 + 1] = Math.min(255, col[1] * 255 * shade);
-      d[i * 4 + 2] = Math.min(255, col[2] * 255 * shade); d[i * 4 + 3] = 255;
+      // contour lines every 2 m on land, as on the big map (lighter where the band changes to the right or below)
+      const band = v => Math.floor(v / 2), lo = MAP.sea != null ? MAP.sea : -1e9;
+      const edge = !water && H[i] > lo && (band(H[i]) !== band(H[r * C + Math.min(c + 1, C - 1)]) || band(H[i]) !== band(H[Math.min(r + 1, R - 1) * C + c]));
+      const k = edge ? 0.3 : 0, lift = v => v + (205 - v) * k;
+      d[i * 4] = lift(Math.min(255, col[0] * 255 * shade)); d[i * 4 + 1] = lift(Math.min(255, col[1] * 255 * shade));
+      d[i * 4 + 2] = lift(Math.min(255, col[2] * 255 * shade)); d[i * 4 + 3] = 255;
     }
     bctx.putImageData(img, 0, 0);
   }
@@ -2766,30 +2872,34 @@ void groundOverlay(inout vec3 col) {
         const x = (c + 0.5) * MMS / C, y = (r + 0.5) * MMS / R;
         if (k) g.lineTo(x, y); else g.moveTo(x, y);
       }
-      g.globalAlpha = i === driven ? 1 : 0.85; g.lineWidth = i === driven ? 2.6 : 1.4;
-      g.strokeStyle = PATH_COLORS[i % PATH_COLORS.length]; g.stroke();
+      g.globalAlpha = i === driven ? 1 : 0.7; g.lineWidth = i === driven ? 2.4 : 1.1;
+      g.strokeStyle = i === driven ? FRIEND : ROUTE; g.stroke();
     }
     g.globalAlpha = 1;
-    const shown = routes.filter(r => r.found && routeShown(r) && !(r === current && r.key === DSTAR.key)).sort((a, b) => (a === current) - (b === current));
+    const shown = routes.filter(r => r.found && routeShown(r) && !(r === current && r.key === DSTAR.key))
+      .sort((a, b) => (routeLit(a) - routeLit(b)) || ((a === current) - (b === current)));
     for (const rt of shown) {
       g.beginPath();
       rt.cells.forEach(([r, c], k) => { const x = (c + 0.5) * MMS / C, y = (r + 0.5) * MMS / R; if (k) g.lineTo(x, y); else g.moveTo(x, y); });
-      const sel = rt === current;
+      const sel = rt === current, lit = routeLit(rt);
       g.setLineDash(rt.dashed ? [3, 2.5] : []);
-      g.globalAlpha = sel || rt.dashed ? 1 : 0.55; g.lineWidth = sel ? 2.4 : rt.dashed ? 1.6 : 1.2; g.strokeStyle = rt.color; g.stroke();
+      g.globalAlpha = lit ? 1 : 0.6; g.lineWidth = sel ? 2.4 : lit ? 1.6 : 1.1; g.strokeStyle = lit ? FRIEND : ROUTE; g.stroke();
     }
     g.setLineDash([]);
     g.globalAlpha = 1;
-    if (air.on && airspace) for (const [r, c] of airspace.towers) {   // watchtowers: their reach, and where they stand
-      const x = (c + 0.5) * MMS / C, y = (r + 0.5) * MMS / R;
-      g.beginPath(); g.arc(x, y, AIRC.sight * MMS / C, 0, Math.PI * 2); g.fillStyle = "rgba(226, 70, 60, 0.12)"; g.fill();
-      g.lineWidth = 1; g.strokeStyle = "rgba(255, 90, 75, 0.7)"; g.stroke();
-      g.beginPath(); g.moveTo(x, y - 4); g.lineTo(x + 3.5, y + 3); g.lineTo(x - 3.5, y + 3); g.closePath(); g.fillStyle = "#ff4d3d"; g.fill();
+    if (air.on && airspace) {                       // watchtowers: their reach, and a hostile sensor's symbol where each stands
+      for (const [r, c] of airspace.towers) {
+        const x = (c + 0.5) * MMS / C, y = (r + 0.5) * MMS / R;
+        g.beginPath(); g.arc(x, y, AIRC.sight * MMS / C, 0, Math.PI * 2); g.fillStyle = "rgba(255, 90, 82, 0.1)"; g.fill();
+        g.lineWidth = 1; g.strokeStyle = "rgba(255, 90, 82, 0.65)"; g.stroke();
+      }
+      for (const [r, c] of airspace.towers) drawSymbol(g, "tower", (c + 0.5) * MMS / C, (r + 0.5) * MMS / R, 15);
     }
     if (!START) return;                             // parked: no start or finish
-    [[START, "#4fae6a"], [GOAL, "#f4f1e8"]].forEach(([[r, c], fill]) => {
-      g.beginPath(); g.arc((c + 0.5) * MMS / C, (r + 0.5) * MMS / R, 4.2, 0, Math.PI * 2);
-      g.fillStyle = fill; g.fill(); g.lineWidth = 1.5; g.strokeStyle = "#1b1f19"; g.stroke();
+    [[START, false], [GOAL, true]].forEach(([[r, c], fill]) => {
+      g.beginPath(); g.arc((c + 0.5) * MMS / C, (r + 0.5) * MMS / R, 3.8, 0, Math.PI * 2);
+      g.lineWidth = 3.5; g.strokeStyle = "rgba(0, 0, 0, 0.55)"; g.stroke();
+      if (fill) { g.fillStyle = ACCENT; g.fill(); } else { g.lineWidth = 1.6; g.strokeStyle = ACCENT; g.stroke(); }
     });
   }
   function drawMinimap(Pw) {
@@ -2798,25 +2908,28 @@ void groundOverlay(inout vec3 col) {
     g.clearRect(0, 0, MMS, MMS);
     g.drawImage(layerCv, 0, 0, MMS, MMS);
     const [rx, ry] = toMap(Pw.x, Pw.z), [dx, dy] = toMap(camera.position.x, camera.position.z);
-    if (dx > -4 && dx < MMS + 4 && dy > -4 && dy < MMS + 4 && Math.hypot(dx - rx, dy - ry) > 3) {
-      g.setLineDash([3, 3]); g.lineWidth = 1; g.strokeStyle = "rgba(244, 241, 232, 0.75)";
-      g.beginPath(); g.moveTo(dx, dy); g.lineTo(rx, ry); g.stroke(); g.setLineDash([]);
-      g.fillStyle = "#f4f1e8";
-      g.beginPath(); g.moveTo(dx, dy - 4.5); g.lineTo(dx + 4.5, dy); g.lineTo(dx, dy + 4.5); g.lineTo(dx - 4.5, dy); g.closePath(); g.fill();
+    if (dx > -4 && dx < MMS + 4 && dy > -4 && dy < MMS + 4 && Math.hypot(dx - rx, dy - ry) > 3) {   // the camera and where it looks
+      const a = Math.atan2(controls.target.z - camera.position.z, controls.target.x - camera.position.x);
+      g.fillStyle = "rgba(239, 230, 210, 0.14)";
+      g.beginPath(); g.moveTo(dx, dy); g.arc(dx, dy, 22, a - 0.42, a + 0.42); g.closePath(); g.fill();
+      g.fillStyle = ACCENT;
+      g.beginPath(); g.moveTo(dx + Math.cos(a) * 5, dy + Math.sin(a) * 5);
+      g.lineTo(dx + Math.cos(a + 2.4) * 4, dy + Math.sin(a + 2.4) * 4); g.lineTo(dx + Math.cos(a - 2.4) * 4, dy + Math.sin(a - 2.4) * 4); g.closePath(); g.fill();
     }
     if (sensing() && senseView.step >= 0) {        // the sensor drive: where it has been, and its plan from here
       const k = senseView.step, plan0 = current.run.steps[current.planFrom[k]].plan, at = (i) => [(i % C + 0.5) * MMS / C, (((i / C) | 0) + 0.5) * MMS / R];
       g.lineJoin = g.lineCap = "round";
       g.beginPath(); for (let j = 0; j <= k; j++) { const [x, y] = at(current.idx[j]); if (j) g.lineTo(x, y); else g.moveTo(x, y); }
-      g.lineTo(rx, ry); g.lineWidth = 2.4; g.strokeStyle = DSTAR.color; g.stroke();
+      g.lineTo(rx, ry); g.lineWidth = 2.4; g.strokeStyle = FRIEND; g.stroke();
       g.beginPath(); g.moveTo(rx, ry);
       for (let j = k - current.planFrom[k] + 1; j < plan0.length; j++) { const [x, y] = at(plan0[j]); g.lineTo(x, y); }
       g.setLineDash([3, 3]); g.lineWidth = 1.6; g.globalAlpha = 0.9; g.stroke(); g.setLineDash([]); g.globalAlpha = 1;
     }
-    g.save(); g.translate(rx, ry); g.rotate(Math.atan2(fwd.x, -fwd.z));
-    g.beginPath(); g.moveTo(0, -7); g.lineTo(5.5, 5.5); g.lineTo(0, 2.5); g.lineTo(-5.5, 5.5); g.closePath();
-    g.fillStyle = NEON_CSS; g.fill(); g.lineWidth = 1.5; g.strokeStyle = "#1b1f19"; g.stroke();
-    g.restore();
+    // the rover or the drone: its friendly symbol, with a direction-of-movement line (MIL-STD-2525)
+    const lead = 13;
+    g.beginPath(); g.moveTo(rx, ry); g.lineTo(rx + fwd.x * lead, ry + fwd.z * lead);
+    g.lineWidth = 3.4; g.strokeStyle = "rgba(0, 0, 0, 0.6)"; g.stroke(); g.lineWidth = 1.6; g.strokeStyle = FRIEND; g.stroke();
+    drawSymbol(g, air.on ? "uav" : "ugv", rx, ry, 16);
   }
 
   // ---------------------------------------------------------------- stage board
@@ -2836,7 +2949,7 @@ void groundOverlay(inout vec3 col) {
       tr.dataset.name = rt.name;
       if (rt.user) tr.className = "mine";
       const d = rt.found ? (rt.cost - best) / best * 100 : null;
-      tr.innerHTML = `<td><span class="alg"><span class="pos">${i + 1}</span><span class="swatch${rt.dashed ? " dashed" : ""}" style="background:${rt.color};color:${rt.color}"></span>${rt.name}</span></td>
+      tr.innerHTML = `<td><span class="alg"><span class="pos">${i + 1}</span><span class="swatch${rt.dashed ? " dashed" : ""}${rt.dashed || rt.air ? " lit" : ""}"></span>${rt.name}</span></td>
         <td>${rt.found ? fmtTime(rt.cost) : "—"} <span class="delta ${d !== null && d < 0.05 ? "best" : ""}">${fmtDelta(d)}</span></td>
         <td>${rt.found ? rt.stats.distance_m.toFixed(0) : "—"}</td><td class="hide-sm">${!rt.found ? "—" : rt.air ? rt.seenS.toFixed(1) : rt.stats.climb_m.toFixed(0)}</td>
         <td>${rt.user ? "—" : rt.nodes.toLocaleString()}</td><td class="hide-sm">${rt.user ? "—" : rt.ms.toFixed(rt.ms < 10 ? 1 : 0)}</td>`;
@@ -3032,7 +3145,12 @@ void groundOverlay(inout vec3 col) {
     refreshLayers(); drawMapLayer();
     restartLap(!!animate);
   }
+  // Ours, in blue: the selected route and its dashed comparison (the hill-blind shortest route on the ground; in the
+  // air both flights, stealth solid and direct dashed). Every other route is a grey line.
+  const routeLit = rt => rt === current || !!rt.dashed || !!rt.air;
+  const lineCol = new THREE.Color();
   function routeShown(rt) {                         // which routes are on the map outside the planner
+    if (rt.air) return true;                                               // in the air: the stealth and the direct flight
     if (rt.key === "short") return rt === current || showShort;           // the dashed hill-blind comparison
     if (rt.user) return true;                                              // a route you drew
     if (rt === current) return !(rt.key === "astar" && drivenPreset() >= 0);   // a driven preset's own line already is A*'s path
@@ -3043,14 +3161,16 @@ void groundOverlay(inout vec3 col) {
     const planning = !!plan.mode, thick = planning || farView;   // the planner draws every route, thick, on top
     routes.forEach(rt => {
       if (!rt.tube) return;
-      const sel = rt === current, on = planning || routeShown(rt), strong = sel || rt.dashed;
+      const sel = rt === current, on = planning || routeShown(rt), lit = routeLit(rt), strong = sel || rt.dashed;
       rt.tube.visible = on && !thick && !replay.on;
       rt.planTube.visible = on && thick && !replay.on;   // (watching the search draws its own two)
       rt.planMat.depthTest = !planning && !replay.on;   // outside the planner, hills hide the far side of a route
-      rt.planMat.opacity = sel ? 0.95 : rt.dashed ? 0.9 : 0.6;
+      lineCol.set(lit ? FRIEND : ROUTE).convertSRGBToLinear();
+      rt.mat.color.copy(lineCol); rt.mat.emissive.copy(lineCol); rt.planMat.color.copy(lineCol);
+      rt.planMat.opacity = sel ? 0.95 : lit ? 0.8 : 0.55;
       rt.planTube.renderOrder = sel ? 5.5 : 5;
-      rt.mat.opacity = strong ? 1 : 0.45;
-      rt.mat.emissiveIntensity = strong ? 0.55 : 0.25;
+      rt.mat.opacity = strong ? 1 : lit ? 0.85 : 0.5;
+      rt.mat.emissiveIntensity = lit ? 0.55 : 0.2;
       rt.mat.depthWrite = sel;
       if (!sel || rt.key !== DSTAR.key || planning) { rt.tube.geometry.setDrawRange(0, Infinity); rt.planTube.geometry.setDrawRange(0, Infinity); }
     });
@@ -3110,7 +3230,7 @@ void groundOverlay(inout vec3 col) {
 
   // ---------------------------------------------------------------- the sensor drive on screen: fog, reach, plan, roadblocks
   // Pick the D* Lite row and the rover drives seeing only `range` metres round itself: ground it hasn't sensed is
-  // dimmed, a ring shows its reach, the dashed line is its current plan (it turns red as a plan breaks and gives way to
+  // dimmed, a ring shows its reach, the dashed line is its current plan (it turns amber as a plan breaks and gives way to
   // the repaired one), and the line behind it is where it has been. A roadblock you drop appears in its world from
   // that moment, and it finds it when it comes into range. The drive is computed whole (in a few milliseconds) and
   // replayed by the clock, so Restart shows the same drive.
@@ -3175,13 +3295,13 @@ void groundOverlay(inout vec3 col) {
     mesh.castShadow = mesh.receiveShadow = true;
     return mesh;
   }
-  function buildBlocks() {                          // the roadblocks dropped on this trip, with a red ring once the rover has seen them
+  function buildBlocks() {                          // the roadblocks dropped on this trip, with an amber ring once the rover has seen them
     if (senseView.blocks) { scene.remove(senseView.blocks); senseView.blocks.traverse(o => { if (o.isMesh && o.geometry !== hedgeGeo) { o.geometry.dispose(); o.material.dispose(); } }); }
     const g = new THREE.Group();
     for (const b of sensor.blocks) {
       const r = (b.cell / C) | 0, c = b.cell % C, x = toX(c), z = toZ(r), m = hedgehog();
       m.position.set(x, H[b.cell], z); m.rotation.y = (r * 7 + c * 13) % 6;
-      const ring = groundRing(x, z, 0.85, 1.25, "#ff4d3d", 0.9);
+      const ring = groundRing(x, z, 0.85, 1.25, CAUTION, 0.9);
       ring.visible = false; m.userData.ring = ring; m.userData.cell = b.cell;
       g.add(m, ring);
     }
@@ -3284,10 +3404,10 @@ void groundOverlay(inout vec3 col) {
     OVER.uFogP.value.set(k, 1, sensor.range, t);
     OVER.uRoverXZ.value.set(rover.group.position.x, rover.group.position.z);
     const ps = rt.planFrom[k];
-    if (ps !== senseView.planStep) {                // a new plan: the old one turns red and fades if it broke
+    if (ps !== senseView.planStep) {                // a new plan: the old one turns amber and fades if it broke
       senseView.ghost = dropLine(senseView.ghost);
       if (senseView.line && ps > senseView.planStep && rt.run.steps[ps].broke) {
-        senseView.ghost = senseView.line; senseView.ghost.material.color.set("#ff4d3d").convertSRGBToLinear(); senseView.ghostT = 1;
+        senseView.ghost = senseView.line; senseView.ghost.material.color.set(CAUTION).convertSRGBToLinear(); senseView.ghostT = 1;
       } else dropLine(senseView.line);
       senseView.line = planLine(rt.run.steps[ps].plan, DSTAR.color, farView ? 0.3 : 0.14);
       senseView.planStep = ps;
@@ -3301,7 +3421,7 @@ void groundOverlay(inout vec3 col) {
       if (senseView.ghostT <= 0) senseView.ghost = dropLine(senseView.ghost);
       else senseView.ghost.material.opacity = 0.85 * senseView.ghostT;
     }
-    if (senseView.blocks) senseView.blocks.children.forEach(o => {   // ringed red once spotted
+    if (senseView.blocks) senseView.blocks.children.forEach(o => {   // ringed amber once spotted
       if (!o.userData.ring) return;
       const at = rt.run.spotted.get(o.userData.cell);
       o.userData.ring.visible = at !== undefined && at <= k;
@@ -3324,18 +3444,19 @@ void groundOverlay(inout vec3 col) {
         + `Planning from scratch every time the plan broke would have searched ${aA.toLocaleString()} cells, ${ratio}.`;
     } else if (spot !== undefined && tA[k] - tA[spot] < 6) html = `<b>Roadblock spotted.</b> D* Lite repairs the plan round it instead of planning again from scratch.`;
     else if (k < 4) html = `It knows only what its sensor has seen. Dimmed ground is unseen, assumed flat and open, so the dashed plan heads straight for the finish.`;
-    else html = `Each step brings new ground into view: when it breaks the plan (it turns red), D* Lite repairs it. Dimmed: still unseen.`;
+    else html = `Each step brings new ground into view: when it breaks the plan (it turns amber), D* Lite repairs it. Dimmed: still unseen.`;
     if (html !== senseView.note) { SN.msg.innerHTML = html; SN.msg.style.color = ""; senseView.note = html; }
   }
 
   // ---------------------------------------------------------------- the air route on screen: the drone, the towers, their sight
-  // Air mode swaps the tank for a drone with one red eye and races two flights between the same start and finish: the
-  // stealth route, which hides from the watchtowers behind hills, and the direct one, which ignores them. The ground
-  // shows where the towers see (red: even low down; amber: only up high, so flying low hides). A tower that sees the
-  // drone swings its searchlight onto it and a red sight line joins them. Thin lines drop from the route to the ground
-  // to show how high it flies.
+  // Air mode swaps the tank for our drone (UAV-01) and races two flights between the same start and finish: the
+  // stealth route (solid), which hides from the watchtowers behind hills, and the direct one (dashed), which ignores
+  // them. Each tower (TWR-1 to TWR-4) wears a hostile sensor's symbol and a faint red dome: everything within its
+  // reach, with a ring where the dome meets the ground. The ground shows where the towers actually see, hills
+  // considered (red: even low down; amber: only up high, so flying low hides). A tower that sees the drone swings its
+  // searchlight onto it, a red sight line joins them and its tag reads TRACKING. Thin lines drop from the route to the
+  // ground to show how high it flies.
   const air = { on: false, drone: null, towers: null, list: [], curtain: null, curtainOf: null, threat: null, seenNow: false, yaw: 0, roll: 0 };
-  const AIR_COLORS = { stealth: "#a98bff", direct: "#f2a93b" };
   let glowTex = null, rotorTex = null;
   function glowTexture() {                          // a soft round glow, for the eye
     if (glowTex) return glowTex;
@@ -3355,7 +3476,7 @@ void groundOverlay(inout vec3 col) {
     for (const a0 of [0, Math.PI]) { g.beginPath(); g.moveTo(64, 64); g.arc(64, 64, 61, a0, a0 + 0.45); g.closePath(); g.fill(); }
     return (rotorTex = new THREE.CanvasTexture(cv));
   }
-  function buildAirDrone() {                        // matte black, four guarded rotors, one red eye in the nose (faces +z)
+  function buildAirDrone() {                        // matte black, four guarded rotors, one blue eye in the nose (faces +z)
     const g = new THREE.Group(), body = new THREE.Group(), rotors = [];
     const skin = std("#18191b", { roughness: 0.5, metalness: 0.35 }), trim = std("#0b0b0c", { roughness: 0.35, metalness: 0.6 });
     const hull = new THREE.Mesh(new THREE.SphereGeometry(0.5, 28, 18), skin); hull.scale.set(0.55, 0.26, 0.85); body.add(hull);
@@ -3371,9 +3492,9 @@ void groundOverlay(inout vec3 col) {
     }
     const socket = new THREE.Mesh(new THREE.CylinderGeometry(0.115, 0.135, 0.09, 20), trim);
     socket.rotation.x = Math.PI / 2; socket.position.set(0, 0.0, 0.405); body.add(socket);
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.075, 18, 12), new THREE.MeshBasicMaterial({ color: lin("#ff1a1a") }));
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.075, 18, 12), new THREE.MeshBasicMaterial({ color: lin("#8fd6ff") }));
     eye.position.set(0, 0, 0.445); body.add(eye);
-    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), color: 0xff2414, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), color: 0x2f9dff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
     glow.scale.set(0.95, 0.95, 1); glow.position.set(0, 0, 0.5); body.add(glow);
     for (const sx of [-1, 1]) {
       const skid = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.72, 8), trim); skid.rotation.x = Math.PI / 2; skid.position.set(sx * 0.21, -0.22, 0); body.add(skid);
@@ -3381,7 +3502,8 @@ void groundOverlay(inout vec3 col) {
     }
     body.traverse(o => { if (o.isMesh && o.material !== eye.material && !rotors.includes(o)) o.castShadow = true; });
     g.add(body); g.scale.setScalar(1.3); g.visible = false; scene.add(g);
-    return { group: g, body, rotors, glow };
+    const tag = symbolTag("uav", "UAV-01"); tag.sprite.visible = false; scene.add(tag.sprite);
+    return { group: g, body, rotors, glow, tag };
   }
   air.drone = buildAirDrone();
   const sightMat = new THREE.MeshBasicMaterial({ color: lin("#ff2b1a"), transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false });
@@ -3410,14 +3532,58 @@ void groundOverlay(inout vec3 col) {
       const beamM = new THREE.MeshBasicMaterial({ color: lin("#ff3b2b"), transparent: true, opacity: 0.08, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
       head.add(new THREE.Mesh(beamGeo, beamM));
       t.traverse(o => { if (o.isMesh && o.material !== beamM && o.material !== lensM) { o.castShadow = true; o.receiveShadow = true; } });
-      const ring = groundRing(x, z, AIRC.sight - 0.22, AIRC.sight + 0.22, "#ff4d3d", 0.5);
+      const eyeY = airspace.eyes[n];
+      const dome = new THREE.Mesh(domeGeo, domeMat); dome.position.set(x, eyeY, z); dome.renderOrder = 2.5;
+      const ring = rangeRing(x, z, eyeY, AIRC.sight);
       const line = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1, 6, 1, true), sightMat); line.visible = false; line.renderOrder = 7;
-      g.add(t, ring, line);
-      air.list.push({ head, beamM, lensM, line, r, c, eye: airspace.eyes[n], phase: n * 1.9 });
+      const tag = symbolTag("tower", `TWR-${n + 1}`); tag.sprite.position.set(x, H[r * C + c] + 6.1, z);
+      g.add(t, dome, ring, line, tag.sprite);
+      air.list.push({ head, beamM, lensM, line, tag, r, c, eye: eyeY, phase: n * 1.9, watching: false });
     });
     scene.add(g);
     air.towers = g;
     g.visible = air.on;
+  }
+  // Each tower's reach: a faint red dome of radius `sight` round its eye (everything inside is in range; hills still
+  // block the view, which the ground's shading shows), and a range ring where the dome meets the ground or water.
+  const domeGeo = new THREE.SphereGeometry(1, 64, 32);
+  const domeMat = new THREE.ShaderMaterial({
+    uniforms: { uCol: { value: new THREE.Color(HOSTILE) }, uR: { value: 1 } },
+    vertexShader: `varying vec3 vN, vV, vP;
+void main() {
+  vec4 mv = modelViewMatrix * vec4(position, 1.0);
+  vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); vP = position;
+  gl_Position = projectionMatrix * mv;
+}`,
+    fragmentShader: `uniform vec3 uCol;
+varying vec3 vN, vV, vP;
+void main() {
+  float rim = 1.0 - abs(dot(normalize(vN), normalize(vV)));
+  float lat = asin(clamp(normalize(vP).y, -1.0, 1.0)) / 0.2617994;   // a faint line every 15 degrees up the dome
+  float d = abs(fract(lat + 0.5) - 0.5) / max(fwidth(lat), 1e-4);
+  float grid = (1.0 - smoothstep(0.5, 1.5, d)) * (1.0 - smoothstep(0.2, 0.5, fwidth(lat)));
+  gl_FragColor = vec4(uCol, 0.018 + 0.16 * rim * rim * rim + 0.055 * grid);
+}`,
+    transparent: true, depthWrite: false, side: THREE.DoubleSide });
+  domeMat.extensions = { derivatives: true };
+  domeGeo.scale(AIRC.sight, AIRC.sight, AIRC.sight);
+  function rangeRing(cx, cz, eyeY, reach) {        // where the dome meets the ground: the farthest ground in reach, all round
+    const seg = 180, v = [], idx = [], half = 0.14;
+    const floorAt = (x, z) => Math.max(groundH(x, z), waterAt(x, z));
+    const inReach = (d, ca, sa) => { const dy = floorAt(cx + ca * d, cz + sa * d) - eyeY; return d * d + dy * dy <= reach * reach; };
+    for (let i = 0; i <= seg; i++) {
+      const a = i / seg * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a);
+      let lo = 0, hi = reach;
+      for (let d = 0.5; d <= reach; d += 0.5) { if (inReach(d, ca, sa)) lo = d; else { hi = d; break; } }
+      for (let k = 0; k < 8 && hi - lo > 1e-3; k++) { const mid = (lo + hi) / 2; if (inReach(mid, ca, sa)) lo = mid; else hi = mid; }
+      for (const d of [lo - half, lo + half]) { const px = cx + ca * d, pz = cz + sa * d; v.push(px, floorAt(px, pz) + 0.07, pz); }
+      if (i < seg) { const b = i * 2; idx.push(b, b + 1, b + 2, b + 1, b + 3, b + 2); }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(v, 3)); geo.setIndex(idx);
+    const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: lin(HOSTILE), transparent: true, opacity: 0.7, depthWrite: false,
+      side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }));
+    m.renderOrder = 1; return m;
   }
   function threatTexture() {                        // per cell: 2 seen even at the lowest flight level, 1 seen only higher, 0 unseen
     const N = R * C, L = AIRC.levels, a = airspace;
@@ -3437,7 +3603,7 @@ void groundOverlay(inout vec3 col) {
   }
   function airRoute(start, goal, stealth) {         // a flight, as a route the board and the rover machinery understand
     const f = airFly(start, goal, stealth), N = R * C, key = stealth ? "stealth" : "direct";
-    const rt = { key, name: stealth ? "Stealth A*" : "Direct A*", color: AIR_COLORS[key], air: true, found: f.found, nodes: f.nodes,
+    const rt = { key, name: stealth ? "Stealth A*" : "Direct A*", color: FRIEND, dashed: !stealth, air: true, found: f.found, nodes: f.nodes,
                  ms: f.ms, peak: 0, explored: [], voxels: f.voxels };
     if (!f.found) return Object.assign(rt, { cost: Infinity, idx: [], cells: [], stats: null, seenS: Infinity });
     const idx = [], pts = [], stepT = [0];
@@ -3488,6 +3654,7 @@ void groundOverlay(inout vec3 col) {
     $("pb-draw").hidden = on;
     GLAB.forEach((e, k) => { e.textContent = (on ? AIR_LABELS : GROUND_LABELS)[k]; });
     $("key-rover").textContent = on ? "Drone" : "Rover"; $("key-cam").textContent = on ? "Camera" : "Drone";
+    $("key-rover-icon").classList.toggle("air", on); $("key-tower").hidden = !on;
     document.querySelector("#board .note").textContent = on ? NOTE_AIR : NOTE_GROUND;
     document.querySelector("#board-table thead th:nth-child(4)").textContent = on ? "Seen s" : "Climb m";
     if (!parked) {
@@ -3543,7 +3710,9 @@ void groundOverlay(inout vec3 col) {
       tw.line.visible = on;
       tw.beamM.opacity = on ? 0.22 : 0.07;
       tw.lensM.color.setRGB(on ? 1 : 1, on ? 0.12 : 0.32, on ? 0.08 : 0.2);
+      if (on !== tw.watching) { tw.watching = on; tw.tag.set(on ? "TRACKING" : "", on ? "hostile" : ""); }
     });
+    d.tag.sprite.position.set(x, y + 0.85, z);
   }
   const airBtn = document.createElement("button");   // placed beside the map buttons once they exist (switching maps)
 
@@ -3569,7 +3738,7 @@ void groundOverlay(inout vec3 col) {
                pick: { start: $("pb-start"), finish: $("pb-finish") }, at: { start: $("pb-start-at"), finish: $("pb-finish-at") } };
   // start / finish: the markers on the map (both set ⇒ that pair is installed and driven); slot: what the next click places
   const plan = { mode: null, start: null, finish: null, slot: "start", drag: null, prevMode: "drone", prevPlaying: true, boardOpen: true };
-  const LABEL = { start: "START", finish: "FINISH" }, MARK_COLOR = { start: "#4fae6a", finish: "#f4f1e8" }, BAD_COLOR = "#ff4d3d";
+  const LABEL = { start: "START", finish: "FINISH" }, MARK_COLOR = { start: ACCENT, finish: ACCENT }, BAD_COLOR = BAD;
   const otherKind = k => (k === "start" ? "finish" : "start");
   const fmtCell = c => `${c[0]}, ${c[1]}`;
   function say(text, tone) { PB.msg.textContent = text; PB.msg.dataset.tone = tone || ""; }
@@ -3745,9 +3914,9 @@ void groundOverlay(inout vec3 col) {
     say(""); saveState(); refreshDraw();
   }
   const overlay = o => Object.assign(o, { depthTest: false, depthWrite: false, transparent: true });   // planning marks sit on top
-  const neonLine = new THREE.MeshBasicMaterial(overlay({ color: NEON_CSS, opacity: 0.95 }));
-  const ghostOk = new THREE.MeshBasicMaterial(overlay({ color: NEON_CSS, opacity: 0.45 }));
-  const ghostBad = new THREE.MeshBasicMaterial(overlay({ color: "#ff4d3d", opacity: 0.85 }));
+  const neonLine = new THREE.MeshBasicMaterial(overlay({ color: ACCENT, opacity: 0.95 }));   // the route you're drawing
+  const ghostOk = new THREE.MeshBasicMaterial(overlay({ color: ACCENT, opacity: 0.45 }));
+  const ghostBad = new THREE.MeshBasicMaterial(overlay({ color: BAD, opacity: 0.85 }));
   const drawGroup = new THREE.Group(); drawGroup.visible = false; scene.add(drawGroup);
   const knobGeo = new THREE.SphereGeometry(0.42, 14, 10), knobs = [];
   const badKnob = new THREE.Mesh(new THREE.SphereGeometry(0.6, 14, 10), ghostBad); badKnob.visible = false; badKnob.renderOrder = 7; drawGroup.add(badKnob);
@@ -3823,7 +3992,7 @@ void groundOverlay(inout vec3 col) {
     if (rt) disposeRouteVisual(rt); else { rt = { user: true, key: "user" }; routes.push(rt); }
     let cost = 0;
     for (let k = 1; k < idx.length; k++) cost += stepCost(idx[k - 1], idx[k]);
-    Object.assign(rt, { name: "Your route", color: NEON_CSS, found: true, cost, nodes: null, ms: null, peak: null,
+    Object.assign(rt, { name: "Your route", color: FRIEND, found: true, cost, nodes: null, ms: null, peak: null,
       idx, cells: draw.cells.map(c => c.slice()), explored: [], stats: statsOf(idx) });
     buildRouteVisual(rt, 0.55, densePts(draw.clicks, 0.55));
     renderBoard(); refreshLayers(); drawMapLayer();
@@ -4043,10 +4212,7 @@ void groundOverlay(inout vec3 col) {
   };
 
   // ---------------------------------------------------------------- more paths: 20 optional preset routes per map
-  // 20 colours kept clear of the planners' orange, blue, magenta, red and grey and the dashed white
-  const PATH_COLORS = ["#33d6e6", "#a07cff", "#ff6fb1", "#22b8a0", "#ffd84a", "#5468ff", "#c6f36b", "#d4b3ff", "#ff9b85", "#9ff5d0",
-                       "#00a0c8", "#7a3cff", "#ffa6d6", "#0f8f6f", "#e3ef4f", "#9aa8ff", "#e48cff", "#ffc29e", "#4fd3a0", "#ff4f7b"];
-  const pathColor = i => PATH_COLORS[i % PATH_COLORS.length];
+  // added paths are thin grey lines with grey tags; the one being driven or flown is ours, in blue
   const NOTE_PATHS_GROUND = "Tick a path to draw its quickest route over the hills; the first one starts the rover. Drive sends the rover along a path and races the planners on it. Times: quickest route vs the shortest route, which ignores the hills.";
   const NOTE_PATHS_AIR = "Tick a path to draw its stealth flight; the first one starts the drone. Fly sends the drone along a path and races the stealth and direct flights on it. Times: the stealth flight, then seconds in a tower's sight, stealth vs direct.";
   const moreBtn = $("more-btn"), pathsPanel = $("paths"), pathsList = $("paths-list");
@@ -4086,14 +4252,14 @@ void groundOverlay(inout vec3 col) {
     if (k < want.length) airPaths.timer = setTimeout(airPathsPump, 16);
   }
   function drivenPreset() { return parked || !MAP ? -1 : MAP.presets.findIndex(p => sameCell(p.start, START) && sameCell(p.goal, GOAL)); }
-  function buildExtras() {                          // a coloured line, end rings and a label for every added path
+  function buildExtras() {                          // a grey line, end rings and a tag for every added path (the driven one blue)
     if (extraGroup) { scene.remove(extraGroup); disposeTree(extraGroup); }
     extraGroup = new THREE.Group();
     extraGroup.visible = !plan.mode;
     const driven = drivenPreset();
     if (air.on) airPathsKick();
     for (const i of extraOn) {
-      const p = MAP.presets[i], color = pathColor(i), focus = i === driven;
+      const p = MAP.presets[i], focus = i === driven, color = focus ? FRIEND : ROUTE;
       let pts = [];
       if (air.on) {                                 // the stealth flight; not flown yet, it's drawn when it arrives
         const f = airPathFlights(i);
@@ -4101,17 +4267,17 @@ void groundOverlay(inout vec3 col) {
         pts = f.stealth.pts;
       } else for (let k = 0; k < p.path.length; k += 2) pts.push(new THREE.Vector3(toX(p.path[k + 1]), hAt(p.path[k], p.path[k + 1]) + 0.35, toZ(p.path[k])));
       // drawn before the raced routes (renderOrder 4 < 4.5 / 5) so those stay on top where lines cross
-      const mat = new THREE.MeshBasicMaterial({ color, transparent: true, depthWrite: false }); mat.color.convertSRGBToLinear();
+      const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: focus ? 1 : 0.62, depthWrite: false }); mat.color.convertSRGBToLinear();
       const curve = new THREE.CatmullRomCurve3(pts, false, "centripetal");
-      for (const [lod, radius] of [["near", focus ? 0.16 : 0.12], ["far", focus ? 0.32 : 0.2]]) {   // thin up close, thicker far away
+      for (const [lod, radius] of [["near", focus ? 0.16 : 0.08], ["far", focus ? 0.32 : 0.14]]) {   // thin up close, thicker far away
         const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, pts.length * 2, radius, RADIAL, false), mat);
         tube.userData.lod = lod; tube.userData.focus = focus; tube.renderOrder = focus ? 4.2 : 4;
         tube.visible = lod === (farView ? "far" : "near");
         extraGroup.add(tube);
       }
       if (focus) continue;                          // the path being driven: its START and FINISH flags mark the ends
-      for (const cell of [p.start, p.goal]) extraGroup.add(groundRing(toX(cell[1]), toZ(cell[0]), 0.75, 1.15, color, 0.95));
-      const lab = labelSprite(`P${i + 1}`, color, "#1b1a14", 128);
+      for (const cell of [p.start, p.goal]) extraGroup.add(groundRing(toX(cell[1]), toZ(cell[0]), 0.75, 1.0, color, 0.7));
+      const lab = labelSprite(`P${i + 1}`, "rgba(13, 15, 18, 0.82)", "#c9ced3", 128, "rgba(143, 150, 157, 0.75)", true);
       lab.position.set(toX(p.start[1]), hAt(p.start[0], p.start[1]) + 1.6, toZ(p.start[0]));
       extraGroup.add(lab);
     }
@@ -4147,7 +4313,7 @@ void groundOverlay(inout vec3 col) {
           time = `${fmtTime(st.cost)}<span class="paths-dist"> · ${st.seenS.toFixed(1)}${di.found ? ` vs ${di.seenS.toFixed(1)}` : ""} s</span>`;
         }
       }
-      li.innerHTML = `<label><input type="checkbox" data-i="${i}"${extraOn.has(i) ? " checked" : ""}><i style="background:${pathColor(i)}"></i>`
+      li.innerHTML = `<label><input type="checkbox" data-i="${i}"${extraOn.has(i) ? " checked" : ""}>`
         + `<b>P${i + 1}</b><span>${p.name}</span></label>`
         + `<span class="paths-time">${time}</span>`
         + `<button class="chip" data-drive="${i}">${air.on ? (active ? "Flying" : "Fly") : (active ? "Driving" : "Drive")}</button>`;
@@ -4202,7 +4368,7 @@ void groundOverlay(inout vec3 col) {
   let mapIdx = -1;
   const mapBtns = SCENE.maps.map((m, i) => {
     const b = document.createElement("button");
-    b.innerHTML = `<i style="background:${THEMES[m.key].swatch}"></i>${m.name}`;
+    b.textContent = m.name;
     b.setAttribute("aria-pressed", "false");
     b.onclick = () => { if (i !== mapIdx) loadMap(i, true); };
     $("maps").appendChild(b);
@@ -4218,7 +4384,7 @@ void groundOverlay(inout vec3 col) {
     sensor.blocks = []; senseClear(); buildBlocks();  // roadblocks belong to a trip on this map: none on the next one
     mapIdx = i; MAP = SCENE.maps[i]; THEME = THEMES[MAP.key];
     R = MAP.rows; C = MAP.cols; H = MAP.heights; SURF = MAP.surface; OBS = MAP.obstacle;
-    OVER.uGrid.value.set(C, R);
+    OVER.uGrid.value.set(C, R); OVER.uContour.value.set(1, MAP.sea != null ? MAP.sea : -1e4);
     SCOST = MAP.surfaces.map(s => s.cost);
     hMin = Infinity; hMax = -Infinity;
     for (const h of H) { if (h < hMin) hMin = h; if (h > hMax) hMax = h; }
@@ -4318,7 +4484,7 @@ void groundOverlay(inout vec3 col) {
     },
     chase() {
       setMode("chase");
-      tourSay(`Tour · ${MAP.name} · chase camera`, `The same drive from just behind the rover. Green ring: where it's heading next.`);
+      tourSay(`Tour · ${MAP.name} · chase camera`, `The same drive from just behind the rover. Blue ring: where it's heading next.`);
     },
     sensor() {
       if (sensor.range !== 5) SN.ranges.find(b => b.dataset.range === "5").click();
@@ -4339,7 +4505,7 @@ void groundOverlay(inout vec3 col) {
     },
     sensorChase() {
       setMode("chase");
-      tourSay(`Tour · ${MAP.name} · D* Lite, 5 m sensor`, `Red: a plan that just broke. D* Lite repairs only what the new ground changed, instead of planning again from scratch.`);
+      tourSay(`Tour · ${MAP.name} · D* Lite, 5 m sensor`, `Amber: a plan that just broke. D* Lite repairs only what the new ground changed, instead of planning again from scratch.`);
     },
     overview() {
       stopReplay();
@@ -4354,13 +4520,13 @@ void groundOverlay(inout vec3 col) {
     air() {
       setAir(true, true);
       setMode("chase");
-      tourSay(`Tour · ${MAP.name} · the air route`, `Now a drone with one red eye flies the same trip. The watchtowers see ${AIRC.sight} m, but not through hills, so the stealth route flies low behind them. A red line: a tower that sees it.`);
+      tourSay(`Tour · ${MAP.name} · the air route`, `Now our drone, UAV-01, flies the same trip. The watchtowers (red diamonds) see ${AIRC.sight} m, but not through hills, so the stealth route flies low behind them. A red line: a tower that sees it.`);
     },
     airOverview() {
       setMode("course");
       if (!showAll) $("t-routes").click();
       const st = routes.find(r => r.key === "stealth" && r.found), di = routes.find(r => r.key === "direct" && r.found);
-      if (st && di) tourSay(`Tour · ${MAP.name} · stealth vs direct`, `The stealth flight is seen for <b>${st.seenS.toFixed(1)} s</b>, the direct one for ${di.seenS.toFixed(1)} s, at the price of <b>${pct(st.cost, di.cost)}</b> more flight time. Red ground: the towers see even a low flight.`);
+      if (st && di) tourSay(`Tour · ${MAP.name} · stealth vs direct`, `The stealth flight (solid) is seen for <b>${st.seenS.toFixed(1)} s</b>, the direct one (dashed) for ${di.seenS.toFixed(1)} s, at the price of <b>${pct(st.cost, di.cost)}</b> more flight time. Red ground: the towers see even a low flight.`);
     },
     next() { tour.k = (tour.k + 1) % TOUR_MAPS.length; tour.t = -1e-9; tour.step = 0; },   // on to the next map
   };
@@ -4394,7 +4560,7 @@ void groundOverlay(inout vec3 col) {
   }
   tourBtn.onclick = () => (tour ? stopTour() : startTour(MAP && MAP.key));
   airBtn.className = "air-btn"; airBtn.id = "air-btn"; airBtn.setAttribute("aria-pressed", "false"); airBtn.textContent = "✈ Air";
-  airBtn.title = "Air route: a drone with one red eye flies to the finish out of the watchtowers' sight";
+  airBtn.title = "Air route: our drone flies to the finish out of the watchtowers' sight";
   $("maps").insertBefore(airBtn, tourBtn);
   airBtn.onclick = () => setAir(!air.on);
   $("tour-stop").onclick = stopTour;
@@ -4452,7 +4618,7 @@ void groundOverlay(inout vec3 col) {
     RP.bar.hidden = false; RP.labels.hidden = false; RP.play.textContent = "Pause";
     Object.assign(MODES.replay, replayPose());
     const w = clamp(MODES.replay.dist * 0.0045, 0.22, 1.1);   // a line that reads from where the camera is
-    replay.sides.forEach(sd => { if (sd.rt.found) { sd.line = planLine(sd.rt.idx, "#ffffff", w, true); sd.line.visible = false; } });
+    replay.sides.forEach(sd => { if (sd.rt.found) { sd.line = planLine(sd.rt.idx, ACCENT, w, true); sd.line.visible = false; } });
     setMode("replay"); easeView(-1);
     refreshLayers(); replayHUD();
     return true;
@@ -4503,7 +4669,7 @@ void groundOverlay(inout vec3 col) {
     replay.sides.forEach((sd, k) => {
       const el = RP.lab[k], rt = sd.rt, n = Math.min(rt.nodes, Math.floor(replay.step));
       const status = !sd.done ? "searching…" : rt.found ? `route <b>${fmtTime(rt.cost)}</b>` : "no route";
-      el.innerHTML = `<span class="rp-name"><span class="swatch" style="background:${rt.color}"></span>${rt.name}</span>`
+      el.innerHTML = `<span class="rp-name"><span class="swatch lit"></span>${rt.name}</span>`
         + `<span class="rp-count"><b>${n.toLocaleString()}</b> cells searched · ${status}</span>`;
       el.style.left = `${across ? k * W / 2 + 16 : 16}px`;
       el.style.top = `calc(${across ? 14 : k * Hh / 2 + 14}px + ${k && !across ? "0px" : "env(safe-area-inset-top, 0px)"})`;
@@ -4664,6 +4830,89 @@ void groundOverlay(inout vec3 col) {
   addEventListener("keydown", ev => {
     if ((ev.key === "f" || ev.key === "F") && !ev.metaKey && !ev.ctrlKey && !ev.altKey && !(ev.target instanceof HTMLInputElement || ev.target instanceof HTMLSelectElement)) fpsEl.hidden = !fpsEl.hidden;
   });
+
+  // ---------------------------------------------------------------- the drone camera's read-outs (Drone view)
+  // Like a drone feed on a helmet display: a compass strip of where the camera looks, with the rover or drone (blue),
+  // the finish (off-white) and the watchtowers (red) at their bearings, and a tape of the camera's height above the
+  // ground. Thin off-white lines over a dark edge, so they read on bright and dark ground alike.
+  const HUDX = { compass: $("hud-compass"), alt: $("hud-alt"), ccv: $("hud-compass-cv"), acv: $("hud-alt-cv") };
+  const HUD_INK = "rgba(240, 237, 229, 0.92)", HUD_EDGE = "rgba(0, 0, 0, 0.6)";
+  function hudCanvas(cv) {                          // size the canvas to its box at the screen's density; draw in CSS pixels
+    const r = cv.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1), w = Math.round(r.width * d), h = Math.round(r.height * d);
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+    const g = cv.getContext("2d"); g.setTransform(d, 0, 0, d, 0, 0); g.clearRect(0, 0, r.width, r.height);
+    return [g, r.width, r.height];
+  }
+  function edged(g, draw, w) {                      // a line twice: a dark edge under the light line
+    g.lineWidth = w + 2.2; g.strokeStyle = HUD_EDGE; draw(); g.stroke();
+    g.lineWidth = w; g.strokeStyle = HUD_INK; g.stroke();
+  }
+  const headingOf = (dx, dz) => (Math.atan2(dx, -dz) * 180 / Math.PI + 360) % 360;   // 0 = north (up the map), 90 = east
+  function drawHud() {
+    const on = mode === "drone" && !plan.mode && !replay.on && !!MAP;
+    if (HUDX.compass.hidden === on) { HUDX.compass.hidden = HUDX.alt.hidden = !on; }
+    if (!on) return;
+    // the compass strip: 120 degrees across, a tick every 5, numbers every 30, the heading boxed in the middle
+    const [g, W, Hh] = hudCanvas(HUDX.ccv), hdg = headingOf(controls.target.x - camera.position.x, controls.target.z - camera.position.z);
+    const span = 120, ppd = W / span, cx = W / 2, base = Hh - 11;   // box and caret on top, numbers, ticks, then the marks
+    const xOf = a => cx + wrapPi((a - hdg) * Math.PI / 180) * 180 / Math.PI * ppd;
+    g.font = `500 10.5px ${FONT_NUM}`; g.textAlign = "center"; g.textBaseline = "alphabetic"; g.lineCap = "butt";
+    for (let a = Math.ceil((hdg - span / 2) / 5) * 5; a <= hdg + span / 2; a += 5) {
+      const x = xOf(a), aa = ((a % 360) + 360) % 360, len = aa % 30 === 0 ? 9 : aa % 10 === 0 ? 6 : 3.5;
+      g.globalAlpha = Math.max(0, 1 - Math.pow(Math.abs(x - cx) / (W / 2), 3));
+      edged(g, () => { g.beginPath(); g.moveTo(x, base); g.lineTo(x, base - len); }, 1.2);
+      if (aa % 30 === 0) {
+        const label = { 0: "N", 90: "E", 180: "S", 270: "W" }[aa] || String(aa).padStart(3, "0");
+        g.font = aa % 90 === 0 ? `700 11.5px ${FONT_WORD}` : `500 10px ${FONT_NUM}`;
+        g.lineWidth = 3; g.strokeStyle = HUD_EDGE; g.strokeText(label, x, base - 12); g.fillStyle = HUD_INK; g.fillText(label, x, base - 12);
+      }
+    }
+    g.globalAlpha = 1;
+    edged(g, () => { g.beginPath(); g.moveTo(cx - W * 0.42, base + 0.5); g.lineTo(cx + W * 0.42, base + 0.5); }, 1);
+    const mark = (x, z, color, shape) => {          // something at its bearing, under the strip
+      const px = xOf(headingOf(x - camera.position.x, z - camera.position.z));
+      if (px < 6 || px > W - 6) return;
+      g.globalAlpha = Math.max(0.25, 1 - Math.pow(Math.abs(px - cx) / (W / 2), 3));
+      g.beginPath();
+      if (shape === "diamond") { g.moveTo(px, base + 1); g.lineTo(px + 4, base + 5); g.lineTo(px, base + 9); g.lineTo(px - 4, base + 5); }
+      else if (shape === "square") g.rect(px - 3, base + 2, 6, 6);
+      else { g.moveTo(px, base + 1); g.lineTo(px + 4.5, base + 8.5); g.lineTo(px - 4.5, base + 8.5); }
+      g.closePath(); g.lineWidth = 2.4; g.strokeStyle = HUD_EDGE; g.stroke(); g.fillStyle = color; g.fill();
+    };
+    if (air.on && airspace) airspace.towers.forEach(([r, c]) => mark(toX(c), toZ(r), HOSTILE_FILL, "diamond"));
+    if (GOAL) mark(toX(GOAL[1]), toZ(GOAL[0]), ACCENT, "square");
+    const vp = air.on ? air.drone.group.position : rover.group.position;
+    mark(vp.x, vp.z, FRIEND, "tri");
+    g.globalAlpha = 1;
+    const box = `${String(Math.round(hdg) % 360).padStart(3, "0")}°`;   // the heading, boxed, over a caret
+    g.font = `600 11.5px ${FONT_NUM}`; const bw = g.measureText(box).width + 14;
+    g.fillStyle = "rgba(10, 12, 15, 0.78)"; g.fillRect(cx - bw / 2, 1, bw, 17);
+    g.lineWidth = 1; g.strokeStyle = HUD_INK; g.strokeRect(cx - bw / 2 + 0.5, 1.5, bw - 1, 16);
+    g.fillStyle = HUD_INK; g.textBaseline = "middle"; g.fillText(box, cx, 10);
+    g.beginPath(); g.moveTo(cx - 4, 19); g.lineTo(cx + 4, 19); g.lineTo(cx, 24); g.closePath(); g.fill();
+    // the altitude tape: the camera's height above the ground, 40 m of tape, numbers every 5 m
+    const [a, AW, AH] = hudCanvas(HUDX.acv), alt = Math.max(0, camera.position.y - groundH(camera.position.x, camera.position.z));
+    const ppm = (AH - 20) / 40, cy = AH / 2 + 6, tx = AW - 14;
+    a.font = `700 9px ${FONT_WORD}`; a.textAlign = "right"; a.textBaseline = "middle";
+    a.lineWidth = 3; a.strokeStyle = HUD_EDGE; a.strokeText("ALT", tx + 4, 6); a.fillStyle = HUD_INK; a.fillText("ALT", tx + 4, 6);
+    a.save(); a.beginPath(); a.rect(0, 14, AW, AH - 14); a.clip();
+    edged(a, () => { a.beginPath(); a.moveTo(tx + 0.5, 16); a.lineTo(tx + 0.5, AH - 2); }, 1);
+    for (let m = Math.floor(alt - 22); m <= alt + 22; m++) {
+      if (m < 0) continue;
+      const y = cy - (m - alt) * ppm, len = m % 5 === 0 ? 8 : 4;
+      a.globalAlpha = Math.max(0, 1 - Math.pow(Math.abs(y - cy) / (AH / 2), 3));
+      edged(a, () => { a.beginPath(); a.moveTo(tx, y); a.lineTo(tx - len, y); }, 1.1);
+      if (m % 10 === 0) { a.font = `500 10px ${FONT_NUM}`; a.lineWidth = 3; a.strokeStyle = HUD_EDGE; a.strokeText(String(m), tx - 12, y); a.fillStyle = HUD_INK; a.fillText(String(m), tx - 12, y); }
+    }
+    a.restore(); a.globalAlpha = 1;
+    const val = alt.toFixed(0), vw = 44;            // the reading, boxed, pointing at the tape
+    a.fillStyle = "rgba(10, 12, 15, 0.82)"; a.beginPath(); a.moveTo(tx - 2, cy); a.lineTo(tx - 8, cy - 11); a.lineTo(tx - 8 - vw, cy - 11);
+    a.lineTo(tx - 8 - vw, cy + 11); a.lineTo(tx - 8, cy + 11); a.closePath(); a.fill();
+    a.lineWidth = 1; a.strokeStyle = HUD_INK; a.stroke();
+    a.font = `600 12.5px ${FONT_NUM}`; a.fillStyle = HUD_INK; a.textAlign = "center"; a.fillText(val, tx - 8 - vw / 2, cy + 0.5);
+    a.font = `600 8.5px ${FONT_WORD}`; a.textAlign = "right"; a.lineWidth = 3; a.strokeStyle = HUD_EDGE;
+    a.strokeText("M AGL", tx - 8, cy + 20); a.fillStyle = HUD_INK; a.fillText("M AGL", tx - 8, cy + 20);
+  }
 
   // ---------------------------------------------------------------- per-frame
   let side = 1;
@@ -4835,19 +5084,27 @@ void groundOverlay(inout vec3 col) {
     } else placeSun(0, 0, C * 0.75);
     updateSky(t);
 
-    // 5. map and telemetry
+    // 5. map, tags and telemetry
     if (!plan.mode && !replay.on) drawMinimap(P);
     senseTick(dt, t);
+    const tagsOn = !plan.mode && !replay.on;        // callsign tags stay out of the planner and the search replay
+    roverTag.sprite.visible = tagsOn && !air.on; air.drone.tag.sprite.visible = tagsOn && air.on;
+    air.list.forEach(tw => { tw.tag.sprite.visible = tagsOn; });
+    if (!air.on) roverTag.sprite.position.set(P.x, gy + 1.45, P.z);
+    drawHud();
     G.bar.style.width = (driving && total ? simT / total * 100 : 0) + "%";
     if ((hudT += dt) > 0.1) {
       hudT = 0;
+      const spd = playing && driving && simT < total ? mps : 0;
+      if (air.on) air.drone.tag.set(current.park ? "LANDED" : `${(P.y - gy).toFixed(1)} m AGL · ${spd.toFixed(1)} m/s`);
+      else roverTag.set(current.park ? "PARKED" : `${spd.toFixed(1)} m/s`);
       G.time.textContent = driving ? `${fmtTime(simT)} / ${fmtTime(total)}` : "—";
       G.dist.textContent = s.toFixed(0);
       if (air.on) {                                 // height above the ground, climb, and whether a tower sees it
         G.elev.textContent = (current.park ? 0 : P.y - gy).toFixed(1);
         G.grade.textContent = (current.park ? 0 : T.y / Math.max(1e-6, Math.hypot(T.x, T.z)) * 100).toFixed(0);
         G.surf.textContent = current.park ? "Landed" : air.seenNow ? "Seen" : "Hidden";
-        G.surf.className = air.seenNow ? "surf-bad" : "surf-good";
+        G.surf.className = current.park ? "" : air.seenNow ? "sight-seen" : "sight-hidden";
       } else {
       G.elev.textContent = gy.toFixed(1);
       G.grade.textContent = (grade * 100).toFixed(0);
