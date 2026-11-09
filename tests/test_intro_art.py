@@ -1,5 +1,7 @@
 import re
 
+import pytest
+
 from robotnav.intro_art import BISON, COLOURS, FLY, HOIST, STRIPE, UNION_H, UNION_W, flag_svg, flags_svg, star_centres
 
 
@@ -38,11 +40,22 @@ def test_vertical_flag_keeps_the_union_top_left():
     assert union and float(union.group(1)) < float(union.group(2))     # 7 stripes wide, 0.76 of the width tall
 
 
-def test_bison_badge_is_a_round_webp_with_alpha():
+def test_bison_badge_is_a_webp_with_alpha():
     data = BISON.read_bytes()
     assert data[:4] == b"RIFF" and data[8:12] == b"WEBP" and data[12:16] == b"VP8X"
     assert data[20] & 0x10                                              # it has an alpha channel
     w = 1 + int.from_bytes(data[24:27], "little")
     h = 1 + int.from_bytes(data[27:30], "little")
-    assert w == h == 900                                                # a round badge; the viewer's <img> says 900 x 900
+    assert w == h == 900                                                # the viewer's <img> says 900 x 900
     assert len(data) < 120_000
+
+
+def test_bison_badge_is_shield_shaped():
+    Image = pytest.importorskip("PIL.Image")
+    alpha = Image.open(BISON).getchannel("A")
+    assert alpha.getpixel((450, 450)) == 255                            # solid in the middle
+    assert alpha.getpixel((450, 60)) == 255 and alpha.getpixel((450, 850)) == 255   # flat top, down to the point
+    for corner in ((10, 10), (889, 10), (10, 889), (889, 889), (200, 820), (700, 820)):
+        assert alpha.getpixel(corner) == 0                              # clear around it, the bottom tapering in
+    left, top, right, bottom = alpha.getbbox()
+    assert right - left < bottom - top                                  # taller than it is wide

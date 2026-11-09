@@ -293,8 +293,8 @@ input[type=range] { accent-color: var(--accent); width: 84px; }
 .hudx canvas { display: block; width: 100%; height: 100%; }
 @media (max-width: 760px) { .hudx { grid-column: 1; } .compass { width: 100%; height: 54px; } .alt-tape { height: min(170px, 40%); width: 64px; } }
 /* The intro: BRUBUS in heavy, flat off-white type, like a poster, over a blacked-out US flag that is flat, in greys
-   only, and fills the screen (hung vertically on a portrait screen); under it a round badge holds a muscular bison in
-   black chrome, charging toward the screen. The word is revealed left to right behind a hard edge, the badge grows
+   only, and fills the screen (hung vertically on a portrait screen); under it the badge, a polished silver shield with
+   a bison's head on black enamel. The word is revealed left to right behind a hard edge, the badge grows
    toward the viewer, then the word wipes away, the badge rushes past and the black lifts. The wipe is a mask moved by
    one registered property (--reach); without @property the word simply appears. */
 @property --reach { syntax: "<length-percentage>"; inherits: false; initial-value: 0px; }
@@ -542,8 +542,8 @@ const SCENE = /*__SCENE__*/null;
   const tapWord = coarse ? "Tap" : "Click";
 
   // ---------------------------------------------------------------- the intro: BRUBUS over a blacked-out flag
-  // The page opens on the word BRUBUS in flat off-white poster type over a blacked-out flag, with a black-metal bison
-  // charging underneath; the word wipes away, the bison rushes past and the black lifts. Time stands still
+  // The page opens on the word BRUBUS in flat off-white poster type over a blacked-out flag, with the silver bison
+  // shield underneath; the word wipes away, the shield rushes past and the black lifts. Time stands still
   // underneath until then (the map is built and drawn meanwhile, which hides the loading), so the opening fly-in, a
   // tour or a link's drive starts as the black lifts. A click, tap or key skips it; ?intro=0 turns it off.
   // Automated browsers (tests, screenshots) and the frame-rate benchmark skip it, unless ?intro=1.
