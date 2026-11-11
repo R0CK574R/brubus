@@ -14,6 +14,7 @@ from pathlib import Path
 import numpy as np
 
 from .airspace import AIR, place_towers
+from .sensing import SENSE
 from .intro_art import bison_uri, flags_svg
 from .terrain import SHORTEST_TIE, Terrain, preset_routes
 
@@ -56,7 +57,7 @@ def write_viewer(maps: list[Terrain], out: str | Path, scenes: list[dict] | None
     Pass `site_url` (where the page will be hosted, ending in "/") to add link-preview tags, so a shared
     link shows the title, a description and social.png from that address.
     """
-    scene = dict(cost=dict(uphill=maps[0].uphill_penalty, cell=maps[0].cell_size, short_tie=SHORTEST_TIE), air=AIR,
+    scene = dict(cost=dict(uphill=maps[0].uphill_penalty, cell=maps[0].cell_size, short_tie=SHORTEST_TIE), air=AIR, sense=SENSE,
                  maps=scenes if scenes is not None else [map_scene(t) for t in maps])
     body = (TEMPLATE.read_text().replace("/*__SCENE__*/null", json.dumps(scene, separators=(",", ":")))
             .replace("<!--__FLAG__-->", flags_svg()).replace("__BISON_URI__", bison_uri()))

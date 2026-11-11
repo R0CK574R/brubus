@@ -15,7 +15,8 @@ And the rover can drive **seeing only a few metres around it**, re-planning with
 discovers the hills, the water and any roadblock you drop in its way. Press **✈ Air** and our drone,
 UAV-01, flies to the finish through the sky instead, keeping **out of the watchtowers' sight** behind
 the hills. Press **▣ Console** and the same map becomes a small **mission-planning system**: you task the
-tank and the drone, compare three plans, approve one, watch it run on a timeline and get a report.
+tank and the drone, weigh three plans by time and by the **risk of being detected**, approve one, and watch it
+run while the towers' **Kalman-filter tracks** show where they think your vehicles are.
 
 Python generates the maps and picks the routes. The code that decides every route exists three times:
 in Python (the reference), in C++ (a core 27 to 68 times faster, with a command-line tool and a Python
@@ -125,7 +126,7 @@ Run these from the same terminal, with the virtual environment active.
 | `python main.py parity` | The C++ core against Python on all 60 preset trips: identical results, and how much faster (about 3 minutes) |
 | `python main.py explore-bench` | Every preset at 5, 10 and 20 m: time lost to not knowing, D\* Lite's work against A\* from scratch (about a minute) |
 | `python main.py terrain-bench` | Hills, slope limit and obstacle sweep (about 25 seconds) |
-| `python -m pytest -q` | Run the 218 tests (30 of them hold the C++ core against Python; skipped until it's built) |
+| `python -m pytest -q` | Run the 225 tests (30 of them hold the C++ core against Python; skipped until it's built) |
 | `python main.py demo`, `python main.py benchmark` | The original 2D grid version |
 
 `python main.py course` writes the viewer twice: `output/course_3d.html` to open yourself, and
@@ -274,58 +275,103 @@ headless browser on every map.
 
 ## The operator console
 
-![The operator console on the grassland: the entity list and tasks on the left, UGV-01 selected on the right (seen by TWR-4, on a balanced plan, one re-plan), the map with the towers' sight domes in the middle, and the timeline and event log along the bottom](docs/console.png)
+![The operator console on the grassland: the entity list and tasks on the left, UAV-01 selected on the right with a confirmed hostile track on it, the map with the towers' sight domes in the middle, and the timeline and event log along the bottom](docs/console.png)
 
 Press **▣ Console** (next to the map buttons, or add `#ops` to the address) and the map is run as a
 mission. Our two vehicles, the tank UGV-01 and the drone UAV-01, and the hostile watchtowers become
 **entities** in a list with their status, grid position (metres east and north), heading and speed.
 Select one (click its row, click it on the map, or press its number) and the panel on the right shows
-the rest: height above ground, which tower sees it, and the task it's on.
+the rest: height above ground, which towers have it in view, the track the towers hold on it, and its
+task.
 
 **Tasking.** Select a vehicle and press **T**. The camera rises to a top-down map; click where it should
-go, and set limits if you want them: how many seconds it may be **seen** and how soon it must
-**arrive**. The console answers with three plans side by side:
+go, and set limits if you want them: the **risk of detection** you'll accept and how soon it must
+**arrive**. The console answers with three plans side by side, each with its time, distance and risk:
 
-| Plan | Pays, per second in a tower's sight | What you get |
-|---|---|---|
-| Fastest | 0 s | The quickest route, whatever sees it |
-| Balanced | 2 s | Gives up a little time to cut most of the exposure |
-| Stealthiest | 10 s | Hides wherever it can (the Stealth A\* of the air route) |
+| Plan | What it is |
+|---|---|
+| Fastest | The quickest route, whatever sees it |
+| Balanced | The trade nearest to "as quick as the fastest and as safe as the stealthiest" |
+| Stealthiest | The safest route the planner finds, however long |
 
-All three are the same A\*, each optimal for what it weighs. The table shows each plan's time, distance
-and seconds in sight, and whether it keeps your limits; the fastest plan that does is picked for you,
-and you can pick another. **Approve & send** and the task goes through its life: **sent**, **running**
-once the vehicle acknowledges, then **done**, or **failed** if it arrived over a limit or couldn't
-arrive at all. Here the towers watch the tank too: a ground cell is seen where the line from a tower's
-eye to a metre above it is clear.
+Under the table, a chart of **time against risk** shows every trade the planner found (it runs the same
+A\* for eleven prices on risk, from nothing to 256 s per unit of hazard), with the three plans marked and
+your limits shaded. The fastest plan that keeps the limits is picked for you; you can pick another.
+**Run 1,000 trials** flies or drives the chosen plan a thousand times with the towers' looks left to
+chance and reports how often it was detected, with a 95% interval, next to the plan's own figure.
+**Approve & send** and the task goes through its life: **sent**, **running** once the vehicle
+acknowledges, then **done**, or **failed**: late, no way through, or detected when you set a risk limit.
 
-![Planning a task for the drone: three flights on the top-down map, the fastest in sight for 9.7 s, the balanced one for 3.9 s and the stealthiest for none; with "seen for at most 5 s" the console picks the balanced plan](docs/console-plan.png)
+![Planning a task for the drone: three flights on the top-down map; the fastest runs a 99% risk of detection, the balanced one 31% and the stealthiest none; the chart shows every trade between time and risk, and 1,000 trials put the balanced plan at 34% (31% to 37%)](docs/console-plan.png)
 
 **Timeline and event log.** Everything that happens is logged with a UTC time, the way an operations
-log reads: `07:49:07Z UGV-01 re-planned: roadblock at 047 031, 97 s to go`, `07:49:10Z TWR-4 acquired
-UGV-01`. The timeline above the log has a lane per vehicle with a bar per task, red where a tower had
-it in sight, and a tick per event. **Drag the timeline** (or click a log line) and the map shows that
-moment again: the vehicles go back to where they were, the mission itself waits, and **Live** returns
-to now. Drop a roadblock (**B**) in front of the tank and it notices it from 5 m away and plans again
-from where it stands; if nothing gets past, the task fails and the log says why.
+log reads: `19:11:13Z TWR-1 detected UAV-01 at 7 m (87% a look)`, `19:11:14Z TWR-1 track on UAV-01
+confirmed`, `07:49:07Z UGV-01 re-planned: roadblock at 047 031, 97 s to go`. The timeline above the log
+has a lane per vehicle with a bar per task, amber while it was in a tower's view and red while the
+towers held a track on it, and a tick per event. **Drag the timeline** (or click a log line) and the map
+shows that moment again: the vehicles and the tracks go back to where they were, the mission itself
+waits, and **Live** returns to now. Drop a roadblock (**B**) in front of the tank and it notices it from
+5 m away and plans again from where it stands; if nothing gets past, the task fails and the log says why.
 
 **After-action report.** **Report** (or **R**) puts the mission on one page: how long it took, tasks
-done and failed, a map of where each vehicle went (red where it was seen), time in sight over the
-mission, each task as planned against how it went, and the whole log. It's a self-contained HTML page
-you can download or print.
+done and failed, detections, a map of where each vehicle went (amber in view, red while tracked), each
+task as planned against how it went, and the whole log. It's a self-contained HTML page you can download
+or print.
 
-![The after-action report: duration, tasks, time in sight and re-plans at the top, then the map of the routes taken](docs/console-report.png)
+![The after-action report: duration, tasks, detections and re-plans at the top, then the map of the routes taken](docs/console-report.png)
 
 **Command bar.** **Ctrl+K** (or **⌘K**) lists every action by name; type a few letters and press Enter:
 "task uav", "report", "sel twr-3", "map desert", "demo". The keys: **T** task, **B** roadblock, **R**
 report, **Space** pause, **L** live, **1** to **6** select, **Esc** cancel.
 
-What's checked: a headless browser clicks through all of it (41 checks): a task's fastest and
-stealthiest flights are the direct and stealth flights of the air route to the last bit, a vehicle's
-time and seconds in sight match its plan, a task sent over its limit ends failed, the tank never drives
-through a roadblock, and the replay puts it back where its recording says. The console itself (the
-balanced plan, the towers seeing the tank, tasks and the log) lives in the browser only; the Python
-and C++ planners don't have a counterpart for it yet.
+### Detection, tracks and risk
+
+![A track up close: the drone UAV-01, the tower TWR-1 whose searchlight points at where it thinks the drone is, and the track's 95% ellipse on the ground a couple of metres off the drone's true position](docs/console-track.png)
+
+In the console a tower doesn't simply see or not see. It looks once a second, and each look detects a
+mover in clear view with a probability that falls with range, the textbook figure for one look at a
+fluctuating (Swerling 1) target:
+
+    Pd = Pfa ^ (1 / (1 + SNR)),    SNR = SNR50 × (10 m / range)^4
+
+The signal-to-noise ratio falls with the fourth power of range, as the radar equation says, and SNR50
+is set so that a look detects half the time at 10 m (with a false-alarm setting Pfa of 10⁻⁴). That
+makes 98% a look at 4 m, 74% at 8 m, 27% at 12 m, 4% at 16 m and 0.1% at the 24 m edge. No line of
+sight, no detection (hills and trees mask, as before), and nothing is detected standing still: the
+towers pick out movers.
+
+**Risk a planner can add up.** A place's *hazard* is the rate that matches its Pd, −ln(1 − Pd) per look,
+summed over the towers. The chance of crossing a route undetected is then exp(−hazard added up along
+it), so hazard adds along a path the way time does, and "time + w × hazard" has a shortest path. A\* with
+the usual straight-line estimate finds it (the estimate ignores hazard, so it never overestimates), and
+sweeping w gives every trade between quick and safe that a weighted sum can reach: the line on the chart.
+
+**Tracks.** Each detection is a noisy range (±1.5 m) and bearing (±5°) from its tower. An **extended
+Kalman filter** fuses them, from whichever towers detect, into a track: position and velocity, with a
+covariance that says how sure the towers are. The model is a target at steady velocity shaken by random
+accelerations (1.5 m/s²). Two detections confirm a track; 4 s without one and it is dropped, its
+ellipse swelling while it coasts. On the map the track is its 95% ellipse on the ground with a cross
+at the estimate, and the tower's searchlight follows the *estimate*, not the vehicle: you see where the
+towers think it is next to where it really is.
+
+**What's checked.**
+- `robotnav/sensing.py` is the reference for the detection curve, the hazard, the filter and the
+  confidence interval, with its constants; the page takes the constants from it. `tests/test_sensing.py`
+  checks that hazard adds up to the chance of no detection, that 20,000 simulated crossings agree
+  with the risk figure, that a track beats any single detection (1.7 m against 3.4 m on average) and
+  learns the velocity, and that the filter is honest about its error (the error measured in its own
+  covariance averages 1.7, against 2 for a perfectly tuned filter).
+- A headless browser clicks through the console (53 checks). The page's chance per look, its Kalman
+  filter after six detections, its ellipse and its interval match the Python reference to nine
+  digits. Each plan's risk, recomputed from the towers' chance per look at every step, is the figure
+  shown. Flown 120 times each in the live simulation, the three plans were detected 99%, 36% and 0%
+  of the time against figures of 98.5%, 31% and 0%, inside the 95% intervals; over 200,000 trials the
+  figure and the count agree to a tenth of a percent (26.6% against 26.7%).
+- Also: a detected task with a risk limit ends failed and says which tower, the tank never drives
+  through a roadblock, and the replay puts the vehicles back where the recording says.
+
+The console's planning and tracking run in the browser; the Python module is the reference for the
+sensing arithmetic, not a second planner, and the C++ core doesn't have these yet.
 
 ## The rover
 
@@ -543,6 +589,7 @@ Hand-drawn routes are scored by the same rules in both (`robotnav.terrain.evalua
 | `robotnav/algorithms.py` | BFS, Dijkstra, A*, Weighted A*, Greedy — one shared priority-queue engine |
 | `robotnav/replan.py` | Driving with a limited sensor: D\* Lite, the rover's belief about the terrain, roadblocks, and the A\*-from-scratch comparison |
 | `robotnav/airspace.py` | The air route: flight levels, watchtowers and their lines of sight, the stealth and direct flights |
+| `robotnav/sensing.py` | How the towers detect and track, for the operator console: the chance per look against range (Swerling 1), hazard and route risk, the extended Kalman filter, Wilson's interval; the page takes its constants from here |
 | `robotnav/scene3d.py` | Exports the three maps and their preset paths into the self-contained viewer (and the live demo page, with link previews) |
 | `robotnav/intro_art.py` | The intro's art: draws the blacked-out flag (official proportions, flat, greys only, horizontal and vertical) as SVG and inlines the bison badge |
 | `tools/bison_logo.py` | The badge (`robotnav/assets/bison.webp`): a shield with a bison's head, drawn as outlines, raised into a relief (bevels from exact distances to each outline) and shaded as polished silver in a studio, on black enamel (NumPy, SciPy) |
@@ -553,7 +600,7 @@ Hand-drawn routes are scored by the same rules in both (`robotnav.terrain.evalua
 | `docs/` | The live demo served by GitHub Pages (`index.html`, built by `python main.py course`), its preview image, and the README's pictures |
 | `robotnav/terrain_bench.py` | Sweeps hill height, slope limit and obstacle density |
 | `robotnav/grid.py`, `visualize.py`, `benchmark.py` | Original 2D grid world, plots and benchmark |
-| `tests/` | 218 checks: optimality on every map, the shortest route, all 20 presets per map, the desert's oases, grade limit, water, route rules, D\* Lite (legal routes, optimal repairs, roadblocks), the air route (towers, lines of sight, hiding behind a ridge), the C++ core against Python, map rebuilds, the command line, the page head and link previews, the console look (fonts, map symbols, tags, read-outs), the intro's flag and logo |
+| `tests/` | 225 checks: optimality on every map, the shortest route, all 20 presets per map, the desert's oases, grade limit, water, route rules, D\* Lite (legal routes, optimal repairs, roadblocks), the air route (towers, lines of sight, hiding behind a ridge), the C++ core against Python, map rebuilds, the command line, the page head and link previews, the console look (fonts, map symbols, tags, read-outs), the intro's flag and logo |
 
 ## Findings
 

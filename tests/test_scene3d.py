@@ -36,7 +36,10 @@ def test_viewer_has_the_operator_console(tmp_path):
     page = _page(tmp_path)
     for part in ("ops-ents", "ops-tasks", "ops-tl", "ops-log", "ops-pal", "ops-aar"):   # lists, timeline, log, command bar, report
         assert f'id="{part}"' in page
-    assert '{ key: "balanced", name: "Balanced", w: 2 }' in page                # the three plans' weights
+    assert '{ key: "balanced", name: "Balanced" }' in page and "const OPS_W = [0, 0.5, 1," in page   # three plans from a sweep of weights
+    assert '"sense":{"pfa":0.0001,"r50":10.0' in page and "SCENE.sense" in page   # the sensing constants come from Python
+    for fn in ("function pdAt(", "function ekfPredict(", "function ekfUpdate(", "function wilson(", "function opsTrial("):
+        assert fn in page                                                        # detection, the tracker, the trials
     for status in ("SENT", "RUNNING", "DONE_OK", "DONE_NOT_OK"):                 # a task's life
         assert f'"{status}"' in page
     assert "re-planned: roadblock at" in page and "getUTCHours" in page          # the log's wording and its UTC clock
