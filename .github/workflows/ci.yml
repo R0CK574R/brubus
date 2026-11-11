@@ -19,11 +19,11 @@ jobs:
           - { name: "Linux x86-64, GCC",        os: ubuntu-24.04,     cxx: g++,     python: tests }
           - { name: "Linux x86-64, Clang",      os: ubuntu-24.04,     cxx: clang++, python: parity }
           - { name: "Linux ARM64, GCC",         os: ubuntu-24.04-arm, cxx: g++,     python: parity }
-          - { name: "macOS ARM64, Apple Clang", os: macos-14,         cxx: clang++, python: parity }
+          - { name: "macOS ARM64, Apple Clang", os: macos-latest,     cxx: clang++, python: parity }
           - { name: "Windows x86-64, MSVC",     os: windows-2022,     cxx: "",      python: none }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
       - name: Python packages
@@ -49,7 +49,7 @@ jobs:
     name: Address and undefined-behaviour sanitizers
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Configure
         run: >
           cmake -S cpp -B cpp/build -DROBOTNAV_PYTHON=OFF -DCMAKE_BUILD_TYPE=None -DCMAKE_CXX_COMPILER=clang++
