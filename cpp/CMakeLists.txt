@@ -32,6 +32,9 @@ enable_testing()
 add_executable(robotnav_tests tests/test_core.cpp)
 target_link_libraries(robotnav_tests PRIVATE robotnav_core)
 add_test(NAME core COMMAND robotnav_tests)
+# The same answers on every compiler and processor: the three maps' results, bit for bit, against the kept reference.
+add_test(NAME golden COMMAND ${CMAKE_COMMAND} -DTOOL=$<TARGET_FILE:robotnav> -DMAPS=${CMAKE_CURRENT_SOURCE_DIR}/../maps
+         -DGOLDEN=${CMAKE_CURRENT_SOURCE_DIR}/tests/golden.digest -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/golden.cmake)
 
 # robotnav_cpp: the Python module (pybind11), so Python can run the C++ core and check it against its own.
 option(ROBOTNAV_PYTHON "Build the robotnav_cpp Python module (needs pybind11: pip install pybind11)" ON)

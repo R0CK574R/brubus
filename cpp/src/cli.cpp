@@ -10,6 +10,8 @@
 #include <cmath>
 #include <cctype>
 #include <chrono>
+#include <cstdint>
+#include <cstring>
 #include <cstdarg>
 #include <cstdio>
 #include <iostream>
@@ -106,6 +108,7 @@ const char* kUsage =
     "  explore   drive seeing only a few metres, re-planning with D* Lite\n"
     "  fly       the air route: a drone flies out of the watchtowers' sight\n"
     "  bench     time every planner on every preset trip (one or more map files)\n"
+    "  digest    every result on every preset trip, down to the last bit (to compare builds and machines)\n"
     "\n"
     "options:\n"
     "  --preset N     plan one of the map's preset trips (1-20)\n"
@@ -311,6 +314,52 @@ int fly_cmd(const Args& a, const Map& m) {
     return 0;
 }
 
+// A double's 64 bits, and a hash of a list of cells: nothing rounded, so two builds that print the same digest computed
+// the same thing. cpp/tests/golden.digest holds the digest of the three maps; ctest compares every build with it.
+std::string bits(double x) {
+    std::uint64_t u;
+    std::memcpy(&u, &x, sizeof u);
+    return format("%016llx", static_cast<unsigned long long>(u));
+}
+
+std::string cells_hash(const std::vector<int>& cells) {      // FNV-1a over the cells' bytes, low byte first
+    std::uint64_t h = 1469598103934665603ull;
+    for (const int c : cells)
+        for (int k = 0; k < 4; ++k) {
+            h ^= (static_cast<std::uint32_t>(c) >> (8 * k)) & 0xffu;
+            h *= 1099511628211ull;
+        }
+    return format("%016llx", static_cast<unsigned long long>(h));
+}
+
+int digest(const Args&, const Map& m) {
+    const Airspace air = make_airspace(m);
+    std::printf("map %s %dx%d trips %zu\n", m.theme.c_str(), m.rows, m.cols, m.presets.size());
+    int k = 0;
+    for (const Preset& p : m.presets) {
+        ++k;
+        const int s = p.start, g = p.goal;
+        const std::pair<const char*, SearchResult> searches[] = {
+            {"bfs", bfs(m, s, g)}, {"dijkstra", dijkstra(m, s, g)}, {"astar", astar(m, s, g)},
+            {"weighted", weighted_astar(m, s, g)}, {"greedy", greedy(m, s, g)}, {"shortest", shortest_route(m, s, g)}};
+        for (const auto& [name, r] : searches)
+            std::printf("P%d %s time %s searched %ld peak %ld route %s order %s\n", k, name, bits(r.cost).c_str(),
+                        r.nodes_expanded, r.max_frontier, cells_hash(r.path).c_str(), cells_hash(r.explored).c_str());
+        for (const double range : {5.0, 20.0}) {
+            const SensorRun run = sensor_drive(m, s, g, range);
+            std::printf("P%d dstar-%g time %s work %ld again %ld replans %d sensed %d driven %s\n", k, range,
+                        bits(run.time).c_str(), run.dstar_work, run.astar_work, run.replans, run.sensed,
+                        cells_hash(run.driven).c_str());
+        }
+        for (const bool stealth : {true, false}) {
+            const Flight f = fly(air, s, g, stealth);
+            std::printf("P%d %s time %s seen %s searched %ld voxels %s\n", k, stealth ? "stealth" : "direct",
+                        bits(f.time).c_str(), bits(f.seen).c_str(), f.nodes, cells_hash(f.voxels).c_str());
+        }
+    }
+    return 0;
+}
+
 template <class F>
 double fastest_ms(int repeat, F&& f) {                // best of `repeat` runs, in milliseconds
     double best = kInf;
@@ -362,6 +411,10 @@ int main(int argc, char** argv) {
         std::vector<Map> maps;
         for (const std::string& f : a.files) maps.push_back(load_map(f));
         if (a.command == "bench") return bench(a, maps);
+        if (a.command == "digest") {
+            for (const Map& m : maps) digest(a, m);
+            return 0;
+        }
         if (maps.size() != 1 && a.command != "paths") throw Exit("robotnav " + a.command + " takes one map file");
         if (a.command == "route") return route(a, maps[0]);
         if (a.command == "explore") return explore(a, maps[0]);
@@ -370,7 +423,7 @@ int main(int argc, char** argv) {
             for (const Map& m : maps) paths(a, m);
             return 0;
         }
-        throw Exit("robotnav: unknown command '" + a.command + "' (route, paths, explore, fly or bench)");
+        throw Exit("robotnav: unknown command '" + a.command + "' (route, paths, explore, fly, bench or digest)");
     } catch (const Exit& e) {
         std::fflush(stdout);
         std::fprintf(stderr, "%s\n", e.what());

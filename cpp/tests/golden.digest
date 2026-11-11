@@ -1,0 +1,603 @@
+map grassland 96x96 trips 20
+P1 bfs time 4058aba7473887af searched 3034 peak 113 route 7ed9f5102597f108 order 0f2d53ffc41c1b9a
+P1 dijkstra time 4053963180764f49 searched 3302 peak 239 route 652c4b1f5dbca036 order 5fa0a8213df34d1f
+P1 astar time 4053963180764f49 searched 957 peak 247 route 652c4b1f5dbca036 order 911e8a63f694310b
+P1 weighted time 40559c57b33ed60a searched 205 peak 234 route decb93bb82c20573 order 026169a9ed933562
+P1 greedy time 405b5e8c222067a8 searched 53 peak 122 route 96a928b3275e793b order 96a928b3275e793b
+P1 shortest time 4057a95c160680ba searched 3619 peak 176 route 2f48b1566f16ebce order 438ef610c66b9d43
+P1 dstar-5 time 4059381a0aa97f6c work 2528 again 4547 replans 46 sensed 703 driven ab5a1d97d2337c89
+P1 dstar-20 time 4053963180764f49 work 13089 again 6850 replans 31 sensed 3263 driven 652c4b1f5dbca036
+P1 stealth time 40319ccdc0e2cbf6 seen 0000000000000000 searched 1607 voxels 8b7cfb47b9909433
+P1 direct time 4028c8ea6d4f0f3a seen 4016c3c1c2a5b5d2 searched 1462 voxels 267927c1f92a142c
+P2 bfs time 405e71ce3edd86db searched 4379 peak 197 route d01999774889636f order e81a91ec4ac83b9f
+P2 dijkstra time 4054212b2dfe2aaf searched 4313 peak 313 route d8a7f61a1e0f0a0e order 6bbdcaa4a0a58674
+P2 astar time 4054212b2dfe2aaf searched 1062 peak 295 route d8a7f61a1e0f0a0e order c1c89ac5f77da327
+P2 weighted time 4056402fa94eb04f searched 105 peak 198 route d2aaf4acdeb63358 order 4576e14ef1420b6f
+P2 greedy time 405d524b26e54d73 searched 51 peak 141 route 827a5d6631bd34ef order c6957de9d6485873
+P2 shortest time 405c73041851206d searched 4845 peak 253 route 6278b0b05cfe6724 order 6ce93337f61e8a3b
+P2 dstar-5 time 4055f705b2f1ea4c work 2243 again 3285 replans 49 sensed 707 driven 74ab06b160705721
+P2 dstar-20 time 4054212b2dfe2aaf work 9810 again 4637 replans 30 sensed 2560 driven d8a7f61a1e0f0a0e
+P2 stealth time 4027d6d547bf76a6 seen 3fc999999999999a searched 417 voxels 072c3807b0b6f8f2
+P2 direct time 40279ad93d82a4f1 seen 3fdee6e51ecc2fd7 searched 476 voxels afd36e3cb9b32a14
+P3 bfs time 405636eb10ca85a0 searched 5968 peak 219 route d3655d0d8e86c07e order 07f928e272b7bf5a
+P3 dijkstra time 405423b5d43da478 searched 6377 peak 375 route d71fa9f0af47edb1 order abcb8e7985647fd3
+P3 astar time 405423b5d43da478 searched 1714 peak 313 route d71fa9f0af47edb1 order 255e7e1af3d04d6d
+P3 weighted time 40550ddddb82d737 searched 174 peak 166 route 59b3d7d18d0d6369 order dc3e384b1b48a18f
+P3 greedy time 405af50ab35957d2 searched 54 peak 135 route 605c7898c578366e order a4828d9bd0268894
+P3 shortest time 405dc74d74e3ab37 searched 6301 peak 277 route 7b9de72a558948c9 order 7544b5fe769b1169
+P3 dstar-5 time 405791758187d73e work 2083 again 3942 replans 50 sensed 729 driven 635bb760a8a8c8e6
+P3 dstar-20 time 40545893f7c4f94d work 12937 again 7245 replans 30 sensed 3447 driven c8244e7f424803b9
+P3 stealth time 403075e0ab478e35 seen 3ffee6e51ecc2fd6 searched 1805 voxels fb101668c3db6623
+P3 direct time 40263d3bae25dd0c seen 401b18967af8df38 searched 372 voxels 7fa37b130897ddb2
+P4 bfs time 40608b012443deec searched 8001 peak 267 route e6e30757c6598457 order 4118fa78bb851a77
+P4 dijkstra time 4055ba3543b45418 searched 7738 peak 425 route 0200ae15aec70a47 order 1ba72dd5b30fc350
+P4 astar time 4055ba3543b45418 searched 2168 peak 348 route 0200ae15aec70a47 order 73cab70ec91dfab8
+P4 weighted time 40587c6e496b672b searched 337 peak 297 route 4ad69cb94a7eb4a6 order 77dad609e37732c4
+P4 greedy time 4061f2ed8645bfb7 searched 57 peak 137 route fb7a268da329b2c0 order fb7a268da329b2c0
+P4 shortest time 405e7145ca231b7f searched 7091 peak 353 route a7bd3755bdfdbf4a order 8dbf170d47db8f63
+P4 dstar-5 time 405c06cfec95940b work 2913 again 5139 replans 59 sensed 775 driven a579d03586a9dc21
+P4 dstar-20 time 4055c23856da5118 work 12674 again 9492 replans 39 sensed 3229 driven 8e52edd7407aeb96
+P4 stealth time 403166b29c3d2ca2 seen 3fdee6e51ecc2fd7 searched 4481 voxels fd7d6557f0a60008
+P4 direct time 4027100fd70cb92a seen 401c54d4b8532968 searched 278 voxels fae01e2438fef579
+P5 bfs time 4058c8ad7c0276d3 searched 4760 peak 135 route 07085a21cc07f222 order 83fbdedddac76248
+P5 dijkstra time 4056489b2f2a0d56 searched 4150 peak 281 route 5f234bcf3ba33703 order b70abb091f436702
+P5 astar time 4056489b2f2a0d56 searched 1076 peak 330 route 5f234bcf3ba33703 order 0e443d944f93f917
+P5 weighted time 405798001ceb653d searched 169 peak 203 route 89fa5efef120faee order de97f144f91d3c13
+P5 greedy time 4060d417226eff5f searched 57 peak 126 route 580cae88cbd3080f order 580cae88cbd3080f
+P5 shortest time 405f5a82be528def searched 4247 peak 182 route 2a7f6495eaefd303 order 2adf66f8736cd4e5
+P5 dstar-5 time 4058bb670d26452d work 2837 again 5866 replans 57 sensed 842 driven b087990f464ebbf8
+P5 dstar-20 time 4057515b156b943c work 22156 again 9282 replans 41 sensed 3517 driven 29dd2c55874e8435
+P5 stealth time 40309e032502e2fe seen 0000000000000000 searched 1760 voxels e2fa2814bbf1844f
+P5 direct time 402c8327a11dbf06 seen 40235ae654362d09 searched 1280 voxels a7a12d28ccccfbcf
+P6 bfs time 405c4f99ed84446b searched 2694 peak 108 route e2e5d09dfc06d2c2 order 2225dfa3dc125630
+P6 dijkstra time 4056c11f9cc4b30d searched 3846 peak 233 route 1cc6153fdecd4542 order 9b05935e9b0b986e
+P6 astar time 4056c11f9cc4b30d searched 1940 peak 308 route 1cc6153fdecd4542 order 0f6938366dd028aa
+P6 weighted time 405758cbd4897e35 searched 257 peak 272 route ebd4642f2f7ca363 order 8f6c75cd74078a07
+P6 greedy time 405c5716ca1d024a searched 46 peak 131 route 7d45bf915c45a11e order 7d45bf915c45a11e
+P6 shortest time 405aa53abdd0c552 searched 3273 peak 166 route ef13a3978c6ffa65 order 5e80a8758e5edbda
+P6 dstar-5 time 405bf5cf8b2d46f4 work 3172 again 5875 replans 64 sensed 850 driven 5e2b38553be49501
+P6 dstar-20 time 4056c8e8952d26f5 work 17880 again 8458 replans 35 sensed 3252 driven 1a9bc04bd9fa4f5a
+P6 stealth time 40315a99e14fc036 seen 0000000000000000 searched 4148 voxels ec5b09693c00fd96
+P6 direct time 40285cb42403d091 seen 401a28a652059866 searched 970 voxels d88bf795731a4dbe
+P7 bfs time 405b78c8e3d641fb searched 7342 peak 176 route 2ba8dc5bcb431699 order cee1b997e0d7eb2b
+P7 dijkstra time 40581000b085489d searched 6710 peak 327 route 4541ff3038215b37 order 9d601ddf16170923
+P7 astar time 40581000b085489d searched 2097 peak 439 route 4541ff3038215b37 order 093587e76e80f5fb
+P7 weighted time 405d4436576f9441 searched 272 peak 251 route b9d57c771388c8b0 order d5e4acd51b64f438
+P7 greedy time 405fc81985d29e08 searched 71 peak 153 route 05605a78f5a549da order 589c89eba2996f0b
+P7 shortest time 40603c18b2afb510 searched 6603 peak 253 route 7c1998b530e87a39 order 63968ffbc98719df
+P7 dstar-5 time 405f4ac532e2e698 work 3518 again 8317 replans 70 sensed 983 driven c5e46c664579bd65
+P7 dstar-20 time 40581000b085489d work 19348 again 10364 replans 47 sensed 3772 driven 4541ff3038215b37
+P7 stealth time 403742ad78145afd seen 3fd999999999999a searched 2324 voxels da54c02abddbdebc
+P7 direct time 402c403f5c32e4b0 seen 40188686147fd8c5 searched 778 voxels b54cad1965e4f14a
+P8 bfs time 405f62dce3f81ae2 searched 7673 peak 215 route 162242b034451a18 order 6a76f51ae45b05a0
+P8 dijkstra time 4058ad287d53fef3 searched 7749 peak 349 route 081291331cd4f47e order dc41c8e05d658bbb
+P8 astar time 4058ad287d53fef3 searched 2874 peak 429 route 081291331cd4f47e order 053202489420953a
+P8 weighted time 405bea4d4a8e6fc5 searched 419 peak 348 route 697bf1d36003610d order 694b777157cd8805
+P8 greedy time 4061b5ca9c49ec81 searched 69 peak 157 route 068ffc568e41b1b5 order 39d3ac21cb2b51ec
+P8 shortest time 405d7c64fdb34af7 searched 7231 peak 278 route 7c143d08a8ddff2f order 25f586c778ffd760
+P8 dstar-5 time 405d314547b1f381 work 2920 again 5202 replans 68 sensed 925 driven 34fd34b63da74b73
+P8 dstar-20 time 4058b9c96888627a work 16587 again 10784 replans 48 sensed 3933 driven 9353f475d398d6a5
+P8 stealth time 4030f97f0b64a160 seen 0000000000000000 searched 926 voxels 45d06d2ff0ebdbd6
+P8 direct time 402bafbb0c895664 seen 401643430a3fec63 searched 1462 voxels 14eb7bb163ead23d
+P9 bfs time 405dd99d2cc52408 searched 3306 peak 119 route 12551ddd2516b0dc order 06787298d06f3dac
+P9 dijkstra time 40590b2119767172 searched 4756 peak 255 route 43d03040fd8811a5 order a2e716933942cbaf
+P9 astar time 40590b2119767172 searched 1821 peak 362 route 43d03040fd8811a5 order a986f92370d0c630
+P9 weighted time 405927a8d8702bb7 searched 271 peak 239 route 328c4adf0fa5fab5 order ede6857e6c6fdc44
+P9 greedy time 4061c009de7771d0 searched 59 peak 149 route dd85267fce3c278f order ffbb5f31bb087203
+P9 shortest time 405d7eac5abb98ad searched 3546 peak 178 route 187205de8b23e183 order fce297055dc031c6
+P9 dstar-5 time 405fbff11646841e work 3480 again 5182 replans 65 sensed 830 driven b62d52c8a70cfe08
+P9 dstar-20 time 405ac892ea9f0531 work 17541 again 7837 replans 35 sensed 2162 driven 9795057a56618777
+P9 stealth time 402aa3ee8772b03c seen 3ff7b9b947b30bf6 searched 12650 voxels fd47f273d8ba8bf3
+P9 direct time 402789940255d4b9 seen 401ca3a2148c4378 searched 1056 voxels 4d1aa447930c16f0
+P10 bfs time 405da5b908802ce8 searched 5556 peak 157 route 03ad50d503eedb1b order 085bc40f6386999e
+P10 dijkstra time 40593c6605db574a searched 5139 peak 273 route 352870f5741b7ab4 order 91a0df356a1626c9
+P10 astar time 40593c6605db574a searched 1986 peak 326 route 352870f5741b7ab4 order 06251327201a6b64
+P10 weighted time 405b25a6967a1b9c searched 319 peak 273 route f0843c2737718bae order b2a6fd3e87464e54
+P10 greedy time 405fbaf09e2f8a0b searched 67 peak 129 route 84b5a4a257703418 order 2b980a631fe53ea0
+P10 shortest time 405f480a16297b81 searched 4870 peak 206 route c624dee4135db7dd order ab9801e156868720
+P10 dstar-5 time 405fe915b44e74bb work 3579 again 5480 replans 69 sensed 893 driven 4ed86507f4c65a69
+P10 dstar-20 time 40595e75429ec9d4 work 22422 again 11372 replans 43 sensed 3042 driven 947738505bb8b3a2
+P10 stealth time 4032bacbc60134ce seen 3ff0000000000000 searched 20276 voxels 5de6de8ae73f8f6b
+P10 direct time 402d1e4311bddc73 seen 401f95477b159445 searched 1768 voxels 5f3c51bbc2140f97
+P11 bfs time 40618d93c8e230de searched 3181 peak 113 route 551b2a212c274a21 order 458c7639d7717764
+P11 dijkstra time 405940366e513bca searched 4352 peak 247 route b50b776464d4cd85 order 236337fe732cc392
+P11 astar time 405940366e513bca searched 2100 peak 327 route b50b776464d4cd85 order 0ebd6c1004dfe874
+P11 weighted time 405c73a89e985ece searched 255 peak 279 route d6aa5f5bdaa342db order 8503394b75a601c8
+P11 greedy time 4061481e2df61f03 searched 49 peak 161 route 53b523840f835099 order 53b523840f835099
+P11 shortest time 40616be0ef1ae29a searched 3939 peak 186 route b56234b805a9a0ee order f5f59404e5d1167d
+P11 dstar-5 time 405e70e6cd6e7b3d work 3125 again 5656 replans 57 sensed 814 driven 5497de9f77087500
+P11 dstar-20 time 405a324da03c5598 work 21328 again 10364 replans 42 sensed 3540 driven 7ff11b8b922c9eab
+P11 stealth time 402f977aca208b37 seen 3fc999999999999a searched 8130 voxels 912e9756363e502d
+P11 direct time 402a86d20d46f874 seen 4011c54399ac39a6 searched 976 voxels 845b1ba075ae9c1e
+P12 bfs time 4062e702c03aa222 searched 3381 peak 117 route 3016d44d00b77610 order 54571000d0f9b33a
+P12 dijkstra time 405ab1899f4edea3 searched 3304 peak 203 route 9d27ab7ef7e97db3 order d9105e83cfc50d4d
+P12 astar time 405ab1899f4edea3 searched 1096 peak 214 route 9d27ab7ef7e97db3 order 8ee5319e93eeb94d
+P12 weighted time 405cbd9b747a6077 searched 422 peak 275 route c7c2068cd1f981aa order f6049c251deb4987
+P12 greedy time 40635902215e3b9c searched 61 peak 120 route 51a2416bf77e5e95 order 37357e990664be77
+P12 shortest time 4062565f4dcd8f39 searched 2826 peak 170 route 69a55b61d3c119c3 order b9df8b82326647dd
+P12 dstar-5 time 406409a42f672fd9 work 3316 again 4480 replans 59 sensed 629 driven f9f4753d5fe24b3b
+P12 dstar-20 time 405ab1899f4edea3 work 21001 again 9942 replans 39 sensed 2369 driven 9d27ab7ef7e97db3
+P12 stealth time 4046423755a6e1c8 seen 0000000000000000 searched 28700 voxels 1b044db548d3f706
+P12 direct time 402b650d3c072744 seen 401f546f3915d5f4 searched 1353 voxels aa9d920c1f5a3d9c
+P13 bfs time 4061168ba2c6c95f searched 4458 peak 149 route c3c6fc875ddf1f4b order b31f5584d8d0a269
+P13 dijkstra time 405c7d32d344f942 searched 6230 peak 274 route f5f053ca6f9cf7db order 369115b5a9480093
+P13 astar time 405c7d32d344f942 searched 2761 peak 419 route f5f053ca6f9cf7db order e1dc015a788f2e51
+P13 weighted time 405d8de0f3797b42 searched 246 peak 301 route 2632f17d4a377dd9 order 404d2346bf209f46
+P13 greedy time 4060919b429e5809 searched 48 peak 162 route 5c254b74ba93181a order 5c254b74ba93181a
+P13 shortest time 40611384176160ad searched 5490 peak 242 route 7c44b30c2ff67e54 order bfa9fbb4a2bc51d5
+P13 dstar-5 time 405e853d6676fd9d work 3464 again 6301 replans 58 sensed 850 driven 66d76314354b8a5a
+P13 dstar-20 time 405cd51457b10331 work 26488 again 10213 replans 41 sensed 3718 driven 7152163cd17a9e58
+P13 stealth time 403528792c6ab5e0 seen 3feee6e51ecc2fd7 searched 26454 voxels 01b875c4cb916045
+P13 direct time 402d31bb9bf5a3a9 seen 402125e4d7160935 searched 793 voxels b628b3ce3914c7cb
+P14 bfs time 4062df78c48b5336 searched 5578 peak 148 route ab84ceb495a43d14 order aaaca9de5c764970
+P14 dijkstra time 405d3afa91f091cd searched 5210 peak 296 route 5559636159d445ab order 67daf0c24e4d98ec
+P14 astar time 405d3afa91f091cd searched 1664 peak 251 route 5559636159d445ab order b78c142f420b9170
+P14 weighted time 405f242d1a2ae667 searched 529 peak 403 route 6b5a5423f2245275 order 86bc7e7542607698
+P14 greedy time 4064c1ee44153dfe searched 81 peak 154 route 7e91a17c30fd6d3e order e6aaf74d9ba3a5da
+P14 shortest time 40642daadc62ff40 searched 4531 peak 196 route d1e3e871ce64cfa8 order 806ee6aaee6208fb
+P14 dstar-5 time 4062bb9ca7818dea work 3204 again 4778 replans 71 sensed 852 driven 635b5b0f6eed93ee
+P14 dstar-20 time 405f9e87b5a0290b work 25563 again 14864 replans 54 sensed 2695 driven 8f8cc695e44e761e
+P14 stealth time 402e3b085f1ae605 seen 0000000000000000 searched 945 voxels a657e803c2969963
+P14 direct time 402e3b085f1ae605 seen 0000000000000000 searched 1049 voxels a657e803c2969963
+P15 bfs time 4065a98b979acf4f searched 7380 peak 151 route 621709fbbbcc206f order 46ec0c8ae92e042d
+P15 dijkstra time 4060787dd29addcf searched 7507 peak 310 route 2465a064fe2e56e2 order 63233d09392ecffd
+P15 astar time 4060787dd29addcf searched 2879 peak 501 route 2465a064fe2e56e2 order cb428ff84079ce0b
+P15 weighted time 4061b03f5833d90b searched 225 peak 315 route cce0789c0bf03057 order 7034f96721489ade
+P15 greedy time 4069e22be456b1f3 searched 79 peak 221 route 78f3b66054b74c75 order 189e687bb1547adb
+P15 shortest time 406806e46eb551b8 searched 7617 peak 204 route a407983391f6c304 order 1f2e201e7adc4574
+P15 dstar-5 time 4060d7a94dfb83bb work 4578 again 12533 replans 76 sensed 1056 driven 42af09b1211a9eb6
+P15 dstar-20 time 4060787dd29addcf work 28625 again 12971 replans 61 sensed 3844 driven 2465a064fe2e56e2
+P15 stealth time 4041712c56c87c1a seen 0000000000000000 searched 20172 voxels 305c4809819a6a26
+P15 direct time 403492a94c45e004 seen 402b3ebd852c60dc searched 4864 voxels 7fce73e7e36532e3
+P16 bfs time 4063659a2baadda1 searched 7470 peak 172 route 4c745bfbfbc3941f order e79138e829f5404f
+P16 dijkstra time 4060f2f0a6bd3616 searched 7182 peak 348 route 58118abdf1b90693 order 78015a32b3d3bb97
+P16 astar time 4060f2f0a6bd3616 searched 2427 peak 410 route 58118abdf1b90693 order edfb1f3e927dc0d7
+P16 weighted time 4061980167579b1a searched 453 peak 425 route b5d52cc30635f92d order 62749ca8adea0e9d
+P16 greedy time 4065088055bffeea searched 89 peak 162 route cbf70de27612f712 order 9ef6402d4d1274bd
+P16 shortest time 406448d2de3f5bf1 searched 6496 peak 228 route b00cdb8ed3169117 order 4948f03f6de945a2
+P16 dstar-5 time 40662a22b18aa2d4 work 5043 again 11356 replans 83 sensed 1111 driven 0df8511fe3c03c37
+P16 dstar-20 time 40616af83ec8bb51 work 29664 again 16700 replans 64 sensed 3198 driven 5703a164f64e0019
+P16 stealth time 403948bf13f75ea1 seen 0000000000000000 searched 4465 voxels 39e58da8fa17cec3
+P16 direct time 403384b0a15b957a seen 401a2eadae1fa7b8 searched 2398 voxels 454aa9108a9b8a69
+P17 bfs time 40655d8ee0b86402 searched 8345 peak 159 route 66518c03c03126de order 080e8a2c00be8f25
+P17 dijkstra time 4061d3ae24dd26c3 searched 8038 peak 252 route 7166b5e41622b4f9 order a9768c150786d5d7
+P17 astar time 4061d3ae24dd26c3 searched 4097 peak 552 route 7166b5e41622b4f9 order c440e97e7e4ce5e0
+P17 weighted time 4063b1f17f31f075 searched 222 peak 315 route dbd2b79167ea9de7 order 0283f870c8b7c0d0
+P17 greedy time 40647ef24da96d07 searched 95 peak 199 route 2290f911c9aa60a3 order 231381a9bc2a3ed7
+P17 shortest time 406549e19d207e1d searched 7934 peak 220 route f6c5266c81544d09 order 270ebc31b6c7c6b7
+P17 dstar-5 time 4064076131896403 work 4913 again 10156 replans 92 sensed 1172 driven 682696446dc7a662
+P17 dstar-20 time 4061ee1494e78ae9 work 30583 again 17232 replans 71 sensed 4101 driven baee145e8ab0c3ea
+P17 stealth time 403b4c3c5a85b58f seen 3fe5d9d8f5cc7e52 searched 25186 voxels 55b4812556ddc8f0
+P17 direct time 403401127e4e28d7 seen 4023d2de68afd072 searched 4138 voxels e0f36ff20b1db3e1
+P18 bfs time 4068d5ffe24da002 searched 7465 peak 172 route 7bfde883e81eb392 order 1e3ab2d60be544ed
+P18 dijkstra time 40626e1c27016d69 searched 7519 peak 325 route 4b164a0af206daad order 790b7cdfc1b7067e
+P18 astar time 40626e1c27016d69 searched 3038 peak 478 route 4b164a0af206daad order 3eee4512a3786070
+P18 weighted time 40645446741b5f10 searched 198 peak 355 route 0ec2a4534ae050b4 order 28f8ec7143f0d6c5
+P18 greedy time 40646e28879c3be0 searched 92 peak 237 route f830f27fca8d4c12 order 34b69086afa0db7f
+P18 shortest time 4066b450aa479113 searched 7949 peak 231 route 18f2e0d0017d84a0 order 4d8d69501a29283c
+P18 dstar-5 time 40647830603802bf work 5934 again 14766 replans 91 sensed 1290 driven 66cc49ec3abe01f3
+P18 dstar-20 time 4062ce7781ca370d work 34788 again 17745 replans 75 sensed 4484 driven 33ca54ca9b9bf7e0
+P18 stealth time 403c2cfe746e9acc seen 3fc999999999999a searched 15100 voxels 644d671b225385e5
+P18 direct time 40368e931feaaf79 seen 402557963342b891 searched 3057 voxels 8b6579c36006a563
+P19 bfs time 406a6607df89948f searched 8209 peak 181 route 89ffe47b24ba7bc8 order 58039cf05eacba28
+P19 dijkstra time 4062a8b16b6b3483 searched 7872 peak 307 route 20a975b517d5ba0c order 5f5fbc6c8141bd18
+P19 astar time 4062a8b16b6b3483 searched 4094 peak 403 route 20a975b517d5ba0c order 701409e7b37c4b9b
+P19 weighted time 406370abda82bef0 searched 299 peak 350 route c21f7bbeff6aaa98 order 932f8602eb49d4a2
+P19 greedy time 40665f7b30a108e9 searched 104 peak 216 route 90171505e28747e2 order a828e58c8c3417f4
+P19 shortest time 4069ed53c86508a1 searched 7198 peak 215 route 8c6dde00a9abf592 order 865856ab7ed0004a
+P19 dstar-5 time 406cbfa8778671f3 work 6493 again 14607 replans 104 sensed 1286 driven caee98dbf12e2e54
+P19 dstar-20 time 4062d83c46392be0 work 34481 again 17595 replans 73 sensed 3706 driven 120b3935f9ebb319
+P19 stealth time 404141399de2f836 seen 0000000000000000 searched 13923 voxels 77faff61f5455f35
+P19 direct time 403401127e4e28d7 seen 402a3944cf1636d0 searched 3814 voxels 600d10bfdb944a8b
+P20 bfs time 406b84571598f83b searched 8245 peak 167 route e01396e0d75860ae order d06200f2769e3b1f
+P20 dijkstra time 406598302d375bf4 searched 8641 peak 315 route 75db17755936c9d0 order 6a00fd632862f1ec
+P20 astar time 406598302d375bf4 searched 5146 peak 524 route 75db17755936c9d0 order d483e8e8e270282b
+P20 weighted time 406919e29b905abf searched 584 peak 553 route b72e723f5ea6f864 order c323eb8ffee49c41
+P20 greedy time 406f214ccec86761 searched 104 peak 282 route 708c92e3956a77de order 762fa4e67e0a61d9
+P20 shortest time 406ac582517cbce3 searched 8572 peak 209 route 6cb33aec43084ce8 order ae07097f36bd3656
+P20 dstar-5 time 406dc322aab07df6 work 7951 again 17736 replans 112 sensed 1461 driven 32b1cbc219925524
+P20 dstar-20 time 4066bf4dd89595df work 46715 again 30130 replans 90 sensed 4949 driven ea4decbefa5ab4ff
+P20 stealth time 403bab5bc0e90149 seen 0000000000000000 searched 5752 voxels fec08427f9024125
+P20 direct time 4038db8b460f2cd7 seen 4014a3a2148c4377 searched 6902 voxels 23081af7e7e4503a
+map desert 96x96 trips 20
+P1 bfs time 40589aaa251a1b9c searched 6345 peak 218 route c9b21652b33d95b0 order c97aa1af4adaf95b
+P1 dijkstra time 4051078e5b7a1530 searched 4382 peak 509 route 912dd415c6d032ab order e7510ea3173ab84a
+P1 astar time 4051078e5b7a1530 searched 720 peak 290 route 912dd415c6d032ab order 7816b09ba61f7e20
+P1 weighted time 4051d4bfec7b1f93 searched 108 peak 185 route 55aa6805362dbeb8 order 4a5252c06c98029f
+P1 greedy time 4055d1c0a0e94f98 searched 52 peak 128 route 6a8a13a9f8f6056b order 1ebca977369a9bc7
+P1 shortest time 405616d6c257e80e searched 6029 peak 311 route c392dbf27f4d4d39 order 986ab3a4ec13d921
+P1 dstar-5 time 4052e5ed908a8e9f work 1703 again 2997 replans 47 sensed 695 driven da5f3b2af45bb609
+P1 dstar-20 time 405138cb93a5dbd9 work 7336 again 3552 replans 31 sensed 3559 driven 37e7d7731695a76e
+P1 stealth time 402651d10a4621b7 seen 3ff48686147fd8c2 searched 13872 voxels f7d4aa88a110783f
+P1 direct time 402615d500095002 seen 40039695eb8c91f1 searched 506 voxels d502b1ab8ca39e16
+P2 bfs time 4057ab316a609b94 searched 6217 peak 255 route 09d30ea61de09e7b order a372021980b0d570
+P2 dijkstra time 40512c9f35ebc5a6 searched 5274 peak 480 route c9f7ba7f81c46dc5 order 07576efa0cbf89ca
+P2 astar time 40512c9f35ebc5a6 searched 660 peak 477 route c9f7ba7f81c46dc5 order 78050f07cb2a3b53
+P2 weighted time 405259ee066b3461 searched 57 peak 153 route 90d740724232f023 order afe43921d3990242
+P2 greedy time 405bf4ca2aefd26d searched 48 peak 125 route 83af7f3213428cd5 order 83af7f3213428cd5
+P2 shortest time 4056f952fdd64483 searched 6776 peak 384 route a8aaa3ff225ea3c7 order d1eede142f23654f
+P2 dstar-5 time 40515d5b5cf1fc76 work 1720 again 4608 replans 44 sensed 724 driven 9c484f740850829b
+P2 dstar-20 time 40520b4a591f8307 work 7252 again 2552 replans 27 sensed 3171 driven 1926e9cb82988309
+P2 stealth time 4027e5afbaac18cb seen 3fe8807eb865c970 searched 588 voxels bb9c620b602a52d0
+P2 direct time 4027a9b3b06f4715 seen 3feb27247aff148f searched 1249 voxels 949765ba6788788c
+P3 bfs time 40566c7f0811fddc searched 2894 peak 116 route c4eb78533b6b83cc order c62636e124213ea8
+P3 dijkstra time 4051b56d19d2c5bd searched 2374 peak 240 route a7e82c28da5edc87 order bce92a7b4bb81106
+P3 astar time 4051b56d19d2c5bd searched 373 peak 253 route a7e82c28da5edc87 order 7e43f590d9c0f340
+P3 weighted time 4051fd817db09479 searched 71 peak 163 route f8fa4244d315e163 order e4b1347381bae718
+P3 greedy time 405a1875bfc3b08b searched 46 peak 146 route af91f2b6e60411ed order af91f2b6e60411ed
+P3 shortest time 4056449c93fbf6ca searched 3345 peak 193 route 232b81d0a2a1268d order eeca6ab6df555a56
+P3 dstar-5 time 4051e5da72d5af44 work 1702 again 4275 replans 50 sensed 718 driven 03fc5fa957b45dbf
+P3 dstar-20 time 4051b56d19d2c5bd work 13064 again 4482 replans 36 sensed 2908 driven a7e82c28da5edc87
+P3 stealth time 402e50dd5f24360d seen 40113ebd852c60e3 searched 14193 voxels c0b1dae132eeaeb9
+P3 direct time 4028dce6e3a27a4a seen 40214d97f819030c searched 477 voxels a6379773299e5415
+P4 bfs time 405d0fbead464f6e searched 4743 peak 135 route 7892268fd68338b7 order cc56a40af0bba593
+P4 dijkstra time 405328f0850a815a searched 4940 peak 315 route c7daae2028881e8c order 1fcd734aae14a714
+P4 astar time 405328f0850a815a searched 1267 peak 362 route c7daae2028881e8c order d174ba561c3de04b
+P4 weighted time 40585d71fbfa3e07 searched 234 peak 250 route 8d68aaf95049f235 order 69e1b6e2a6627717
+P4 greedy time 405e5efc41f6ce07 searched 55 peak 130 route 3d04ca39591efe22 order 997bc66d27c01abe
+P4 shortest time 4060c524f945350f searched 4423 peak 203 route 3d48d5e7bc2b2632 order 33c525ca70a4f429
+P4 dstar-5 time 405b391068cf2044 work 2623 again 3893 replans 58 sensed 770 driven f0d5b18a5cb94cfa
+P4 dstar-20 time 40583f043baf5b4d work 18467 again 8569 replans 34 sensed 2673 driven f7b207eeb57b1739
+P4 stealth time 40306362b8595eb7 seen 4004403f5c32e4b7 searched 37389 voxels 03447f91ebdb7c08
+P4 direct time 402674f4666c9bbe seen 401a2eadae1fa7b9 searched 509 voxels fcd2f4dc7a1d74e6
+P5 bfs time 405d055dcb52f5d1 searched 3602 peak 121 route 3a7748e172ad1a40 order dbcc1d90ca0e985d
+P5 dijkstra time 4053782b223445f3 searched 2334 peak 208 route 76d87a37f7fbdd3b order 222274e039ee1083
+P5 astar time 4053782b223445f3 searched 681 peak 295 route 76d87a37f7fbdd3b order 54831d85ee058a4f
+P5 weighted time 40540490a33a5b01 searched 132 peak 128 route 610c726f1f22d598 order b8e2fb53d1915501
+P5 greedy time 405d055dcb52f5d1 searched 57 peak 118 route 3a7748e172ad1a40 order 3a7748e172ad1a40
+P5 shortest time 405d055dcb52f5d1 searched 2869 peak 177 route 3a7748e172ad1a40 order 34da252b6eeda913
+P5 dstar-5 time 4054025f110298de work 1558 again 3792 replans 50 sensed 508 driven e1ffe593285994e4
+P5 dstar-20 time 4053782b223445f3 work 9972 again 4988 replans 37 sensed 2430 driven 76d87a37f7fbdd3b
+P5 stealth time 4026666666666662 seen 0000000000000000 searched 57 voxels 308da86aa8ce1e94
+P5 direct time 4026666666666662 seen 0000000000000000 searched 57 voxels 308da86aa8ce1e94
+P6 bfs time 4060f6d630aa07e8 searched 4377 peak 188 route a2fa3fd50cb482fe order ca0162803e530ac6
+P6 dijkstra time 4054137291824986 searched 5626 peak 460 route a8e55f8592ebe76f order 84d5cbaaf4a59031
+P6 astar time 4054137291824986 searched 1570 peak 338 route a8e55f8592ebe76f order d0f4692eed62a21d
+P6 weighted time 4055e6896ef925c8 searched 332 peak 238 route 525b7bc659e4d94e order 7645f8daa227c896
+P6 greedy time 4062a23251955785 searched 41 peak 133 route 5caa93bcfdbaf2e2 order 5caa93bcfdbaf2e2
+P6 shortest time 4060f6d630aa07e8 searched 4995 peak 272 route a2fa3fd50cb482fe order 380ab1a3936013d1
+P6 dstar-5 time 4056582f71fcc5b7 work 1759 again 2948 replans 53 sensed 801 driven 9957efcb8965d4bd
+P6 dstar-20 time 4054137291824986 work 10563 again 7604 replans 33 sensed 3310 driven a8e55f8592ebe76f
+P6 stealth time 4036ba5919a7919a seen 401585043d7954f0 searched 52784 voxels 17571acb19ff8076
+P6 direct time 4028061bdbabf7f5 seen 4028061bdbabf7f5 searched 1547 voxels 3fb85b27ea69efe1
+P7 bfs time 406479baa10ac449 searched 4830 peak 156 route 551f3e62f54090af order 1a2306e9565c9c97
+P7 dijkstra time 405546e972b5a942 searched 5476 peak 443 route 223de36f988165ed order 1e03f1cd4aa36d47
+P7 astar time 405546e972b5a942 searched 1208 peak 393 route 223de36f988165ed order 92cd2c90d899afb1
+P7 weighted time 405bb54d2cfb0244 searched 338 peak 210 route a2e5c074fafa0071 order a7d784af8b01bf42
+P7 greedy time 40635be92ef54e5e searched 54 peak 167 route 95d4b4b58ee8cff3 order 95d4b4b58ee8cff3
+P7 shortest time 4062661c35ce512e searched 5392 peak 230 route f7e016a727fd2cb5 order f3c942bd62087527
+P7 dstar-5 time 40645ae5f5ba8e5e work 3282 again 6402 replans 70 sensed 1063 driven 1d8007b5b2e1f1a6
+P7 dstar-20 time 405cf82ed3b2da22 work 21430 again 13632 replans 45 sensed 3196 driven a60f9013d69411f6
+P7 stealth time 402ca3a2148c436c seen 4016c9c91ebfc527 searched 51531 voxels efb7449ce50e3a2c
+P7 direct time 402bb3b1eb98fc9b seen 401c403f5c32e4bb searched 1354 voxels 84e0060d0bde4d98
+P8 bfs time 40616dc6d21b807b searched 6562 peak 156 route 36c2a96cbe7ef079 order d2236ae777283e59
+P8 dijkstra time 40581296978434a0 searched 4858 peak 296 route efe5f18225c0e92f order 6dce0633efb574fd
+P8 astar time 40581296978434a0 searched 950 peak 456 route efe5f18225c0e92f order a22b20022fd4c167
+P8 weighted time 40602c5ed33c8078 searched 306 peak 357 route 3ec746ebc22833aa order 26bf2579e430ccb4
+P8 greedy time 406477130cf0bf14 searched 84 peak 148 route 036c52ce8b675494 order 07c8aa40134ab52d
+P8 shortest time 4060318898e47443 searched 5502 peak 245 route 57b8d240b0c7c477 order d14a3746b74d8441
+P8 dstar-5 time 40627269666f1332 work 3556 again 8690 replans 78 sensed 941 driven 4e7142e5567da9e2
+P8 dstar-20 time 40582e619f112980 work 10211 again 7359 replans 58 sensed 3560 driven 13230e98c2bec67f
+P8 stealth time 4037b6b599a60441 seen 40113ebd852c60e3 searched 48835 voxels 4a61fa1e59eeccb2
+P8 direct time 402f100fd70cb921 seen 40287f3f147cbe10 searched 300 voxels 7b45009f7131699b
+P9 bfs time 4069e166eb74dd6e searched 5819 peak 170 route db44b5de02eccc19 order d9f64273ba6bc54f
+P9 dijkstra time 4059e7511ba5f87e searched 5409 peak 390 route a1f6f7a7b92f7019 order b9bd3224c04df299
+P9 astar time 4059e7511ba5f87e searched 884 peak 392 route a1f6f7a7b92f7019 order 49647a1162bc1c75
+P9 weighted time 405b42c19a561c4d searched 72 peak 221 route 11d97f5e99e4c112 order 1daee038af520847
+P9 greedy time 4067af0d41ec909f searched 66 peak 215 route 8e94286a73747c31 order 8e94286a73747c31
+P9 shortest time 406787ce8bfacde7 searched 7090 peak 236 route a8d6e9eda660f2b6 order d27efb2baa5c7a46
+P9 dstar-5 time 405ade5b7aeecea0 work 2268 again 5626 replans 66 sensed 1018 driven 475f5065b5fc56eb
+P9 dstar-20 time 405a5fe15075a9a4 work 15809 again 6492 replans 50 sensed 4157 driven 9555837589c86521
+P9 stealth time 40399adfe4c5356b seen 4012605f0a4c5714 searched 20463 voxels 9f358d6097278e1d
+P9 direct time 4031ca68f0b44acc seen 401ea09e667f3bd0 searched 420 voxels 6e68bcfc59224187
+P10 bfs time 4063cf350a85305d searched 6632 peak 163 route 80d88ba640f8fea8 order 14e407f2d7126c76
+P10 dijkstra time 405a200065a5ad23 searched 5902 peak 361 route caf2770d4244ff24 order c4dec6403f2aef67
+P10 astar time 405a200065a5ad23 searched 1670 peak 443 route caf2770d4244ff24 order 02d74477bd2169d3
+P10 weighted time 405d761702093a55 searched 275 peak 279 route 16d0519fb8b8780a order 1730aa950b8d17e9
+P10 greedy time 40638335ba474732 searched 78 peak 200 route c5dee669c8fce459 order 2924455c3e93225c
+P10 shortest time 4063aa0b40ad5811 searched 7081 peak 221 route 7f84148368d34150 order d44efa1fb4f13b45
+P10 dstar-5 time 4064daf3e1cfbba5 work 4581 again 12075 replans 118 sensed 1591 driven 375a07bae451649e
+P10 dstar-20 time 405e24f52873cbfb work 20193 again 11922 replans 62 sensed 4355 driven a9e8fadceff1ead8
+P10 stealth time 403277160f67a53b seen 402059180a493c6a searched 51436 voxels 3954a77c1b1898b1
+P10 direct time 4031b6b599a60446 seen 4024bf7e70afa2cc searched 2356 voxels 998e7056b9349087
+P11 bfs time 4060693d026c8a8b searched 3012 peak 124 route e2855138051a53ec order 9d794bdaa124ae4b
+P11 dijkstra time 405bba0955c523ce searched 4776 peak 280 route a82ada165f14903e order e2c945d80dc77880
+P11 astar time 405bba0955c523ce searched 2237 peak 450 route a82ada165f14903e order 29cf1615c9f09027
+P11 weighted time 405c0bdb77ea07fb searched 828 peak 239 route c03a17dce60c7bb9 order 2b1cb69fc6aa6683
+P11 greedy time 406326a5744f364e searched 61 peak 145 route 5347118f48ded7c6 order 1e6d3537e347092f
+P11 shortest time 406167cdf8f525ba searched 3303 peak 193 route 92f6ffa0e275d093 order d62325c62626e02f
+P11 dstar-5 time 4064c25ebb470227 work 4639 again 13558 replans 97 sensed 1337 driven a942fd680c9ad432
+P11 dstar-20 time 405c3e6e72c7d946 work 25315 again 13137 replans 41 sensed 3491 driven 126733a13cb50254
+P11 stealth time 402fb3b1eb98fc9b seen 3ffd93923d7f8a46 searched 15433 voxels 92d30ad9a382b72c
+P11 direct time 4028061bdbabf7f5 seen 4028061bdbabf7f5 searched 968 voxels 2f99ac8fb48cc969
+P12 bfs time 40621f25c272bd56 searched 5393 peak 183 route 88a46dc553198008 order a22ee1e5a09050f8
+P12 dijkstra time 405e365b4a89cb1b searched 7815 peak 438 route f207d42ce5a5066b order e6e28f1939a96c26
+P12 astar time 405e365b4a89cb1b searched 2920 peak 456 route f207d42ce5a5066b order 83d641829607ca60
+P12 weighted time 4060f977908bb360 searched 798 peak 335 route b27f236fae8224a3 order ec3533d5c4478643
+P12 greedy time 4063a663aabfc315 searched 65 peak 158 route cb3561a4cbf947ca order 405e61d37bb56c29
+P12 shortest time 40613c233712eec9 searched 4999 peak 242 route 2323a3c47632e934 order de13a39e94e98bf3
+P12 dstar-5 time 406324b8aeee3931 work 4430 again 10934 replans 94 sensed 1287 driven eeade227df16885c
+P12 dstar-20 time 4060d4cd4ed47030 work 27500 again 13483 replans 53 sensed 3469 driven 7ae54b380ae94084
+P12 stealth time 40377e5939d4b586 seen 40132d2bd71923e1 searched 19155 voxels e8b6ae0a33ad9bb4
+P12 direct time 4029cfdabaa2c8c0 seen 40237b06024f9f62 searched 1590 voxels c79165b41b340d69
+P13 bfs time 40657bbb3c03dab5 searched 8222 peak 207 route e35154e052ab8aff order c9469ae53c848ed2
+P13 dijkstra time 405e886509cc85da searched 7996 peak 383 route 85b1fa39deb1d343 order cb2cfe00f29c56a2
+P13 astar time 405e886509cc85da searched 2438 peak 650 route 85b1fa39deb1d343 order 953c8208a0bdec7f
+P13 weighted time 405f323465e0aa2b searched 749 peak 444 route 36ea793fafacf7ac order a6a9f4fcc857a833
+P13 greedy time 406939c4561353f9 searched 89 peak 173 route 2a1a8618c47bf5f8 order e632fbe58748c0fe
+P13 shortest time 40677ea47aa6eb30 searched 8008 peak 309 route bfa8d819c6471404 order 4ee7a81c15eb7a90
+P13 dstar-5 time 406c5fe6bc24b364 work 6205 again 15579 replans 105 sensed 1355 driven 734367e769035f07
+P13 dstar-20 time 40645dcd8532b635 work 39495 again 24005 replans 65 sensed 3325 driven d95df5a806e9d320
+P13 stealth time 403825e4d7160928 seen 40113ebd852c60e3 searched 50355 voxels c50f0dcdad886098
+P13 direct time 40307fdee67143bf seen 40240b8a51f92daf searched 3790 voxels c12d8167daf9109c
+P14 bfs time 406257f430bdcceb searched 5352 peak 161 route c07ccf31c58cb2cc order 7b8c16f0c22359a4
+P14 dijkstra time 405ed337db287804 searched 6936 peak 344 route 9df57a8f16be8682 order c2157f3c8b2bd6e8
+P14 astar time 405ed337db287804 searched 3888 peak 486 route 9df57a8f16be8682 order b038e60b02a13344
+P14 weighted time 405f3428c78f8ce9 searched 710 peak 374 route 7164a43100101968 order 38de41d270d70b48
+P14 greedy time 4061feab33d50edd searched 59 peak 170 route aab859313724bd11 order 81d8ea687e854c96
+P14 shortest time 4061de3b0662f8fc searched 5302 peak 252 route b92ef080c953bdc1 order 222154d07d990669
+P14 dstar-5 time 407188b70e902cd5 work 10637 again 28840 replans 163 sensed 1921 driven 1497bd277250bce3
+P14 dstar-20 time 405ee6a4493a79d1 work 25761 again 13657 replans 52 sensed 4285 driven 01d7e2ed94d1cbe9
+P14 stealth time 402ea6a5c2994b14 seen 4017b9b947b30bf8 searched 15917 voxels cc1f17f2512fc9b4
+P14 direct time 402a605f0a4c570d seen 401dc54399ac39a9 searched 483 voxels 304b5f4c327d7b7d
+P15 bfs time 406ad972ebafd3ac searched 8332 peak 175 route 76fd738477ec9a31 order f2865997211af110
+P15 dijkstra time 405f49bdb0725782 searched 7897 peak 376 route 3b9d713fd7a2538d order 6b13c605de3a34b4
+P15 astar time 405f49bdb0725782 searched 3258 peak 595 route 3b9d713fd7a2538d order 2b7e0bc7b5503aa6
+P15 weighted time 4064bce6ffbfe3fa searched 653 peak 480 route 4ae230a22520606e order f4564628d082d05d
+P15 greedy time 4067efb3a2fc11c2 searched 96 peak 218 route 94c0f2a4800d26d4 order d8743b16fd929c3b
+P15 shortest time 406a93f9676568f7 searched 7688 peak 269 route 519ec974bf6167c1 order 228cf4590cba8492
+P15 dstar-5 time 40650de5207dee1d work 4525 again 15931 replans 95 sensed 1230 driven e2fa94c8409ea832
+P15 dstar-20 time 4061cde56b3a7ae9 work 25064 again 19691 replans 73 sensed 4050 driven dc65d5bb19c709a2
+P15 stealth time 40364261052dee31 seen 0000000000000000 searched 2657 voxels 3390d0d0d7ed4ff7
+P15 direct time 4033d7b74cd174c6 seen 40258f4eeb897741 searched 3443 voxels e6a0420601ba4a83
+P16 bfs time 4069f656686955bf searched 7802 peak 153 route fba1367ea3e8a1b3 order 5d74f0dbbea2fc36
+P16 dijkstra time 40601ee3065334ec searched 7163 peak 321 route 1ae89795e2900ad7 order 5da5a70316ce4c67
+P16 astar time 40601ee3065334ec searched 2174 peak 732 route 1ae89795e2900ad7 order 8e09940c0bd89792
+P16 weighted time 40618ec6216e531e searched 153 peak 345 route 333172fcd94358cc order b0cdcbb6d9d00835
+P16 greedy time 406a20de9870a43c searched 90 peak 194 route 61fb239d5198b39c order 61fb239d5198b39c
+P16 shortest time 40659173acc98d8d searched 7959 peak 222 route 2e380ff81f982cf2 order 23fae7ffcc8f23db
+P16 dstar-5 time 40614e03229432f2 work 5001 again 13421 replans 90 sensed 1302 driven 9986c076b0364449
+P16 dstar-20 time 4060bfe7b3d999d4 work 27925 again 14614 replans 75 sensed 4677 driven 10cd7d4911cde41b
+P16 stealth time 4038ec30af47775f seen 4008a9a970a652c8 searched 4691 voxels e076712a07ab5a0e
+P16 direct time 403380051fe47a20 seen 40269c5b148928c4 searched 4776 voxels 20e527f8b70f654e
+P17 bfs time 406c443976bb4003 searched 8304 peak 175 route 06214dda8ce14896 order 99c5f883e9a785b6
+P17 dijkstra time 40608e4a8b92b290 searched 7590 peak 362 route f38f6d294ccf02a0 order 33a916437ac7f758
+P17 astar time 40608e4a8b92b290 searched 3089 peak 628 route f38f6d294ccf02a0 order adb407d29a5c1645
+P17 weighted time 40653cfe29e12c9c searched 717 peak 478 route bcbbed4764692dd9 order 52f32601a72531a1
+P17 greedy time 406c36063fb63278 searched 95 peak 209 route d529907195cfd4d3 order 15cee79d7124cbd6
+P17 shortest time 40665ade47bced58 searched 7652 peak 217 route b41e2d7554821a13 order ba350fbee208a613
+P17 dstar-5 time 406b64b1e5be1d92 work 6488 again 16853 replans 111 sensed 1442 driven 3c9abc82e06a9f0f
+P17 dstar-20 time 4064ee96792b27fc work 44419 again 21692 replans 67 sensed 4424 driven ade936bbfc54c007
+P17 stealth time 40357fdee67143b9 seen 401193923d7f8a47 searched 49212 voxels 851f710a7b8959d2
+P17 direct time 4031ee6e51ecc2f5 seen 40222a6a5c2994b2 searched 323 voxels 6c35ad671fa614bb
+P18 bfs time 4066e1fbb060b0e1 searched 8572 peak 182 route 86eb9a1a1b505c92 order 46d5008dc439153a
+P18 dijkstra time 406221ed7632b36c searched 8487 peak 347 route 2d2c2c1cc29afbf7 order 418c340a49f3105d
+P18 astar time 406221ed7632b36c searched 4597 peak 679 route 2d2c2c1cc29afbf7 order ca06c108ccfe3b2f
+P18 weighted time 40645d555aad1297 searched 1319 peak 585 route c848da25ae854897 order 3d8c73e63296e1d6
+P18 greedy time 4070ad2aaa0b7331 searched 110 peak 255 route 2601113bc1b3324a order 34a1ba2fc405b810
+P18 shortest time 406d96cac57cbd05 searched 8645 peak 231 route 78d5e1d65cb3d721 order 8a1c9a43813c068e
+P18 dstar-5 time 4075b08b9685a741 work 9677 again 34322 replans 216 sensed 2637 driven 467565f8b94b7a36
+P18 dstar-20 time 406248d55b978dff work 29746 again 22541 replans 81 sensed 4661 driven 268ab44c25126195
+P18 stealth time 40369735bd811796 seen 4002a6a5c2994b1f searched 1143 voxels 4f51ff55ac319560
+P18 direct time 403502c17aef8f27 seen 402b5edd3345d33a searched 2024 voxels 4b185915367ed8f3
+P19 bfs time 406c09ac434c29cd searched 8038 peak 184 route 5446ad8391076c27 order 9a0b6ecbc8596b6e
+P19 dijkstra time 40622e3cb7254e4e searched 7230 peak 324 route 41a9d72910f6bbf0 order e2094811952a5da5
+P19 astar time 40622e3cb7254e4e searched 2895 peak 683 route 41a9d72910f6bbf0 order 266d5fb9130e3950
+P19 weighted time 4063f24f2c85425b searched 315 peak 336 route 98163488c80f5251 order 710b755047888023
+P19 greedy time 4069a76d95cd90df searched 90 peak 284 route ebefc07c75ad750e order ebefc07c75ad750e
+P19 shortest time 406b387fe43da3f2 searched 8349 peak 261 route bb64228f176756a8 order 2f9e102fc42d3ccb
+P19 dstar-5 time 40628989f8a34204 work 4982 again 17690 replans 107 sensed 1487 driven cd03793e29b881d8
+P19 dstar-20 time 406266bf26783d95 work 29739 again 21635 replans 87 sensed 5175 driven a74c4de2047d49fd
+P19 stealth time 40361a1851ff6303 seen 0000000000000000 searched 498 voxels abd3cf242d7a8cd4
+P19 direct time 40361a1851ff6302 seen 401af5731ed26533 searched 1027 voxels 2a39c7b1283e0b3b
+P20 bfs time 406462f0150a30be searched 4616 peak 162 route 1a5feef851c4e45d order 48c475b277cb285e
+P20 dijkstra time 4062346155f27b97 searched 7299 peak 333 route 5fbc03f3a342afcb order be2a16cf0581c917
+P20 astar time 4062346155f27b97 searched 3914 peak 388 route 5fbc03f3a342afcb order abe21f7e68cf0f1d
+P20 weighted time 4062736cfdf39f7a searched 2265 peak 370 route 9ac9fc77157a68f5 order ef235b32da849a65
+P20 greedy time 40685430230caa50 searched 82 peak 139 route c6042f4e475c19dd order 675facfc1560e600
+P20 shortest time 40679ad8eb877e3a searched 4304 peak 202 route 0ea063a8ac177189 order 4c07d701c4f5cf22
+P20 dstar-5 time 407086572863e471 work 7372 again 16378 replans 148 sensed 1806 driven 27ca1fc923eb0b9b
+P20 dstar-20 time 4063b7de6513ffcd work 32187 again 24204 replans 56 sensed 3148 driven ad8917919534a2ea
+P20 stealth time 40306d3e0db1261b seen 4010e9e8ccd93780 searched 14785 voxels 41f68d70495c67b5
+P20 direct time 402906119be3039e seen 40263944cf1636d4 searched 1035 voxels 4b3235acb3a5cb74
+map island 96x96 trips 20
+P1 bfs time 404f4eebeeda2a41 searched 2506 peak 118 route b8ac2e3bd1c0d2e8 order 6bc9477d78990fec
+P1 dijkstra time 4049378818fb3e61 searched 2512 peak 233 route 5b98e49c45f1b737 order 50b4f81d90344df8
+P1 astar time 4049378818fb3e61 searched 474 peak 303 route 5b98e49c45f1b737 order f8d7438b92d13385
+P1 weighted time 4049d9430b4f4bbb searched 39 peak 113 route 7e7487a410945df6 order d6c31bed589fac18
+P1 greedy time 40506073c189f817 searched 37 peak 110 route 623be45246962a43 order 55e7ea08a2ff63fb
+P1 shortest time 404dafd0b98d849a searched 2643 peak 167 route 582d2124fc68140a order 8651a87482754563
+P1 dstar-5 time 40498bb28503b065 work 939 again 1313 replans 29 sensed 534 driven 0977a6b3653f42c0
+P1 dstar-20 time 4049378818fb3e61 work 4617 again 1658 replans 19 sensed 2925 driven 5b98e49c45f1b737
+P1 stealth time 40353dae5a7f803a seen 400d6b9950d8b424 searched 47652 voxels 8f44a637e7225d58
+P1 direct time 4021acb75e7c4ec4 seen 402079842b491b92 searched 318 voxels 1b5ea221cd64abc2
+P2 bfs time 4054dbf878ce9617 searched 2316 peak 112 route e81325a4fedebedd order a34a20d6a38c6a87
+P2 dijkstra time 404ba3ef1a753053 searched 2320 peak 213 route 5201037ff3e6d441 order 4f3ca02d536bf718
+P2 astar time 404ba3ef1a753053 searched 668 peak 198 route 5201037ff3e6d441 order 72692ac61d1f8c66
+P2 weighted time 404cb5572f21cce8 searched 40 peak 110 route b4b224dabe8a284a order 7af1c321d08cd4ec
+P2 greedy time 404c26ab04751a14 searched 39 peak 111 route 6e0a336a1ff98ae9 order 6e0a336a1ff98ae9
+P2 shortest time 4052763368e062ac searched 2465 peak 155 route 1467729730919dbc order 7baf03608d593f83
+P2 dstar-5 time 404cddbd9b30dd5a work 1110 again 2820 replans 34 sensed 563 driven 4590e2e047498bfb
+P2 dstar-20 time 404bf16176cf4669 work 4921 again 2925 replans 20 sensed 2860 driven c179cf437de77b08
+P2 stealth time 402554def81c1db5 seen 0000000000000000 searched 636 voxels ed4653c2bffd7aa8
+P2 direct time 4022a3ee8772b042 seen 40001d1c000c6ab3 searched 769 voxels 34513fd100dcd99d
+P3 bfs time 404d9e307ccbd99a searched 2668 peak 122 route 5c187c7133de260c order 69393a8ea530d239
+P3 dijkstra time 404c98be500bf909 searched 3363 peak 234 route 33521c141249cba6 order 8121d6fc330507f0
+P3 astar time 404c98be500bf909 searched 799 peak 317 route 33521c141249cba6 order 7d6de85fbed5374f
+P3 weighted time 404f2ff349b5c410 searched 80 peak 127 route 69097f058395e31b order 482cc16e26217e17
+P3 greedy time 404f0a0ec769381e searched 42 peak 107 route 8b34c3a0c8be44b3 order 794429db336a07d4
+P3 shortest time 4050beba7680a1f8 searched 2960 peak 181 route c4b3b4b3c3aa61de order ec5cfc43c28177f9
+P3 dstar-5 time 405292aa4bae63d2 work 1562 again 1811 replans 34 sensed 558 driven 4d37c130462ae00c
+P3 dstar-20 time 404c98be500bf909 work 3810 again 1268 replans 13 sensed 2442 driven 33521c141249cba6
+P3 stealth time 4030622d543947b0 seen 3ff7b9b947b30bf6 searched 1814 voxels 5e574dd008777683
+P3 direct time 402192eb05440b71 seen 4013a523eb92c74a searched 524 voxels 5879c31c91625a66
+P4 bfs time 4054733c76d69333 searched 1722 peak 90 route 7a06425d04495d4b order 67c796ba5077ee86
+P4 dijkstra time 405190da2564e62a searched 2426 peak 185 route 1503383b3b437b01 order 10df126383532f4a
+P4 astar time 405190da2564e62a searched 1007 peak 162 route 1503383b3b437b01 order b405129d7c8e6d8f
+P4 weighted time 40523db190af254c searched 346 peak 141 route aab92e40fce790f7 order f6e24ccc12cb52f1
+P4 greedy time 405420554a8e30ab searched 36 peak 93 route 3d4d46da1eefa7fb order 52de9fd0a5cf4f8f
+P4 shortest time 405598ca29a7f12e searched 1885 peak 125 route e5763f6a39625d7f order 7909692489389ec2
+P4 dstar-5 time 4054ccd999afee46 work 1553 again 1430 replans 36 sensed 553 driven 01dbe59aaf184d97
+P4 dstar-20 time 405190da2564e62a work 5662 again 4359 replans 21 sensed 2421 driven 1503383b3b437b01
+P4 stealth time 4031a51cc25b74a7 seen 400b75ab3ef878aa searched 15570 voxels 8912d7c616a5921f
+P4 direct time 402332080edc107f seen 4022a1374c4c1567 searched 1377 voxels efe162f5adcc3dc5
+P5 bfs time 405b1ea8647043a5 searched 2128 peak 99 route 6c71ff3f148d6b8e order 1b60d2575e62df9d
+P5 dijkstra time 405270c7bd00c05b searched 2684 peak 212 route d4c0346e6c8b21f5 order 505efb704aa6c6e9
+P5 astar time 405270c7bd00c05b searched 868 peak 210 route d4c0346e6c8b21f5 order 1867aaacdf16aaa5
+P5 weighted time 4053316360bc34ad searched 63 peak 112 route ff33194d3aec4205 order b7f4bef396a001b0
+P5 greedy time 4059455b951d0935 searched 40 peak 94 route c61151cb9e340adc order c61151cb9e340adc
+P5 shortest time 405755109c88b7b3 searched 1999 peak 139 route de6e94f7642ca05f order 699152fbb73f7333
+P5 dstar-5 time 405349150a508f09 work 2181 again 1854 replans 35 sensed 549 driven 02e7246f7eba2348
+P5 dstar-20 time 405270c7bd00c05b work 10787 again 4806 replans 20 sensed 2741 driven d4c0346e6c8b21f5
+P5 stealth time 40243dd493f2b6a8 seen 4014951414860e1e searched 50716 voxels dbe675393bef740f
+P5 direct time 402336cf4cedc75d seen 4022d068e68760f7 searched 679 voxels a8d57a69ec4fb568
+P6 bfs time 4057431b67481471 searched 3226 peak 123 route 8ee75546a3864a17 order c4c85667b9714ac7
+P6 dijkstra time 405278c39e21553c searched 4166 peak 229 route 65ed6b144645ed8c order d5b435bf1bd74577
+P6 astar time 405278c39e21553c searched 1290 peak 338 route 65ed6b144645ed8c order 02fb133344a6b051
+P6 weighted time 405470a6c7580f58 searched 62 peak 156 route fb7d99ff71c10e6d order f107ea5b12533f18
+P6 greedy time 405789fce2215c16 searched 40 peak 142 route ad2041150c905598 order ad2041150c905598
+P6 shortest time 4056e3ec2304012e searched 3728 peak 186 route a534cc3870d63c38 order a09fe10e808cdc5b
+P6 dstar-5 time 40540fda99e2eaa3 work 1709 again 2598 replans 43 sensed 661 driven 2da7644dddb8cd11
+P6 dstar-20 time 405282827b64cbd7 work 8605 again 5391 replans 30 sensed 3213 driven 90e25ce1ef27f8fc
+P6 stealth time 4030149f9be938fa seen 40181d1c000c6ab6 searched 59259 voxels 6acfbbca13b22ff7
+P6 direct time 4026b188dc56f9f6 seen 4024ff1694a708ae searched 1148 voxels 71cb941adfa08d65
+P7 bfs time 405ce9af2aafd779 searched 3395 peak 115 route 6ddd30053e4533fc order 30e01ccc84e6ac59
+P7 dijkstra time 40536b4c1321b4dd searched 3505 peak 242 route caf1ebc09428fa89 order 2f1e4c6e1a99f397
+P7 astar time 40536b4c1321b4dd searched 1058 peak 297 route caf1ebc09428fa89 order 4fb76c8e34911df5
+P7 weighted time 405b2f2b101d9b27 searched 357 peak 181 route 214e5d0ca72a1d2c order c4ecb692858ac166
+P7 greedy time 40606fdfa3752cc2 searched 57 peak 98 route 2b5c30d19b7cf905 order 8c39b133a26ba30d
+P7 shortest time 405aff15902a2f14 searched 3088 peak 168 route 4e0ac884a8381b93 order b83c32ae552cc1bd
+P7 dstar-5 time 4060f4b83eedfc26 work 3226 again 2493 replans 46 sensed 660 driven 9906a4c602220874
+P7 dstar-20 time 40536bc1cb13c7b5 work 8166 again 3680 replans 28 sensed 3303 driven eeb7db93439ce6a9
+P7 stealth time 402563f0e43df6eb seen 0000000000000000 searched 309 voxels a9a689e2d661c1f9
+P7 direct time 40245b280d34586b seen 3fe8807eb865c970 searched 301 voxels a48c9ab6a5ca796d
+P8 bfs time 406032b3395eaaf3 searched 2039 peak 103 route e0057d4a89e73b49 order 2f2c2111ca9a4ab4
+P8 dijkstra time 40537d37abcb5260 searched 2628 peak 225 route be7f53570c75daa1 order 3134553c4463753d
+P8 astar time 40537d37abcb5260 searched 750 peak 216 route be7f53570c75daa1 order c86013cd2e368b9b
+P8 weighted time 4054c8e7c8ca2e28 searched 225 peak 251 route bb1aec50d86dc2fa order 3428ed118a76e17f
+P8 greedy time 4061720a23df45ff searched 56 peak 117 route 14ff2b7fb31e2af0 order deb69f610932b8cc
+P8 shortest time 405f666f2a3ef138 searched 2335 peak 161 route b53f1697348b8a3c order a314c84a7c8b3ef5
+P8 dstar-5 time 405b87e0660edd6d work 3835 again 5650 replans 60 sensed 825 driven f90b7c265ae7483d
+P8 dstar-20 time 40537d37abcb5260 work 10936 again 6176 replans 27 sensed 3018 driven be7f53570c75daa1
+P8 stealth time 4031364121092f2c seen 3fec403f5c32e4b8 searched 3602 voxels c471763431f952bd
+P8 direct time 40239ad93d82a4f4 seen 401e0582f5df1e62 searched 220 voxels 7c32250837c94288
+P9 bfs time 4054fa2e31d69be4 searched 2263 peak 100 route d4d4932c20ce6e4a order a5fe59db4fe58a29
+P9 dijkstra time 40539905783a2a48 searched 2282 peak 186 route 951811a434a964a4 order 461324d30381418d
+P9 astar time 40539905783a2a48 searched 912 peak 158 route 951811a434a964a4 order 366680bc8f22164e
+P9 weighted time 40550902ddc4217b searched 152 peak 180 route c9b03adc6ad86bdb order 8c7e34ba8f8df22a
+P9 greedy time 4058d2706561d62c searched 41 peak 79 route 7a73b3cc5c6c5079 order 7a73b3cc5c6c5079
+P9 shortest time 40588cf27c5525f0 searched 1908 peak 139 route 4809c0fd48ffddba order 1682123c7ce1e5a1
+P9 dstar-5 time 4055eceae7096cec work 2187 again 1893 replans 38 sensed 555 driven 89736d2cfc134517
+P9 dstar-20 time 4053ac1b3e79937c work 12008 again 4448 replans 21 sensed 2918 driven fb9dbeff1138c887
+P9 stealth time 4022f47fedcfc6a1 seen 3fc999999999999a searched 2991 voxels f230940e8dede7b7
+P9 direct time 40220eda72eca226 seen 4001999999999999 searched 547 voxels 1382670e5921ee78
+P10 bfs time 4059cd851cca8d05 searched 2348 peak 95 route 3f2769fe776cce2a order 5bb7dbead92c430f
+P10 dijkstra time 4053ed72b94205d6 searched 3094 peak 199 route 4d903b79f912e8ae order be259789929c1e26
+P10 astar time 4053ed72b94205d6 searched 844 peak 341 route 4d903b79f912e8ae order 5a68c6f6dd4351c0
+P10 weighted time 40542829855669b0 searched 146 peak 180 route d2507fdd94d505aa order 70a322c0ab891d3d
+P10 greedy time 4059a15c77ebee9f searched 41 peak 134 route be27fd71383b1210 order be27fd71383b1210
+P10 shortest time 405989346fd89e3b searched 2872 peak 139 route 3372a16a77586700 order ac702aa947f8c165
+P10 dstar-5 time 405449f63e47cde1 work 2323 again 3554 replans 44 sensed 707 driven 172c3dec4bab0acd
+P10 dstar-20 time 4053ed72b94205d6 work 9498 again 2922 replans 29 sensed 3488 driven 4d903b79f912e8ae
+P10 stealth time 40450bc3a825ff48 seen 4008807eb865c96f searched 60501 voxels d31b8f2de29b9c4e
+P10 direct time 4026cb55358f3d49 seen 4023f74168bf55d2 searched 285 voxels fb16fb753b3e5179
+P11 bfs time 4059b8d4ad5c571d searched 3086 peak 96 route c1837ff07c0a0264 order 14f979e5649ac5a0
+P11 dijkstra time 40553c72946a443e searched 2707 peak 195 route a9fd349de267c529 order 587d084d9d145e17
+P11 astar time 40553c72946a443e searched 1012 peak 256 route a9fd349de267c529 order 123a0fb7ec7df068
+P11 weighted time 4055aa036f55be96 searched 92 peak 105 route af67f4f214a3ea7d order 54c8ea81407f796c
+P11 greedy time 405a89f04d1a8720 searched 54 peak 107 route 4e61113b00a9a4f0 order 577a4bb3999f9722
+P11 shortest time 40597bfa4de07782 searched 2638 peak 141 route 09f73f0f2b14d747 order dae0c034863f3853
+P11 dstar-5 time 405aab38e51d6e28 work 3433 again 2505 replans 47 sensed 679 driven 72dbee4eda3aa2c9
+P11 dstar-20 time 4055d80470137b6d work 16385 again 7579 replans 32 sensed 3209 driven 9e2e7515f2ae1130
+P11 stealth time 402f552b6b028a77 seen 3ffd0704cce5a232 searched 34860 voxels 767efb38f6547667
+P11 direct time 402a24fbe5dc5ef2 seen 4016c9c91ebfc527 searched 1401 voxels 3ce0dfb8d355a515
+P12 bfs time 4060bf51f055d847 searched 3512 peak 109 route 2e5807c3c66b1911 order 3a227f4c23867f3c
+P12 dijkstra time 4055e1b12e1c0947 searched 4131 peak 218 route ae417fede57c04c3 order 68bd54d5d66d04ba
+P12 astar time 4055e1b12e1c0947 searched 995 peak 376 route ae417fede57c04c3 order 789f3c7eee4fbbd3
+P12 weighted time 4059270e6a66e6b1 searched 173 peak 238 route fb2be6da96fa9b05 order 7ae3c1b9cb325a69
+P12 greedy time 405d8c1ba51fa8b7 searched 48 peak 154 route af30cd89d2d773ea order af30cd89d2d773ea
+P12 shortest time 40609529bdc3bf79 searched 4058 peak 175 route 30a913c36b0b038b order c8bb49df794319c1
+P12 dstar-5 time 4059369f6e67c931 work 2732 again 4614 replans 54 sensed 820 driven cbfb633a32a759c0
+P12 dstar-20 time 40566a41fdaec4a1 work 13518 again 6686 replans 39 sensed 3598 driven 0133e682c4825d66
+P12 stealth time 4035197156d38ab7 seen 4007b9b947b30bf6 searched 43011 voxels 462eb9ad088326b3
+P12 direct time 402c263b89c56a50 seen 40243a8472ff4233 searched 1451 voxels 5f5733d9d6b153c4
+P13 bfs time 40608ddcc0e72960 searched 3613 peak 107 route 4eba88a0e2ccc811 order 54d21b84fc5c772f
+P13 dijkstra time 4056899e66f2499e searched 2913 peak 217 route 553870249f7f1e2f order 124209816d28913e
+P13 astar time 4056899e66f2499e searched 834 peak 214 route 553870249f7f1e2f order 45da096409c8a0b7
+P13 weighted time 4057a428521f1f7c searched 85 peak 167 route 04f8f31903353402 order 60796d11a93fc1e7
+P13 greedy time 4059ce0dc52d34b9 searched 60 peak 130 route f1eb5692a1fa96f3 order e3852545eab41a10
+P13 shortest time 4060724740e5c8bb searched 3000 peak 149 route 0730b032b2e5b293 order 70b163bd8278359a
+P13 dstar-5 time 4056d11168ba542c work 2400 again 2599 replans 50 sensed 724 driven b992572b4ffcd500
+P13 dstar-20 time 4056899e66f2499e work 19613 again 6190 replans 35 sensed 3632 driven 553870249f7f1e2f
+P13 stealth time 4029a827999fceec seen 3fd999999999999a searched 9074 voxels 4c8188a8607b3c79
+P13 direct time 4028403f5c32e4b4 seen 4000c6c570b2bd7b searched 738 voxels e255cc863406dbfd
+P14 bfs time 405e5414cf1c7f41 searched 4455 peak 108 route dbc62fda7875400e order c5959baa4f88c8fb
+P14 dijkstra time 40573dbaafa1ee99 searched 3943 peak 209 route db39ff2107b790b9 order 1359c7eecd19ebdc
+P14 astar time 40573dbaafa1ee99 searched 826 peak 370 route db39ff2107b790b9 order 6cbe1f09976bd605
+P14 weighted time 405957011529b9ee searched 182 peak 224 route 137b2b44173cfb6f order c9ef4a66079ec669
+P14 greedy time 4060faf83bf1fa20 searched 66 peak 131 route 812ea50374bb7be4 order 103aa02a0cb7b2cc
+P14 shortest time 405f4f4ec1cf9147 searched 3977 peak 164 route 4e95d961d9f745d4 order 45b234444df4c448
+P14 dstar-5 time 40696aeded8ec4c2 work 5966 again 7880 replans 73 sensed 1018 driven 037eaa310c6ca745
+P14 dstar-20 time 40573dbaafa1ee99 work 13874 again 6395 replans 46 sensed 3936 driven db39ff2107b790b9
+P14 stealth time 4034ba5919a7919b seen 0000000000000000 searched 2790 voxels d0711d10a6a62922
+P14 direct time 402f4de46aff6fcb seen 401fa523eb92c74e searched 2961 voxels 86af49ccd666e973
+P15 bfs time 405b8f4ab1e92c71 searched 3255 peak 112 route b5807bf8a7965ba4 order 16f12cddfd26e455
+P15 dijkstra time 4057410f7bd1a8a9 searched 3686 peak 255 route 12ba04062c7e3e76 order df4e025c435ae9fe
+P15 astar time 4057410f7bd1a8a9 searched 1330 peak 315 route 12ba04062c7e3e76 order 1bc05f3a4eadcbf1
+P15 weighted time 4057a8ccda68d53f searched 154 peak 169 route 28be12364861aaba order 841e07a381ce17dd
+P15 greedy time 405b31da9eca8181 searched 48 peak 110 route f69376f35f362c9d order cb8266115cb39762
+P15 shortest time 405ac5bd18a9a112 searched 3010 peak 170 route fa8ecbe512ec2f2f order ca4f0b3e90c53a5e
+P15 dstar-5 time 40620bdeb1e96023 work 3568 again 2817 replans 47 sensed 694 driven eda61f0412b74865
+P15 dstar-20 time 4057410f7bd1a8a9 work 17364 again 5932 replans 26 sensed 2899 driven 12ba04062c7e3e76
+P15 stealth time 40356556fea9df30 seen 40100e8e0006355a searched 43669 voxels 949cde8a189dca92
+P15 direct time 4024bfcae3960f99 seen 4024bfcae3960f99 searched 751 voxels a6f67ea23d2af0b8
+P16 bfs time 4058489348ef7ef3 searched 3467 peak 93 route 4ff6d338c1b73284 order 6a93821b0ebfbfca
+P16 dijkstra time 40582dac9a72b42f searched 2998 peak 220 route cd5896920df5198d order f24c9b256b14d3a2
+P16 astar time 40582dac9a72b42f searched 1157 peak 348 route cd5896920df5198d order cf6129326a9cb9c1
+P16 weighted time 40590d92f4e36c57 searched 166 peak 237 route 06ed77b255f2fdce order 31b5052184ac6713
+P16 greedy time 406085d5040666dd searched 63 peak 141 route f5c9617e9c59b3e7 order 28f69b8df438f5d7
+P16 shortest time 405cd05c98b9452b searched 3343 peak 151 route f617861ea1d1da80 order d436bc7a2d799b63
+P16 dstar-5 time 40615e804755672d work 5246 again 8185 replans 65 sensed 898 driven 7ea8db03a6187872
+P16 dstar-20 time 4058a40faeee7864 work 20805 again 9743 replans 46 sensed 3614 driven 19eae41d974fd806
+P16 stealth time 403ab202eef79647 seen 400e201fae19725e searched 37716 voxels 320266b7fe260032
+P16 direct time 402f7fe23a128bfa seen 402cb3156d45bf30 searched 2209 voxels dd4b0bf7f4da963f
+P17 bfs time 405a8e369c8efd4f searched 4141 peak 97 route c2de6647dd489906 order 7ca1f954aa99723e
+P17 dijkstra time 4058f04a662a1d27 searched 3575 peak 209 route 1746eef2c09e947f order 72bcdac13308ff10
+P17 astar time 4058f04a662a1d27 searched 819 peak 456 route 1746eef2c09e947f order 534ca932803a5d61
+P17 weighted time 405d3c2092c20a4a searched 174 peak 166 route c158d94680889320 order f3f2cdce2553b757
+P17 greedy time 40644b2db8e911d4 searched 74 peak 139 route 8e5b97911b4009f5 order 14c91244e00520a3
+P17 shortest time 40632dcb077a4112 searched 3975 peak 164 route 2c4dbcb1a0ac5e63 order 64934c1e60b0e5f7
+P17 dstar-5 time 40695c51078ce373 work 6204 again 8731 replans 70 sensed 974 driven d641ee18eb5b5f18
+P17 dstar-20 time 405919b041a65d61 work 17550 again 6931 replans 47 sensed 3732 driven 147ff43baa136f1e
+P17 stealth time 403da0bd76bb1f86 seen 4010b83770ac8822 searched 55696 voxels 6c5f90c567f53c66
+P17 direct time 4030c8b9f412e47c seen 40270d589be61e4f searched 2381 voxels 0bd7e4794396f3a1
+P18 bfs time 4062176fad5dd4a7 searched 4481 peak 91 route 52ae7b52f3493cbb order 5b718e2d22c4303b
+P18 dijkstra time 405ae3bc422c9495 searched 4028 peak 239 route 37413879f35e7e52 order 7c2100bdc7266b80
+P18 astar time 405ae3bc422c9495 searched 1388 peak 390 route 37413879f35e7e52 order b8e2f6e6820a4c80
+P18 weighted time 405d054c0d9c07be searched 171 peak 252 route d12d2899d76c23a9 order 5ba510e6b8f143ca
+P18 greedy time 40639d9bb58663aa searched 78 peak 152 route 8272b05df1c5b0b1 order 8272b05df1c5b0b1
+P18 shortest time 40637d37c60eed2d searched 4255 peak 150 route 105e4be98c1f7d24 order 4c6d1d844513af76
+P18 dstar-5 time 40634fffb82aefc1 work 6759 again 11413 replans 78 sensed 1048 driven 821fe0506cc743bc
+P18 dstar-20 time 405af1f06c9446cd work 22924 again 12087 replans 56 sensed 4018 driven 13779973a4f362d2
+P18 stealth time 403a31420374545f seen 4006201fae19725b searched 21440 voxels 47a0f33f322c61a8
+P18 direct time 40312cb23e97d493 seen 402c408bcf19517c searched 1756 voxels 16eda6800ca60172
+P19 bfs time 4060a9f30c9ad0d5 searched 3798 peak 108 route 8cbe296d659b9924 order 1a4660cb96e45399
+P19 dijkstra time 405cc1b6fcba8c6b searched 4397 peak 223 route 9cdc07843b26b691 order 940546773c574872
+P19 astar time 405cc1b6fcba8c6b searched 2080 peak 271 route 9cdc07843b26b691 order 6de235597f165164
+P19 weighted time 405fcbdb3aa819fe searched 177 peak 192 route 1991dea151806293 order fa11e195125a32db
+P19 greedy time 40648c5af622a292 searched 64 peak 107 route 5ef94c0f44c9cdd9 order ed7b7d902aea4ac7
+P19 shortest time 40606b32ce5261a6 searched 3170 peak 156 route 8d6eb67e4ee22290 order 43456048576948bd
+P19 dstar-5 time 406145e828c48948 work 3857 again 5565 replans 60 sensed 794 driven 54bae0dec6710d9b
+P19 dstar-20 time 405ce7b6ba027eaa work 26576 again 12049 replans 38 sensed 3647 driven 2f96c5948738486b
+P19 stealth time 4034879892ce019d seen 40155352e14ca592 searched 47012 voxels 45a27c834696c1f0
+P19 direct time 402c7a1d1115f521 seen 4029e94c4e85fa0c searched 1622 voxels 1e8d85a2d02832e6
+P20 bfs time 4066416902b880e8 searched 4665 peak 116 route 136b6a7d5e2b1047 order 0cde27fde492bb95
+P20 dijkstra time 405f3ffa1f36d82d searched 4437 peak 210 route bc3b7727046f4b6c order 33e1dae172bf6037
+P20 astar time 405f3ffa1f36d82d searched 1937 peak 336 route bc3b7727046f4b6c order 5b084610815839d9
+P20 weighted time 405fc733aadd6063 searched 422 peak 327 route 92902f9fb9579b72 order 92fff6bec286948c
+P20 greedy time 4067694f8931730d searched 93 peak 165 route de5097a7eab24307 order af918be0b1881cc8
+P20 shortest time 4065b96186a065b8 searched 4616 peak 161 route 9ff4bae6e83ff7d1 order 0b0e95703ed7e9ff
+P20 dstar-5 time 40655f431a852f4e work 5119 again 11427 replans 83 sensed 1123 driven 8da98b8449bf9141
+P20 dstar-20 time 406172fb02569523 work 23996 again 9879 replans 56 sensed 4073 driven a5d35ff437f4d07b
+P20 stealth time 4041b5cafe9bb5ef seen 4001999999999999 searched 48433 voxels 3bf53bb3103f3e21
+P20 direct time 4030206c20ffdf23 seen 4024ccccccccccca searched 1198 voxels 1669825b28b771dc
