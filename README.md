@@ -1,5 +1,7 @@
 # Rover Hill Course — 3D Off-Road Robot Navigation
 
+[![CI](https://github.com/R0CK574R/brubus/actions/workflows/ci.yml/badge.svg)](https://github.com/R0CK574R/brubus/actions/workflows/ci.yml)
+
 **[▶ Open the live demo](https://r0ck574r.github.io/brubus/)**: it runs in your browser, on a laptop or a phone,
 with nothing to install. Press **▶ Tour** for a guided run through all three maps (under two minutes).
 
@@ -580,6 +582,17 @@ checked the same way (see above), and the C++ core matches Python on all of it (
 positions, flag drags with mouse and touch, swapping) was checked the same way: after each one, the
 browser's six routes matched Python's cell for cell, and `main.py route` printed the same times.
 Hand-drawn routes are scored by the same rules in both (`robotnav.terrain.evaluate_route`).
+
+### Checked on every push, on x86-64 and ARM64
+
+GitHub Actions (`.github/workflows/ci.yml`) builds the C++ core on every push with four compilers on two
+processor families: GCC and Clang on Linux x86-64, GCC on Linux ARM64, Apple Clang on macOS ARM64 and MSVC
+on Windows. Each build runs the unit tests and a **golden check**: `robotnav digest` prints every result on
+every preset trip of the three maps as its exact 64 bits (times) and a hash (routes and search order), and
+the output must equal `cpp/tests/golden.digest`, made on x86-64 Linux, byte for byte. So an ARM64 build
+gives the same bits as an x86-64 one, not merely close ones. Where Python is set up, the job also runs
+`python main.py parity` on that machine; the Linux GCC job runs the Python tests; and one more job repeats
+the C++ tests under AddressSanitizer and UndefinedBehaviorSanitizer.
 
 ## Layout
 
