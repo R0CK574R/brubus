@@ -341,6 +341,139 @@ input[type=range] { accent-color: var(--accent); width: 84px; }
   26% { filter: brightness(1); }
   100% { opacity: 1; transform: none; filter: brightness(1); } }
 @keyframes bison-out { 0% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(6%) scale(1.5); } }
+/* ops:css:begin */
+/* The operator console (#ops): the same map, run as a mission. A bar across the top, the entity and task lists on
+   the left, the selected entity (or the task being planned) on the right, the timeline and event log along the
+   bottom. Dense: 11-12 px type, numbers in the data face, one line per row. */
+body.ops-on .hud { display: none; }
+.ops { position: fixed; inset: 0; pointer-events: none; display: grid; gap: 8px;
+  grid-template-columns: 21.5rem minmax(0, 1fr) 21.5rem; grid-template-rows: auto minmax(0, 1fr) auto;
+  padding-block: calc(8px + env(safe-area-inset-top, 0px)) calc(8px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(8px, env(safe-area-inset-left, 0px)); padding-right: max(8px, env(safe-area-inset-right, 0px));
+  font-size: 12px; }
+.ops h2 { margin: 0; padding: 9px 12px 6px; font: 700 10px/1 var(--f-display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+  display: flex; justify-content: space-between; align-items: baseline; }
+.ops h2 span { font: 500 10px/1 var(--f-data); letter-spacing: 0; }
+.ops button { padding: 5px 9px; font-size: 11.5px; }
+.ops kbd { font: 500 10px/1 var(--f-data); padding: 2px 4px; border: 1px solid var(--edge); border-radius: 3px; color: var(--muted); }
+.ops-top { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: 6px 10px; }
+.ops-brand { display: flex; align-items: baseline; gap: 9px; }
+.ops-brand b { font: 900 14px/1 var(--f-display); letter-spacing: 0.06em; color: var(--accent); }
+.ops-brand span { font: 600 10px/1 var(--f-body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.ops-seg { display: inline-flex; border: 1px solid var(--edge); border-radius: 4px; overflow: hidden; }
+.ops-seg button { border: 0; border-radius: 0; border-left: 1px solid var(--edge); }
+.ops-seg button:first-child { border-left: 0; }
+.ops-seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.ops-clock { display: flex; align-items: center; gap: 10px; margin-inline: auto; font-family: var(--f-data); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ops-clock output:first-of-type { font-size: 13px; color: var(--ink); }
+.ops-clock output:last-of-type { color: var(--muted); }
+.ops-pill { display: inline-block; padding: 3px 6px; border-radius: 3px; font: 700 9.5px/1 var(--f-body); letter-spacing: 0.1em; text-transform: uppercase;
+  border: 1px solid currentColor; color: var(--muted); white-space: nowrap; }
+.ops-pill.live, .ops-pill.ok { color: var(--hidden); }
+.ops-pill.run, .ops-pill.sent { color: var(--friend); }
+.ops-pill.warn, .ops-pill.replay { color: var(--caution); }
+.ops-pill.bad { color: var(--hostile); }
+.ops-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.ops-left { grid-column: 1; grid-row: 2; align-self: start; max-height: 100%; overflow: auto; padding-bottom: 6px; }
+.ops-right { grid-column: 3; grid-row: 2; align-self: start; max-height: 100%; overflow: auto; }
+.ops-bottom { grid-column: 1 / -1; grid-row: 3; display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; gap: 0 10px; padding: 6px 10px 6px; }
+.ops-table { width: 100%; border-collapse: collapse; }
+.ops-table th { font-size: 9px; padding: 3px 5px; text-align: left; }
+.ops-table td { font-size: 11px; padding: 4px 5px; text-align: left; white-space: nowrap; }
+.ops-table th:first-child, .ops-table td:first-child { padding-left: 12px; }
+.ops-table th:last-child, .ops-table td:last-child { padding-right: 12px; }
+.ops-table .num { text-align: right; }
+.ops-table tbody tr { cursor: pointer; }
+.ops-table tbody tr[aria-selected="true"] td { background: var(--accent-soft); }
+.ops-table tbody tr[aria-selected="true"] td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
+.ops-table td.call { font-family: var(--f-body); font-weight: 600; font-size: 11.5px; }
+.ops-table td.call img { width: 15px; height: 15px; vertical-align: -3px; margin-right: 6px; }
+.ops-st { font: 600 10px/1 var(--f-body); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.ops-st.run { color: var(--friend); } .ops-st.bad { color: var(--hostile); } .ops-st.ok { color: var(--hidden); } .ops-st.warn { color: var(--caution); }
+.ops-empty { margin: 2px 12px 8px; color: var(--muted); font-size: 11.5px; line-height: 1.5; }
+.ops-empty p { margin: 0 0 8px; }
+/* the selected entity */
+.ops-head { display: flex; align-items: center; gap: 10px; padding: 10px 12px 8px; border-bottom: 1px solid var(--edge); }
+.ops-head img { width: 30px; height: 30px; flex: none; }
+.ops-head b { display: block; font: 700 15px/1.1 var(--f-display); }
+.ops-head small { display: block; margin-top: 3px; font: 500 10.5px/1 var(--f-body); letter-spacing: 0.04em; color: var(--muted); }
+.ops-head .ops-pill { margin-left: auto; }
+.ops-kv { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin: 0; }
+.ops-kv div { padding: 6px 12px; border-bottom: 1px solid var(--edge); min-width: 0; }
+.ops-kv div:nth-child(odd) { border-right: 1px solid var(--edge); }
+.ops-kv dt { font: 600 9px/1 var(--f-body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.ops-kv dd { margin: 4px 0 0; font: 500 12px/1.1 var(--f-data); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ops-kv dd.seen { color: var(--hostile); } .ops-kv dd.hid { color: var(--hidden); }
+.ops-sec { padding: 9px 12px 10px; border-bottom: 1px solid var(--edge); display: grid; gap: 7px; }
+.ops-sec:last-child { border-bottom: 0; }
+.ops-sec h3 { margin: 0; font: 700 10px/1 var(--f-display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.ops-sec p { margin: 0; line-height: 1.5; color: var(--muted); }
+.ops-sec p b { color: var(--ink); font-weight: 600; }
+.ops-bar { height: 3px; background: var(--edge); border-radius: 2px; overflow: hidden; }
+.ops-bar i { display: block; height: 100%; width: 0; background: var(--friend); }
+.ops-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.ops-row .grow { margin-left: auto; }
+.ops-limits { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ops-limits label { display: grid; gap: 4px; font: 600 9px/1 var(--f-body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.ops-limits input { box-sizing: border-box; width: 100%; padding: 6px 7px; font: 12px/1 var(--f-data); color: var(--ink); background: var(--map-bg); border: 1px solid var(--edge); border-radius: 4px; }
+.ops-plans td:first-child, .ops-plans th:first-child { padding-left: 8px; }
+.ops-plans td:last-child, .ops-plans th:last-child { padding-right: 8px; }
+.ops-plans { border: 1px solid var(--edge); border-radius: 4px; border-collapse: separate; border-spacing: 0; overflow: hidden; }
+.ops-plans tr:first-child td { border-top: 1px solid var(--edge); }
+.ops-plans tr[aria-disabled="true"] { opacity: 0.45; cursor: default; }
+.ops-plans .ok { color: var(--hidden); } .ops-plans .no { color: var(--hostile); }
+.ops-plans td.call i { display: inline-block; width: 12px; height: 3px; margin-right: 6px; vertical-align: 3px; background: var(--route); }
+.ops-plans tr[aria-selected="true"] td.call i { background: var(--friend); }
+.ops-msg { min-height: 1.5em; color: var(--muted); line-height: 1.5; }
+.ops-msg[data-tone="bad"] { color: var(--bad); }
+/* the timeline and the event log */
+.ops-transport { grid-row: 1 / 3; display: grid; align-content: start; gap: 5px; width: 6.4rem; }
+.ops-transport output { font: 500 11px/1.2 var(--f-data); color: var(--muted); font-variant-numeric: tabular-nums; }
+#ops-tl { display: block; width: 100%; height: 62px; cursor: ew-resize; touch-action: none; }
+.ops-log { list-style: none; margin: 5px 0 0; padding: 3px 0 0; height: 100px; overflow: auto; overscroll-behavior: contain; border-top: 1px solid var(--edge); }
+.ops-log li { display: grid; grid-template-columns: 5.6rem 4.6rem minmax(0, 1fr); gap: 8px; height: 20px; align-items: center; font: 11px/1 var(--f-data); cursor: pointer; }
+.ops-log li:hover { background: var(--hover); }
+.ops-log time { color: var(--muted); }
+.ops-log b { font: 600 11px/1 var(--f-body); color: var(--friend); }
+.ops-log li[data-src^="TWR"] b { color: var(--hostile); }
+.ops-log li[data-src="OPERATOR"] b { color: var(--accent); }
+.ops-log span { font-family: var(--f-body); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ops-log li[data-sev="warn"] span { color: var(--caution); }
+.ops-log li[data-sev="bad"] span { color: var(--hostile); }
+.ops-log li[data-sev="ok"] span { color: var(--hidden); }
+.ops-log li.later { opacity: 0.3; }
+/* the command bar */
+.ops-veil { position: fixed; inset: 0; pointer-events: auto; background: rgba(5, 6, 8, 0.55); display: grid; justify-items: center; align-items: start; padding: 12vh 16px 16px; z-index: 30; }
+.ops-pal { width: min(34rem, 100%); background: #14171b; border: 1px solid rgba(230, 231, 232, 0.2); border-radius: 6px; box-shadow: 0 18px 60px rgba(0, 0, 0, 0.6); overflow: hidden; }
+.ops-pal input { box-sizing: border-box; width: 100%; padding: 13px 14px; font: 14px/1 var(--f-body); color: var(--ink); background: transparent; border: 0; border-bottom: 1px solid var(--edge); outline: 0; }
+.ops-pal ul { list-style: none; margin: 0; padding: 4px; max-height: min(22rem, 50vh); overflow: auto; }
+.ops-pal li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 7px 10px; border-radius: 4px; font-size: 13px; cursor: pointer; }
+.ops-pal li[aria-selected="true"] { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent); }
+.ops-pal li small { font: 500 10.5px/1 var(--f-data); color: var(--muted); white-space: nowrap; }
+.ops-pal .none { padding: 12px 10px; color: var(--muted); cursor: default; }
+/* the after-action report: a white page over the console */
+.ops-aar { align-items: stretch; padding: 4vh 16px; overflow: auto; }
+.ops-aar-box { width: min(54rem, 100%); display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 8px; }
+.ops-aar-bar { display: flex; align-items: center; gap: 8px; }
+.ops-aar-bar b { margin-right: auto; font: 700 11px/1 var(--f-display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.ops-aar iframe { width: 100%; height: 100%; min-height: 70vh; border: 0; border-radius: 4px; background: #fff; }
+@media (max-width: 1100px) { .ops { grid-template-columns: 18.5rem minmax(0, 1fr) 19rem; } .ops-table .hide-md { display: none; } }
+@media (max-width: 760px) {
+  .ops { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr) auto auto; gap: 6px; padding-inline: 6px; }
+  .ops-top { gap: 6px 8px; padding: 6px 8px; }
+  .ops-brand span, #ops-cmd-btn kbd, .ops-clock output:last-of-type, #ops-speed, .ops-aar-bar b { display: none; }
+  .ops-aar-bar { justify-content: flex-end; }
+  .ops-clock { margin-inline: 0 auto; }
+  .ops-left { grid-column: 1; grid-row: 2; max-height: 8.2rem; }
+  .ops-left h2, .ops-left #ops-tasks, .ops-left #ops-tasks-empty, .ops-table .hide-sm { display: none; }
+  .ops-right { grid-column: 1; grid-row: 4; max-height: 34vh; }
+  .ops-bottom { grid-row: 5; grid-template-columns: minmax(0, 1fr); }
+  .ops-transport { grid-row: auto; display: flex; width: auto; align-items: center; margin-bottom: 4px; }
+  .ops-log { height: 60px; }
+  .ops-log li { grid-template-columns: 4.9rem 3.8rem minmax(0, 1fr); gap: 6px; }
+  #ops-tl { height: 48px; }
+}
+/* ops:css:end */
 </style>
 
 <div class="intro" id="intro" role="img" aria-label="BRUBUS">
@@ -519,6 +652,61 @@ input[type=range] { accent-color: var(--accent); width: 84px; }
     </div>
   </section>
 </div>
+<!-- ops:html:begin -->
+<div class="ops" id="ops" hidden>
+  <header class="board ops-top" id="ops-top">
+    <div class="ops-brand"><b>BRUBUS</b><span>Operator console</span></div>
+    <div class="ops-seg" id="ops-maps" role="group" aria-label="Map"></div>
+    <div class="ops-clock" title="Mission time (simulated), in UTC, and time since the mission began"><span class="ops-pill live" id="ops-state">Live</span><output id="ops-utc">—</output><output id="ops-tplus">T+00:00</output></div>
+    <div class="ops-tools">
+      <div class="ops-seg" id="ops-speed" role="group" aria-label="Simulation speed">
+        <button data-speed="1" aria-pressed="false">1×</button><button data-speed="4" aria-pressed="true">4×</button><button data-speed="10" aria-pressed="false">10×</button>
+      </div>
+      <div class="ops-seg" id="ops-views" role="group" aria-label="Camera">
+        <button data-view="drone" aria-pressed="false">Follow</button><button data-view="top" aria-pressed="false">Top</button><button data-view="course" aria-pressed="true">Overview</button>
+      </div>
+      <button id="ops-cmd-btn" title="Command bar: every action, by name">Commands <kbd>Ctrl K</kbd></button>
+      <button id="ops-report-btn" title="After-action report of this mission">Report</button>
+      <button id="ops-exit" title="Back to the route demo">Exit</button>
+    </div>
+  </header>
+  <section class="board ops-left" id="ops-left" aria-label="Entities and tasks">
+    <h2>Entities <span id="ops-ent-n"></span></h2>
+    <table class="ops-table" id="ops-ents">
+      <thead><tr><th>Callsign</th><th>Status</th><th>Grid</th><th class="num hide-md">Hdg</th><th class="num">m/s</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <h2>Tasks <span id="ops-task-n"></span></h2>
+    <table class="ops-table" id="ops-tasks">
+      <thead><tr><th>ID</th><th>Entity</th><th>Plan</th><th>Status</th><th class="num">Time</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="ops-empty" id="ops-tasks-empty"><p>No tasks yet. Select a vehicle and press <kbd>T</kbd> to send it somewhere, or watch a mission run itself.</p><button id="ops-demo-btn">▶ Run the demo mission</button></div>
+  </section>
+  <section class="board ops-right" id="ops-right" aria-label="Selected entity"></section>
+  <section class="board ops-bottom" id="ops-bottom" aria-label="Timeline and event log">
+    <div class="ops-transport">
+      <button id="ops-play" title="Pause or resume (Space)">Pause</button>
+      <button id="ops-live" title="Back to now (L)" disabled>● Live</button>
+      <output id="ops-view-t"></output>
+    </div>
+    <canvas id="ops-tl" role="slider" aria-label="Mission timeline: drag to replay" tabindex="0"></canvas>
+    <ol class="ops-log" id="ops-log" aria-label="Event log"></ol>
+  </section>
+  <div class="ops-veil" id="ops-pal" hidden>
+    <div class="ops-pal" role="dialog" aria-label="Command bar">
+      <input id="ops-pal-in" type="text" placeholder="Type a command…" autocomplete="off" spellcheck="false" aria-label="Command">
+      <ul id="ops-pal-list" role="listbox"></ul>
+    </div>
+  </div>
+  <div class="ops-veil ops-aar" id="ops-aar" hidden>
+    <div class="ops-aar-box" role="dialog" aria-label="After-action report">
+      <div class="ops-aar-bar"><b>After-action report</b><button id="ops-aar-dl">Download .html</button><button id="ops-aar-print">Print</button><button class="primary" id="ops-aar-close">Close</button></div>
+      <iframe id="ops-aar-frame" title="After-action report"></iframe>
+    </div>
+  </div>
+</div>
+<!-- ops:html:end -->
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -2120,7 +2308,7 @@ void groundOverlay(inout vec3 col) {
     const t0 = performance.now(), N = R * C, NV = AIRC.levels * N, s = airVoxel(start), g = airVoxel(goal);
     if (s < 0 || g < 0) return { found: false, voxels: [], nodes: 0, cost: Infinity, ms: 0 };
     const gk = Math.floor(g / N), gr = ((g - gk * N) / C) | 0, gc = g - gk * N - gr * C;
-    const w = stealth ? AIRC.exposure : 0, MT = AIR_MOVES.map(([dr, dc, dk]) => airMoveTime(dr, dc, dk)), seen = airspace.seen;
+    const w = stealth === true ? AIRC.exposure : +stealth || 0, MT = AIR_MOVES.map(([dr, dc, dk]) => airMoveTime(dr, dc, dk)), seen = airspace.seen;
     const h = v => {
       const k = Math.floor(v / N), rem = v - k * N, r = (rem / C) | 0, c = rem - r * C, y = (k - gk) * AIRC.dz;
       return Math.sqrt((r - gr) * (r - gr) + (c - gc) * (c - gc) + y * y) / AIRC.speed;
@@ -3016,9 +3204,14 @@ void groundOverlay(inout vec3 col) {
   let planView = null;
   function computePlanView() {                      // fit the whole map into the space the panels leave free
     const vw = innerWidth, vh = innerHeight, board = $("board");
-    const top = $("title-board").getBoundingClientRect().bottom + 10;
-    const bottom = (PB.bar.hidden ? vh - 16 : PB.bar.getBoundingClientRect().top) - 10;
-    const right = !board.hidden && !narrow() ? board.getBoundingClientRect().left - 12 : vw - 16, left = 16;
+    let top = $("title-board").getBoundingClientRect().bottom + 10;
+    let bottom = (PB.bar.hidden ? vh - 16 : PB.bar.getBoundingClientRect().top) - 10;
+    let right = !board.hidden && !narrow() ? board.getBoundingClientRect().left - 12 : vw - 16, left = 16;
+    if (ops.on) {                                   // the console: between its panels
+      const rc = id => $(id).getBoundingClientRect();
+      top = (narrow() ? rc("ops-left") : rc("ops-top")).bottom + 8; bottom = (narrow() ? rc("ops-right") : rc("ops-bottom")).top - 8;
+      left = narrow() ? 8 : rc("ops-left").right + 8; right = narrow() ? vw - 8 : rc("ops-right").left - 8;
+    }
     const wpp = Math.max(C / (Math.max(120, right - left) * 0.92), R / (Math.max(120, bottom - top) * 0.92));
     return { dist: wpp * vh / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2)),
              tx: (vw / 2 - (left + right) / 2) * wpp, tz: (vh / 2 - (top + bottom) / 2) * wpp };
@@ -3063,7 +3256,7 @@ void groundOverlay(inout vec3 col) {
     const cx0 = (Math.min(...pts.map(p => p[0])) + Math.max(...pts.map(p => p[0]))) / 2;
     const cy0 = (Math.min(...pts.map(p => p[1])) + Math.max(...pts.map(p => p[1]))) / 2;
     const blocks = [[-1e4, -1e4, m, 1e4], [W - m, -1e4, 1e4, 1e4], [-1e4, -1e4, 1e4, m], [-1e4, H - m, 1e4, 1e4]];   // screen edges
-    for (const id of ["title-board", "board", "drone", "paths", "tele", "planbar", "tour-cap", "sense"]) {   // every panel on show
+    for (const id of ["title-board", "board", "drone", "paths", "tele", "planbar", "tour-cap", "sense", "ops-top", "ops-left", "ops-right", "ops-bottom"]) {   // every panel on show
       const el = $(id), r = el.getBoundingClientRect();                                     // (a phone's path list is a
       if (!el.hidden && r.width && !(id === "paths" && narrow())) blocks.push([r.left - m, r.top - m, r.right + m, r.bottom + m]);   // brief overlay)
     }
@@ -3080,7 +3273,7 @@ void groundOverlay(inout vec3 col) {
       }
       return best;
     };
-    let lo = 0.15, hi = 1.3, spot = place(lo, true);
+    let lo = 0.15, hi = ops.on ? 2.4 : 1.3, spot = place(lo, true);   // (the console's map may come closer)
     if (!spot) { lo = 0.6; spot = place(lo, false); }   // no room anywhere (a phone with the board open): hide the least
     else for (let k = 0; k < 7; k++) { const mid = (lo + hi) / 2, p = place(mid, true); if (p) { lo = mid; spot = p; } else hi = mid; }
     return { s: lo, x: cx0 - spot.cx / lo, y: cy0 - spot.cy / lo };
@@ -3180,6 +3373,7 @@ void groundOverlay(inout vec3 col) {
       extraGroup.children.forEach(o => { if (o.userData.lod) o.visible = o.userData.lod === (thick ? "far" : "near") && !(hideFocus && o.userData.focus); });
     }
     senseShow(); airShow();
+    if (ops.on) opsLayers();
   }
   function sAtTime(rt, tt) {                        // distance along the route after tt seconds, and metres per second there
     const tA = rt.tAt, sA = rt.sAt, last = tA.length - 1;
@@ -3633,10 +3827,10 @@ void main() {
     air.curtain = new THREE.LineSegments(g, m); air.curtain.renderOrder = 3; scene.add(air.curtain);
   }
   function airShow() {                              // towers, coverage, the drone and the curtain follow the mode
-    rover.group.visible = !air.on;
-    air.drone.group.visible = air.on;
-    if (air.towers) air.towers.visible = air.on;
-    OVER.uThreatOn.value = air.on && air.threat ? 1 : 0;
+    rover.group.visible = !air.on || ops.on;
+    air.drone.group.visible = air.on || ops.on;
+    if (air.towers) air.towers.visible = air.on || ops.on;
+    OVER.uThreatOn.value = (air.on || ops.on) && air.threat ? 1 : 0;
     OVER.uThreat.value = air.threat;
     if (air.curtainOf !== current || (!air.on && air.curtain)) buildCurtain();
   }
@@ -4105,16 +4299,17 @@ void main() {
   function clearHover() { hoverEv = null; hoverKey = ""; cursorRing.hide(); PB.cursor.textContent = ""; if (!plan.drag) cvs.style.cursor = ""; }
   cvs.addEventListener("pointerdown", ev => {
     pointers.add(ev.pointerId);
-    tap = (plan.mode || senseView.arming) && !plan.drag && pointers.size === 1 ? { x: ev.clientX, y: ev.clientY, id: ev.pointerId } : null;
+    tap = (plan.mode || senseView.arming || ops.on) && !plan.drag && pointers.size === 1 ? { x: ev.clientX, y: ev.clientY, id: ev.pointerId } : null;
   });
   const pointerEnd = ev => {
     pointers.delete(ev.pointerId);
     if (plan.drag && ev.pointerId === plan.drag.id) { endDrag(ev.type); return; }
     if (!tap || tap.id !== ev.pointerId) return;
     const t0 = tap; tap = null;
-    if ((!plan.mode && !senseView.arming) || ev.type !== "pointerup" || Math.hypot(ev.clientX - t0.x, ev.clientY - t0.y) > 6) return;
+    if ((!plan.mode && !senseView.arming && !ops.on) || ev.type !== "pointerup" || Math.hypot(ev.clientX - t0.x, ev.clientY - t0.y) > 6) return;
     const cell = cellAt(ev);
     if (!cell) return;
+    if (ops.on) { opsClick(cell); return; }
     if (!plan.mode) { if (sensing()) dropBlock(cell); return; }
     if (plan.mode === "pick") {
       placeMarker(plan.slot, cell);
@@ -4127,11 +4322,12 @@ void main() {
   cvs.addEventListener("pointermove", ev => {
     if (plan.drag && ev.pointerId === plan.drag.id) { dragMove(ev); return; }
     if (senseView.arming && !plan.mode) cvs.style.cursor = "crosshair";
-    if (plan.mode && ev.pointerType === "mouse" && !ev.buttons) hoverEv = ev;
+    if ((plan.mode || ops.picking) && ev.pointerType === "mouse" && !ev.buttons) hoverEv = ev;
   });
   cvs.addEventListener("pointerleave", () => {
     if (plan.mode === "draw") { hoverEv = null; preview(null); }
     else if (plan.mode === "pick" && !plan.drag) clearHover();
+    else if (ops.picking) { hoverEv = null; cursorRing.hide(); }
   });
 
   function enterPlan() {
@@ -4712,6 +4908,873 @@ void main() {
     else if (senseView.arming) armBlock(false);
   });
 
+  /* ops:js:begin */
+  // ---------------------------------------------------------------- the operator console: #ops
+  // The same map run as a mission. Two vehicles of ours (UGV-01, the tank, and UAV-01, the drone) and the hostile
+  // watchtowers are entities in a list; you select one, give a vehicle a task (move to a point, with limits on how
+  // long it may be seen and when it must arrive), compare three plans (fastest, balanced, stealthiest: the same A*
+  // paying 0, 2 or 10 seconds per second in a tower's sight), approve one, and watch it run: sent, running, then done
+  // or failed. Everything that happens goes to an event log with UTC times and onto a timeline you can drag to replay
+  // the mission; a report sums it up afterwards. The towers see the tank too here: a ground cell is seen where a line
+  // from a tower's eye to a metre above it is clear.
+  const OPS_PLANS = [{ key: "fast", name: "Fastest", w: 0 }, { key: "balanced", name: "Balanced", w: 2 }, { key: "stealth", name: "Stealthiest", w: AIRC.exposure }];
+  const OPS_SENSE = 5, OPS_ACK = 0.8;               // how far the tank notices a roadblock (m); seconds from sent to running
+  const ops = { on: false, epoch: 0, clock: 0, view: null, viewPlay: false, paused: false, speed: 4, sel: "UAV-01", vehs: [], tasks: [], events: [],
+                blocks: new Map(), draft: null, picking: null, gmask: null, gmap: null, seq: 0, prevMode: "course", demo: null, uiT: 1, tlT: 1,
+                sig: "", mission: "", followY: 0, dirty: true, syms: {}, shown: null };
+  const OE = { root: $("ops"), top: $("ops-top"), left: $("ops-left"), right: $("ops-right"), bottom: $("ops-bottom"), ents: $("ops-ents").tBodies[0],
+               tasks: $("ops-tasks").tBodies[0], tasksEmpty: $("ops-tasks-empty"), log: $("ops-log"), tl: $("ops-tl"), utc: $("ops-utc"), tplus: $("ops-tplus"),
+               state: $("ops-state"), play: $("ops-play"), live: $("ops-live"), viewT: $("ops-view-t"), pal: $("ops-pal"), palIn: $("ops-pal-in"),
+               palList: $("ops-pal-list"), aar: $("ops-aar"), frame: $("ops-aar-frame") };
+  const p2 = n => String(n).padStart(2, "0");
+  function opsUTC(t, date) {                        // mission time as a UTC clock time
+    const d = new Date(ops.epoch + t * 1000);
+    return (date ? `${d.getUTCFullYear()}-${p2(d.getUTCMonth() + 1)}-${p2(d.getUTCDate())} ` : "") + `${p2(d.getUTCHours())}:${p2(d.getUTCMinutes())}:${p2(d.getUTCSeconds())}Z`;
+  }
+  const opsGrid = cell => `${String(cell[1]).padStart(3, "0")} ${String(cell[0]).padStart(3, "0")}`;   // easting, northing in metres
+  const opsHdg = yaw => String(Math.round(headingOf(Math.sin(yaw), Math.cos(yaw))) % 360).padStart(3, "0");
+  const opsNames = mask => air.list.map((_, n) => (mask >> n & 1 ? `TWR-${n + 1}` : "")).filter(Boolean);
+  const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+  function opsSym(kind) {                           // an entity's map symbol as a little picture, for the lists
+    if (!ops.syms[kind]) { const cv = document.createElement("canvas"); cv.width = cv.height = 60; drawSymbol(cv.getContext("2d"), kind, 30, 30, 40); ops.syms[kind] = cv.toDataURL(); }
+    return ops.syms[kind];
+  }
+  function opsGround() {                            // which towers see each ground cell (a bit per tower)
+    if (ops.gmap === MAP) return;
+    const m = new Uint8Array(R * C), s2 = AIRC.sight * AIRC.sight;
+    airspace.towers.forEach(([tr, tc], n) => {
+      const E = airspace.eyes[n];
+      for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) {
+        const i = r * C + c, a = H[i] + 1, dr = r - tr, dc = c - tc, dy = a - E;
+        if (OBS[i] || !(dr || dc) || dr * dr + dc * dc + dy * dy > s2) continue;
+        if (lineOfSight(airspace.top, tr, tc, E, r, c, a)) m[i] |= 1 << n;
+      }
+    });
+    ops.gmask = m; ops.gmap = MAP;
+  }
+  const opsAirMask = vox => whoSees(vox).reduce((m, n) => m | 1 << n, 0);
+
+  // -- planning: a ground route or a flight that pays w seconds for every second in sight
+  function opsGroundRoute(si, gi, w) {
+    const t0 = performance.now(), gm = ops.gmask;
+    const step = (a, b) => {
+      const blk = ops.blocks.get(b);
+      if (blk && blk.known) return -1;
+      const c = stepCost(a, b);
+      return c < 0 || !w || !gm[b] ? c : c + w * c;
+    };
+    const res = bestFirst(si, gi, PRIO.astar, step), idx = [], stepT = [0];
+    if (res.found) { for (let i = gi; i !== -1; i = res.parent[i]) idx.push(i); idx.reverse(); }
+    let cost = 0, seenS = 0;
+    for (let k = 1; k < idx.length; k++) { const c = stepCost(idx[k - 1], idx[k]); stepT.push(c); cost += c; if (gm[idx[k]]) seenS += c; }
+    return { found: res.found, idx, cells: idx.map(i => [(i / C) | 0, i % C]), cost: res.found ? cost : Infinity, seenS, stepT, color: FRIEND,
+             stats: res.found ? statsOf(idx) : null, nodes: res.explored.length, ms: performance.now() - t0, flags: idx.map(i => (gm[i] ? 1 : 0)) };
+  }
+  function opsPlan(v, dest) {                       // the three plans for a vehicle from where it is
+    const out = OPS_PLANS.map(p => {
+      const rt = v.kind === "uav" ? airRoute(v.cell, dest, p.w) : opsGroundRoute(v.cell[0] * C + v.cell[1], dest[0] * C + dest[1], p.w);
+      if (rt.voxels && rt.found) rt.flags = rt.voxels.map(x => airspace.seen[x]);
+      rt.dashed = false; rt.color = FRIEND;
+      return Object.assign({ rt, same: null }, p);
+    });
+    const path = p => p.rt.voxels || p.rt.idx;
+    for (let a = 1; a < out.length; a++) for (let b = 0; b < a && !out[a].same; b++) {
+      const x = path(out[a]), y = path(out[b]);
+      if (out[a].rt.found && x.length === y.length && x.every((q, i) => q === y[i])) out[a].same = out[b].same ? out[b].same : out[b].name;
+    }
+    return out;
+  }
+  const opsMeets = (d, p) => (d.maxSeen == null || p.rt.seenS <= d.maxSeen + 1e-9) && (d.arriveBy == null || p.rt.cost <= d.arriveBy + 1e-9);
+  function opsVisual(rt) { if (!rt.tube && rt.found) buildRouteVisual(rt, 0.25, rt.air ? rt.pts : undefined); }
+  function opsPaint(rt, sel, show, from) {          // one route's line: ours in blue, an alternative in grey
+    if (!rt || !rt.tube) return;
+    const thick = farView || mode === "plan";
+    rt.tube.visible = show && !thick; rt.planTube.visible = show && thick;
+    lineCol.set(sel ? FRIEND : ROUTE).convertSRGBToLinear();
+    rt.mat.color.copy(lineCol); rt.mat.emissive.copy(lineCol); rt.planMat.color.copy(lineCol);
+    rt.planMat.opacity = sel ? 0.95 : 0.6; rt.mat.opacity = sel ? 1 : 0.6; rt.planTube.renderOrder = sel ? 5.5 : 5;
+    rt.planMat.depthTest = mode !== "plan";
+    const n = Math.floor((from || 0) * rt.segs) * RADIAL * 6;
+    rt.tube.geometry.setDrawRange(n, Infinity); rt.planTube.geometry.setDrawRange(n, Infinity);
+  }
+  function opsLayers() {
+    const d = ops.draft;
+    if (d && d.plans) d.plans.forEach((p, n) => { if (n !== d.pick) opsPaint(p.rt, false, !p.same); });
+    for (const v of ops.vehs) opsPaint(v.route, true, ops.view === null && !(d && d.veh === v && d.plans), v.u);
+    if (d && d.plans) opsPaint(d.plans[d.pick].rt, true, true);
+  }
+
+  // -- the mission's state
+  function opsVeh(id, kind, cell) {
+    const x = toX(cell[1]), z = toZ(cell[0]), y = groundH(x, z) + (kind === "uav" ? 0.36 : 0);
+    return { id, kind, cell: cell.slice(), x, y, z, dy: y, yaw: MODES.course.theta + Math.PI, yawS: MODES.course.theta + Math.PI, roll: 0, spd: 0, climb: 0, mask: 0,
+             status: kind === "uav" ? "LANDED" : "IDLE", task: null, route: null, rt: 0, k: 0, u: 0, dist: 0, sPrev: 0, markS: 0, spans: [],
+             rec: { t: [], x: [], y: [], z: [], yaw: [], spd: [], climb: [], mask: [], st: [] } };
+  }
+  function opsPad(from) {                           // open ground a few metres from the tank, for the drone to stand on
+    let best = null, bestD = Infinity;
+    for (let r = 1; r < R - 1; r++) for (let c = 1; c < C - 1; c++) {
+      const d = Math.hypot(r - from[0], c - from[1]);
+      if (d < 4 || d >= bestD || OBS[r * C + c] || airVoxel([r, c]) < 0) continue;
+      if (Math.hypot(hAt(r, c + 1) - hAt(r, c - 1), hAt(r + 1, c) - hAt(r - 1, c)) / 2 > 0.25) continue;
+      best = [r, c]; bestD = d;
+    }
+    return best || from;
+  }
+  function opsDropRoute(v) { if (v.route) disposeRouteVisual(v.route); v.route = null; v.u = 0; }
+  function opsRing(o) { if (o && o.ring) { scene.remove(o.ring); o.ring.geometry.dispose(); o.ring.material.dispose(); o.ring = null; } }
+  function opsClear() {                             // take the mission's things off the map
+    opsCancelDraft(true);
+    ops.vehs.forEach(opsDropRoute); ops.tasks.forEach(opsRing);
+    for (const b of ops.blocks.values()) { scene.remove(b.mesh); opsRing(b); }
+    ops.blocks.clear(); ops.vehs = []; ops.tasks = []; ops.events = []; ops.demo = null; ops.seq = 0;
+    OE.log.textContent = ""; marks.clear(); dust.clear();
+  }
+  function opsReset() {                             // a new mission on this map
+    opsClear(); airReady(); opsGround();
+    Object.assign(ops, { epoch: Date.now(), clock: 0, view: null, viewPlay: false, paused: false, sig: "", dirty: true });
+    const d = new Date(ops.epoch);
+    ops.mission = `M-${String(d.getUTCFullYear()).slice(2)}${p2(d.getUTCMonth() + 1)}${p2(d.getUTCDate())}-${p2(d.getUTCHours())}${p2(d.getUTCMinutes())}`;
+    ops.vehs = [opsVeh("UGV-01", "ugv", home), opsVeh("UAV-01", "uav", opsPad(home))];
+    if (!opsEnt(ops.sel)) ops.sel = "UAV-01";
+    ops.vehs.forEach(opsRecord);
+    opsLog("OPERATOR", `Mission ${ops.mission} opened on ${MAP.name}: 2 vehicles, ${air.list.length} hostile sensors`);
+    opsBuildEnts(); snap = true; airShow(); opsLayers();
+  }
+  const opsEnts = () => ops.vehs.concat(air.list.map((tw, n) => ({ id: `TWR-${n + 1}`, kind: "tower", n, tw, cell: [tw.r, tw.c] })));
+  const opsEnt = id => opsEnts().find(e => e.id === id);
+  function opsLog(src, msg, sev = "info") {
+    const e = { t: ops.clock, src, msg, sev };
+    ops.events.push(e);
+    const li = document.createElement("li");
+    li.dataset.src = src; li.dataset.sev = sev;
+    li.innerHTML = `<time>${opsUTC(e.t)}</time><b>${esc(src)}</b><span title="${esc(msg)}">${esc(msg)}</span>`;
+    li.onclick = () => opsScrub(e.t);
+    OE.log.appendChild(li); e.li = li;
+    OE.log.scrollTop = OE.log.scrollHeight;
+  }
+  function opsRecord(v) {                           // a sample of where a vehicle is, for the timeline's replay
+    const r = v.rec, n = r.t.length;
+    if (n && ops.clock <= r.t[n - 1]) return;
+    r.t.push(ops.clock); r.x.push(v.x); r.y.push(v.dy); r.z.push(v.z); r.yaw.push(v.yaw); r.spd.push(v.spd); r.climb.push(v.climb); r.mask.push(v.mask); r.st.push(v.status);
+  }
+  function opsAt(v, t) {                            // a vehicle as it was at mission time t
+    const r = v.rec, last = r.t.length - 1;
+    let lo = 0, hi = last;
+    while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (r.t[mid] <= t) lo = mid; else hi = mid; }
+    if (t >= r.t[hi]) lo = hi;
+    const f = lo < last && r.t[lo + 1] > r.t[lo] ? clamp((t - r.t[lo]) / (r.t[lo + 1] - r.t[lo]), 0, 1) : 0, b = Math.min(last, lo + 1), L = k => r[k][lo] + (r[k][b] - r[k][lo]) * f;
+    return { x: L("x"), y: L("y"), z: L("z"), yaw: r.yaw[lo] + wrapPi(r.yaw[b] - r.yaw[lo]) * f, spd: r.spd[lo], climb: r.climb[lo], mask: r.mask[lo], status: r.st[lo] };
+  }
+  function opsSight(v, mask) {                      // a tower starts or stops seeing a vehicle
+    air.list.forEach((_, n) => {
+      const was = v.mask >> n & 1, is = mask >> n & 1;
+      if (is && !was) opsLog(`TWR-${n + 1}`, `acquired ${v.id}`, "bad");
+      else if (was && !is) opsLog(`TWR-${n + 1}`, `lost ${v.id}`);
+    });
+    if (mask && !v.mask) v.spans.push([ops.clock, null]);
+    else if (!mask && v.mask && v.spans.length) v.spans[v.spans.length - 1][1] = ops.clock;
+    v.mask = mask; ops.dirty = true;
+  }
+  function opsFinish(v, arrived, why) {             // a task ends: done, failed or cancelled
+    const tk = v.task, fails = [];
+    tk.tEnd = ops.clock;
+    if (tk.tStart != null) tk.elapsed = ops.clock - tk.tStart;
+    if (arrived) {
+      if (tk.maxSeen != null && tk.seen > tk.maxSeen + 1e-6) fails.push(`seen ${tk.seen.toFixed(1)} s, limit ${tk.maxSeen} s`);
+      if (tk.arriveBy != null && tk.elapsed > tk.arriveBy + 1e-6) fails.push(`took ${tk.elapsed.toFixed(0)} s, limit ${tk.arriveBy} s`);
+      tk.status = fails.length ? "DONE_NOT_OK" : "DONE_OK"; tk.reason = fails.join("; ");
+      opsLog(v.id, fails.length ? `${tk.id} failed: arrived at ${opsGrid(tk.dest)}, but ${tk.reason}` : `${tk.id} done: arrived at ${opsGrid(tk.dest)} in ${tk.elapsed.toFixed(0)} s, seen ${tk.seen.toFixed(1)} s`, fails.length ? "bad" : "ok");
+    } else { tk.status = why === "canceled" || why === "superseded" ? "CANCELED" : "DONE_NOT_OK"; tk.reason = why; }
+    opsRing(tk); opsDropRoute(v);
+    v.task = null; v.spd = 0; v.climb = 0; v.rt = 0; v.k = 0;
+    v.status = v.kind === "uav" ? (arrived ? "LANDED" : "HOLDING") : "IDLE";
+    if (v.kind === "uav" && arrived) v.y = groundH(v.x, v.z) + 0.36;
+    ops.dirty = true;
+  }
+  function opsCancel(v, why = "canceled") {
+    if (!v || !v.task) return;
+    opsLog("OPERATOR", `${v.task.id} ${why} (${v.id})`, "warn");
+    opsFinish(v, false, why);
+  }
+  function opsSense(v) {                            // the tank notices roadblocks near it; one on its route: plan again from here
+    const tk = v.task, rt = v.route;
+    let hit = null;
+    for (const [i, b] of ops.blocks) {
+      if (!b.known && Math.hypot(((i / C) | 0) - v.cell[0], i % C - v.cell[1]) <= OPS_SENSE) {
+        b.known = true; b.ring.visible = true;
+        opsLog(v.id, `detected a roadblock at ${opsGrid([(i / C) | 0, i % C])}`, "warn");
+      }
+      if (b.known && rt.idx.indexOf(i, v.k + 1) >= 0) hit = i;
+    }
+    if (hit === null) return false;
+    const next = opsGroundRoute(v.cell[0] * C + v.cell[1], tk.dest[0] * C + tk.dest[1], tk.w);
+    if (!next.found) {
+      opsLog(v.id, `${tk.id} failed: no route past the roadblock at ${opsGrid([(hit / C) | 0, hit % C])}`, "bad");
+      opsFinish(v, false, "no route past a roadblock");
+      return true;
+    }
+    const over = v.rt - rt.tAt[v.k];
+    disposeRouteVisual(rt); opsVisual(next);
+    v.route = next; v.rt = Math.max(0, over); v.k = 0; v.sPrev = 0; v.u = 0; tk.replans++;
+    opsLog(v.id, `re-planned: roadblock at ${opsGrid([(hit / C) | 0, hit % C])}, ${next.cost.toFixed(0)} s to go`, "warn");
+    opsLayers(); ops.dirty = true;
+    return false;
+  }
+  function opsStep(ds) {                            // the mission moves on by ds seconds
+    ops.clock += ds;
+    if (ops.demo) opsDemoTick();
+    for (const v of ops.vehs) {
+      let tk = v.task, mask = 0;
+      if (tk && tk.status === "SENT" && ops.clock - tk.tSent >= OPS_ACK) {
+        tk.status = "RUNNING"; tk.tStart = ops.clock; v.status = "EN ROUTE"; ops.dirty = true;
+        opsLog(v.id, `acknowledged ${tk.id}: running`);
+      }
+      if (tk && tk.status === "RUNNING") {
+        let rt = v.route, last = rt.tAt.length - 1;
+        const before = v.rt;
+        v.rt = Math.min(rt.tAt[last], v.rt + ds);
+        const used = v.rt - before;
+        let k = v.k;
+        while (k < last && rt.tAt[k + 1] <= v.rt) k++;
+        if (k !== v.k) {
+          v.k = k; v.cell = rt.cells[k].slice();
+          if (v.kind === "ugv" && ops.blocks.size) { if (opsSense(v)) tk = null; else { rt = v.route; last = rt.tAt.length - 1; } }
+        }
+        if (tk) {
+          const end = rt.tAt[last], [s, mps] = sAtTime(rt, v.rt), u = Math.min(1, s / rt.len);
+          rt.curve.getPointAt(u, tmpA); rt.curve.getTangentAt(u, lookV);
+          v.dist += Math.max(0, s - v.sPrev); v.sPrev = s; v.u = u;
+          v.x = tmpA.x; v.z = tmpA.z; v.y = v.kind === "uav" ? tmpA.y : groundH(tmpA.x, tmpA.z);
+          if (lookV.x * lookV.x + lookV.z * lookV.z > 1e-8) v.yaw = Math.atan2(lookV.x, lookV.z);
+          v.spd = v.rt < end ? mps : 0; v.climb = lookV.y;
+          const nx = Math.min(v.k + 1, last);
+          if (v.rt < end && rt.flags[nx]) { mask = v.kind === "uav" ? opsAirMask(rt.voxels[nx]) : ops.gmask[rt.idx[nx]]; tk.seen += used; }
+          tk.elapsed = ops.clock - tk.tStart;
+          if (tk.maxSeen != null && !tk.warnSeen && tk.seen > tk.maxSeen + 1e-6) { tk.warnSeen = true; opsLog(v.id, `${tk.id} over its exposure limit: seen ${tk.seen.toFixed(1)} s, limit ${tk.maxSeen} s`, "bad"); }
+          if (tk.arriveBy != null && !tk.warnLate && tk.elapsed > tk.arriveBy + 1e-6) { tk.warnLate = true; opsLog(v.id, `${tk.id} is late: ${tk.elapsed.toFixed(0)} s gone, limit ${tk.arriveBy} s`, "bad"); }
+          if (v.rt >= end) { v.cell = rt.cells[last].slice(); if (mask !== v.mask) opsSight(v, mask); mask = 0; opsFinish(v, true); }
+        }
+      }
+      if (mask !== v.mask) opsSight(v, mask);
+      v.dy += (v.y - v.dy) * (v.kind === "uav" ? 1 - Math.exp(-ds * 1.6) : 1);
+      opsRecord(v);
+    }
+  }
+
+  // -- tasking: destination, limits, three plans, approve
+  function opsBeginTask(v, quiet) {
+    if (!v || v.kind === "tower") return;
+    opsCancelDraft(true); opsGoLive();
+    ops.draft = { veh: v, dest: null, from: null, maxSeen: null, arriveBy: null, plans: null, pick: 0, auto: true, msg: "", tone: "", quiet: !!quiet, ring: null };
+    ops.picking = "dest"; ops.sel = v.id; ops.dirty = true; ops.sig = "";
+    if (!quiet) { if (mode !== "plan") ops.prevMode = mode; setMode("plan"); opsViews(); }
+    opsLayers();
+  }
+  function opsEndPick() {
+    ops.picking = null; cursorRing.hide(); cvs.style.cursor = "";
+    if (mode === "plan") { setMode(ops.prevMode); opsViews(); }
+  }
+  function opsCancelDraft(silent) {
+    const d = ops.draft;
+    if (d) { if (d.plans) d.plans.forEach(p => disposeRouteVisual(p.rt)); opsRing(d); ops.draft = null; ops.sig = ""; ops.dirty = true; }
+    if (ops.picking) { if (silent) { ops.picking = null; cursorRing.hide(); cvs.style.cursor = ""; } else opsEndPick(); }
+    if (d) opsLayers();
+  }
+  function opsDestWhy(v, cell) {
+    const i = cell[0] * C + cell[1], b = ops.blocks.get(i);
+    return OBS[i] === 3 ? "That's water." : OBS[i] ? "That cell is blocked." : b && b.known ? "A roadblock stands there." : sameCell(cell, v.cell) ? `${v.id} is already there.`
+      : v.kind === "uav" && airVoxel(cell) < 0 ? "No clear air over that cell." : "";
+  }
+  function opsSetDest(cell) {
+    const d = ops.draft, v = d.veh, why = opsDestWhy(v, cell);
+    const plans = why ? null : opsPlan(v, cell);
+    if (why || !plans[0].rt.found) { d.msg = why || `No route for ${v.id} to ${opsGrid(cell)}.`; d.tone = "bad"; opsPlansUI(); return false; }
+    if (d.plans) d.plans.forEach(p => disposeRouteVisual(p.rt));
+    opsRing(d);
+    d.plans = plans; d.dest = cell.slice(); d.from = v.cell.slice(); d.msg = ""; d.tone = "";
+    plans.forEach(p => { if (!p.same) opsVisual(p.rt); });
+    d.ring = groundRing(toX(cell[1]), toZ(cell[0]), 1.0, 1.5, ACCENT, 0.95); d.ring.material.depthTest = false; d.ring.renderOrder = 7; scene.add(d.ring);
+    opsAuto(); ops.sig = ""; ops.dirty = true; opsLayers();
+    return true;
+  }
+  function opsAuto() {                              // the fastest plan that keeps the limits; none does: the one closest to them
+    const d = ops.draft;
+    if (!d || !d.plans || !d.auto) return;
+    let n = d.plans.findIndex(p => opsMeets(d, p));
+    if (n < 0) n = d.maxSeen != null && d.plans[2].rt.seenS > d.maxSeen ? 2 : 0;
+    d.pick = n;
+  }
+  function opsApprove() {
+    const d = ops.draft;
+    if (!d || !d.plans) return;
+    const v = d.veh;
+    if (v.task) opsCancel(v, "superseded");
+    if (!sameCell(d.from, v.cell)) {                 // it moved on while you were deciding: plan again from where it is
+      const fresh = opsPlan(v, d.dest);
+      if (!fresh[d.pick].rt.found) { d.msg = `No route for ${v.id} from where it is now.`; d.tone = "bad"; opsPlansUI(); return; }
+      d.plans.forEach(p => disposeRouteVisual(p.rt)); d.plans = fresh; d.from = v.cell.slice();
+    }
+    const p = d.plans[d.pick], rt = p.rt;
+    opsVisual(rt);
+    d.plans.forEach(q => { if (q !== p) disposeRouteVisual(q.rt); });
+    const tk = { id: `T-${String(++ops.seq).padStart(3, "0")}`, veh: v.id, dest: d.dest.slice(), from: v.cell.slice(), plan: p.name, w: p.w, maxSeen: d.maxSeen, arriveBy: d.arriveBy,
+                 planned: { time: rt.cost, seen: rt.seenS, dist: rt.stats.distance_m }, status: "SENT", tSent: ops.clock, tStart: null, tEnd: null, seen: 0, elapsed: 0,
+                 replans: 0, reason: "", ring: d.ring };
+    tk.ring.material.color.set(FRIEND).convertSRGBToLinear();
+    v.route = rt; v.rt = 0; v.k = 0; v.u = 0; v.sPrev = 0; v.task = tk; v.status = "TASKED"; ops.tasks.push(tk);
+    const lim = [tk.maxSeen != null ? `seen ≤ ${tk.maxSeen} s` : "", tk.arriveBy != null ? `arrive ≤ ${tk.arriveBy} s` : ""].filter(Boolean).join(", ");
+    ops.draft = null; ops.sig = ""; ops.dirty = true;
+    opsLog("OPERATOR", `${tk.id} sent to ${v.id}: move to ${opsGrid(tk.dest)}, ${p.name.toLowerCase()} plan (${rt.cost.toFixed(0)} s, ${rt.seenS.toFixed(1)} s seen)${lim ? `; limits: ${lim}` : ""}`);
+    if (ops.picking || mode === "plan") opsEndPick();
+    opsLayers();
+  }
+  function opsArmBlock() {                          // the next click on the map puts a roadblock there
+    opsCancelDraft(true); opsGoLive();
+    ops.picking = "block"; ops.sig = ""; ops.dirty = true;
+    if (mode !== "plan") { ops.prevMode = mode; setMode("plan"); opsViews(); }
+  }
+  function opsBlockWhy(cell) {
+    const i = cell[0] * C + cell[1];
+    return OBS[i] ? "Nothing drives there anyway." : ops.blocks.has(i) ? "There's a roadblock there already."
+      : ops.vehs.some(v => sameCell(v.cell, cell) || (v.task && sameCell(v.task.dest, cell))) ? "Not on a vehicle or its destination." : "";
+  }
+  function opsDropBlock(cell) {
+    if (opsBlockWhy(cell)) return false;
+    const i = cell[0] * C + cell[1], x = toX(cell[1]), z = toZ(cell[0]), mesh = hedgehog();
+    mesh.position.set(x, H[i], z); mesh.rotation.y = (cell[0] * 7 + cell[1] * 13) % 6;
+    const ring = groundRing(x, z, 0.85, 1.25, CAUTION, 0.9); ring.visible = false;
+    scene.add(mesh, ring);
+    ops.blocks.set(i, { mesh, ring, known: false, t: ops.clock, cell: cell.slice() });
+    opsLog("OPERATOR", `roadblock placed at ${opsGrid(cell)}`, "warn");
+    const ugv = ops.vehs[0];
+    if (ugv.task && ugv.task.status === "RUNNING") opsSense(ugv);
+    return true;
+  }
+  function opsHover(ev) {                           // while picking: a ring under the pointer, red where it can't go
+    const cell = cellAt(ev);
+    if (!cell) { cursorRing.hide(); return; }
+    const why = ops.picking === "block" ? opsBlockWhy(cell) : opsDestWhy(ops.draft.veh, cell);
+    cursorRing.show(cell, why ? BAD : ops.picking === "block" ? CAUTION : ACCENT); cvs.style.cursor = "crosshair";
+  }
+  function opsClick(cell) {                         // a click on the map: a destination, a roadblock, or the nearest entity
+    if (ops.picking === "dest") { opsSetDest(cell); return; }
+    if (ops.picking === "block") { if (opsDropBlock(cell)) opsEndPick(); ops.sig = ""; ops.dirty = true; return; }
+    if (ops.draft) return;
+    let best = null, bestD = 3.5;
+    for (const e of opsEnts()) { const d = Math.hypot(e.cell[0] - cell[0], e.cell[1] - cell[1]); if (d < bestD) { bestD = d; best = e; } }
+    if (best) opsSelect(best.id);
+  }
+  function opsSelect(id) {
+    if (!opsEnt(id)) return;
+    if (ops.draft && ops.draft.veh.id !== id) opsCancelDraft();
+    ops.sel = id; ops.sig = ""; ops.dirty = true;
+  }
+
+  // -- the timeline's replay
+  function opsScrub(t) {
+    if (t >= ops.clock - 1e-3) { opsGoLive(); return; }
+    if (ops.draft || ops.picking) opsCancelDraft();
+    ops.view = clamp(t, 0, ops.clock); ops.viewPlay = false; snap = true; ops.dirty = true; opsLayers();
+  }
+  function opsGoLive() { if (ops.view === null) return; ops.view = null; ops.viewPlay = false; snap = true; ops.dirty = true; opsLayers(); }
+  function opsTogglePlay() { if (ops.view !== null) ops.viewPlay = !ops.viewPlay; else ops.paused = !ops.paused; ops.dirty = true; }
+
+  // -- every frame: move the mission on, pose the vehicles and the towers, hand the camera the selected entity
+  function opsPoseRover(v, s, dt, t, live) {
+    fwd.set(Math.sin(s.yaw), 0, Math.cos(s.yaw)); rightH.set(fwd.z, 0, -fwd.x);
+    const gy = groundH(s.x, s.z);
+    up.copy(normalAt(s.x, s.z, 0.9));
+    f2.copy(fwd).addScaledVector(up, -fwd.dot(up)).normalize(); xr.crossVectors(up, f2).normalize();
+    basis.makeBasis(xr, up, f2); targetQ.setFromRotationMatrix(basis);
+    if (snap || !live) rover.group.quaternion.copy(targetQ); else rover.group.quaternion.slerp(targetQ, 1 - Math.exp(-dt * 8));
+    rover.group.position.set(s.x, gy, s.z); rover.group.updateMatrixWorld();
+    const moving = live && !ops.paused && s.spd > 0, vv = moving ? s.spd * ops.speed : !live && ops.viewPlay ? s.spd * ops.speed : 0;
+    rover.animate(t, vv, dt, 0, false);
+    roverSpot.value.set(s.x, gy + 0.45, s.z);
+    if (moving) {
+      const surf = SURF[clamp(Math.round(s.z + (R - 1) / 2), 0, R - 1) * C + clamp(Math.round(s.x + (C - 1) / 2), 0, C - 1)];
+      emitAcc += dt * (DUSTS[surf] || DUSTS[0]).rate * Math.min(1.8, vv / 3) * (reduceMotion ? 0.3 : 1);
+      while (emitAcc >= 1) { emitAcc -= 1; spawnDust(surf, vv); }
+      if (v.dist - v.markS >= 0.3) { v.markS = v.dist; addMark(); }
+    }
+    roverTag.sprite.position.set(s.x, gy + 1.45, s.z);
+    roverTag.set(s.status === "EN ROUTE" ? `${s.spd.toFixed(1)} m/s${s.mask ? " · SEEN" : ""}` : s.status);
+  }
+  function opsPoseDrone(v, s, dt, t, live) {
+    const d = air.drone, gy = groundH(s.x, s.z), landed = s.status === "LANDED" && s.y - gy < 0.5, flying = !landed;
+    d.group.position.set(s.x, s.y + (flying ? 0.06 * Math.sin(t * 2.3) : 0), s.z);
+    const dyaw = wrapPi(s.yaw - v.yawS);
+    if (snap || !live) v.yawS = s.yaw; else v.yawS += dyaw * (1 - Math.exp(-dt * 5));
+    const turn = dt > 0 ? wrapPi(s.yaw - v.yawS) / Math.max(dt, 1e-3) : 0;
+    v.roll += (clamp(-turn * 0.08, -0.5, 0.5) - v.roll) * (1 - Math.exp(-dt * 3));
+    d.group.rotation.set(flying ? clamp(s.spd * 0.05, 0, 0.25) - clamp(s.climb, -0.6, 0.6) * 0.5 : 0, v.yawS, flying ? v.roll : 0, "YXZ");
+    d.rotors.forEach((r, i) => { r.rotation.z += dt * (flying ? 38 : 0) * (i % 2 ? 1 : -1); });
+    d.glow.scale.setScalar(0.85 + 0.18 * Math.sin(t * 4.2));
+    d.tag.sprite.position.set(s.x, s.y + 0.85, s.z);
+    d.tag.set(landed ? "LANDED" : `${Math.max(0, s.y - gy).toFixed(1)} m AGL · ${s.spd.toFixed(1)} m/s${s.mask ? " · SEEN" : ""}`);
+  }
+  function opsTick(dt, t) {
+    const live = ops.view === null;
+    if (live) { if (!ops.paused) opsStep(dt * ops.speed); }
+    else if (ops.viewPlay) { ops.view += dt * ops.speed; if (ops.view >= ops.clock) opsGoLive(); }
+    const now = ops.view === null ? ops.clock : ops.view, isLive = ops.view === null;
+    const st = ops.vehs.map(v => (isLive ? { x: v.x, y: v.dy, z: v.z, yaw: v.yaw, spd: v.spd, climb: v.climb, mask: v.mask, status: v.status } : opsAt(v, now)));
+    ops.shown = st;
+    opsPoseRover(ops.vehs[0], st[0], dt, t, isLive); opsPoseDrone(ops.vehs[1], st[1], dt, t, isLive);
+    air.list.forEach((tw, n) => {                   // a tower looks at what it sees: the drone first, else the tank
+      const k = st[1].mask >> n & 1 ? 1 : st[0].mask >> n & 1 ? 0 : -1, on = k >= 0, hx = toX(tw.c), hz = toZ(tw.r);
+      if (on) {
+        tmpA.set(st[k].x, st[k].y + (k ? 0 : 0.5), st[k].z);
+        tw.head.lookAt(tmpA);
+        lookV.set(hx, tw.eye, hz);
+        const len = lookV.distanceTo(tmpA);
+        tw.line.position.copy(lookV).add(tmpA).multiplyScalar(0.5);
+        tw.line.quaternion.setFromUnitVectors(upY, lookV.sub(tmpA).normalize());
+        tw.line.scale.set(1, len, 1);
+      } else tw.head.rotation.set(0.3, tw.phase + t * 0.45, 0);
+      tw.line.visible = on; tw.beamM.opacity = on ? 0.22 : 0.07;
+      tw.lensM.color.setRGB(1, on ? 0.12 : 0.32, on ? 0.08 : 0.2);
+      if (on !== tw.watching) { tw.watching = on; tw.tag.set(on ? "TRACKING" : "", on ? "hostile" : ""); }
+    });
+    for (const v of ops.vehs) if (v.route && v.route.tube && isLive) {
+      const n = Math.floor(v.u * v.route.segs) * RADIAL * 6;
+      v.route.tube.geometry.setDrawRange(n, Infinity); v.route.planTube.geometry.setDrawRange(n, Infinity);
+    }
+    for (const tk of ops.tasks) if (tk.ring) tk.ring.material.opacity = 0.6 + 0.35 * Math.abs(Math.sin(t * 2.2));
+    if (ops.draft && ops.draft.ring) ops.draft.ring.material.opacity = 0.6 + 0.35 * Math.abs(Math.sin(t * 3));
+    if (ops.picking && hoverEv) { const ev = hoverEv; hoverEv = null; opsHover(ev); }
+    // the camera's subject: the selected entity
+    const e = opsEnt(ops.sel) || ops.vehs[0], k = ops.vehs.indexOf(e);
+    let gy;
+    if (k >= 0) {
+      const s = st[k];
+      P.set(s.x, s.y, s.z); fwd.set(Math.sin(s.yaw), 0, Math.cos(s.yaw)); gy = groundH(s.x, s.z);
+      ops.followY = k === 1 ? Math.max(s.y, gy + 0.6) : gy + 0.6;
+    } else { P.set(toX(e.tw.c), 0, toZ(e.tw.r)); fwd.set(0, 0, 1); gy = groundH(P.x, P.z); P.y = gy; ops.followY = gy + 3; }
+    rightH.set(fwd.z, 0, -fwd.x);
+    if ((ops.uiT += dt) > 0.2 || ops.dirty) { ops.uiT = 0; opsUI(now, st); }
+    if ((ops.tlT += dt) > 0.07) { ops.tlT = 0; opsDrawTL(now); }
+    return gy;
+  }
+
+  // -- the panels
+  const opsStClass = s => (s === "EN ROUTE" || s === "RUNNING" || s === "SENT" || s === "TASKED" ? "run" : s === "TRACKING" || s === "DONE_NOT_OK" ? "bad" : s === "DONE_OK" ? "ok" : s === "CANCELED" || s === "HOLDING" ? "warn" : "");
+  const opsTaskWord = s => ({ SENT: "Sent", RUNNING: "Running", DONE_OK: "Done", DONE_NOT_OK: "Failed", CANCELED: "Cancelled" }[s] || s);
+  function opsBuildEnts() {
+    OE.ents.textContent = "";
+    opsEnts().forEach((e, n) => {
+      const tr = document.createElement("tr");
+      tr.dataset.id = e.id; tr.tabIndex = 0; tr.title = `Select ${e.id} (${n + 1})`;
+      tr.innerHTML = `<td class="call"><img alt="" src="${opsSym(e.kind)}">${e.id}</td><td><span class="ops-st" data-f="st"></span></td><td data-f="grid"></td><td class="num hide-md" data-f="hdg"></td><td class="num" data-f="spd"></td>`;
+      tr.onclick = () => opsSelect(e.id);
+      tr.ondblclick = () => { opsSelect(e.id); setMode("drone"); opsViews(); };
+      tr.onkeydown = ev => { if (ev.key === "Enter") { ev.preventDefault(); opsSelect(e.id); } };
+      OE.ents.appendChild(tr);
+    });
+    $("ops-ent-n").textContent = `${ops.vehs.length} friendly · ${air.list.length} hostile`;
+  }
+  function opsTowerMask(st) { return st[0].mask | st[1].mask; }
+  function opsEntRow(e, st) {                       // what the lists show for an entity now
+    const k = ops.vehs.indexOf(e);
+    if (k >= 0) { const s = st[k]; return { st: s.status, grid: opsGrid([Math.round(s.z + (R - 1) / 2), Math.round(s.x + (C - 1) / 2)]), hdg: opsHdg(s.yaw), spd: s.spd.toFixed(1), s }; }
+    const on = opsTowerMask(st) >> e.n & 1;
+    return { st: on ? "TRACKING" : "SCANNING", grid: opsGrid(e.cell), hdg: "—", spd: "0.0" };
+  }
+  function opsUI(now, st) {
+    ops.dirty = false;
+    const live = ops.view === null;
+    OE.utc.textContent = opsUTC(now, true); OE.tplus.textContent = `T+${fmtTime(now)} · ×${ops.speed}`;
+    OE.state.textContent = live ? (ops.paused ? "Paused" : "Live") : "Replay"; OE.state.className = `ops-pill ${live ? (ops.paused ? "warn" : "live") : "replay"}`;
+    OE.play.textContent = live ? (ops.paused ? "Resume" : "Pause") : ops.viewPlay ? "Pause" : "Play";
+    OE.live.disabled = live; OE.viewT.textContent = live ? "" : `at T+${fmtTime(now)} of ${fmtTime(ops.clock)}`;
+    const ents = opsEnts();
+    [...OE.ents.rows].forEach((tr, n) => {
+      const e = ents[n], row = opsEntRow(e, st);
+      tr.setAttribute("aria-selected", String(e.id === ops.sel));
+      for (const td of tr.querySelectorAll("[data-f]")) {
+        const val = row[td.dataset.f];
+        if (td.textContent !== val) td.textContent = val;
+        if (td.dataset.f === "st") td.className = `ops-st ${opsStClass(val)}`;
+      }
+    });
+    // tasks, newest first
+    const sig = ops.tasks.map(tk => tk.id + tk.status).join();
+    if (sig !== OE.tasks.dataset.sig) {
+      OE.tasks.dataset.sig = sig; OE.tasks.textContent = "";
+      ops.tasks.slice().reverse().forEach(tk => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td class="call">${tk.id}</td><td>${tk.veh}</td><td>${tk.plan}</td><td><span class="ops-st ${opsStClass(tk.status)}">${opsTaskWord(tk.status)}</span></td><td class="num" data-t="${tk.id}"></td>`;
+        tr.title = tk.reason ? `${tk.id}: ${tk.reason}` : `${tk.id}: move to ${opsGrid(tk.dest)}`;
+        tr.onclick = () => opsSelect(tk.veh);
+        OE.tasks.appendChild(tr);
+      });
+      OE.tasksEmpty.hidden = ops.tasks.length > 0; $("ops-tasks").hidden = !ops.tasks.length;
+      $("ops-task-n").textContent = ops.tasks.length ? `${ops.tasks.filter(tk => tk.status === "DONE_OK").length} done · ${ops.tasks.filter(tk => tk.status === "DONE_NOT_OK").length} failed` : "";
+    }
+    for (const tk of ops.tasks) { const td = OE.tasks.querySelector(`[data-t="${tk.id}"]`); if (td) td.textContent = tk.tStart == null ? "—" : fmtTime(tk.elapsed); }
+    let lastSeen = null;
+    for (const e of ops.events) { const later = !live && e.t > now; e.li.classList.toggle("later", later); if (!later) lastSeen = e.li; }
+    if (!live && lastSeen && lastSeen !== ops.logAt) { ops.logAt = lastSeen; OE.log.scrollTop = Math.max(0, lastSeen.offsetTop - OE.log.offsetTop - 60); }
+    if (live && ops.logAt) { ops.logAt = null; OE.log.scrollTop = OE.log.scrollHeight; }
+    opsDetail(st);
+  }
+  const KIND = { ugv: "Friendly · unmanned ground vehicle", uav: "Friendly · unmanned aircraft", tower: "Hostile · ground sensor" };
+  function opsDetail(st) {                          // the right-hand panel: the selected entity, or the task being planned
+    const e = opsEnt(ops.sel) || ops.vehs[0], d = ops.draft, tk = e.task || null;
+    const sig = [e.id, d ? "draft" + (d.dest ? opsGrid(d.dest) : "") : "", ops.picking || "", tk ? tk.id + tk.status : "", ops.view === null].join("|");
+    if (sig !== ops.sig) {
+      ops.sig = sig;
+      const head = (sub, pill, cls) => `<div class="ops-head"><img alt="" src="${opsSym(e.kind)}"><div><b>${e.id}</b><small>${sub}</small></div><span class="ops-pill ${cls}" data-f="pill">${pill}</span></div>`;
+      if (d) {
+        OE.right.innerHTML = head("New task · move to a point", "Draft", "warn")
+          + `<div class="ops-sec"><h3>1 · Destination</h3><p>${d.dest ? `<b>${opsGrid(d.dest)}</b> · ${Math.hypot(d.dest[0] - d.from[0], d.dest[1] - d.from[1]).toFixed(0)} m from ${e.id}. Click the map to move it.` : `Click the map where ${e.id} should go.`}</p></div>`
+          + `<div class="ops-sec"><h3>2 · Limits</h3><div class="ops-limits"><label>Seen for at most, s<input id="ops-lim-seen" inputmode="decimal" placeholder="no limit" value="${d.maxSeen == null ? "" : d.maxSeen}"></label>`
+          + `<label>Arrive within, s<input id="ops-lim-time" inputmode="decimal" placeholder="no limit" value="${d.arriveBy == null ? "" : d.arriveBy}"></label></div></div>`
+          + `<div class="ops-sec"><h3>3 · Plan</h3><table class="ops-table ops-plans" id="ops-plans"><thead><tr><th>Plan</th><th class="num">Time</th><th class="num">Dist</th><th class="num">Seen</th><th class="num">Limits</th></tr></thead><tbody></tbody></table><p class="ops-msg" id="ops-plan-msg"></p></div>`
+          + `<div class="ops-sec"><div class="ops-row"><button class="primary" id="ops-approve">Approve &amp; send</button><button id="ops-draft-cancel">Cancel <kbd>Esc</kbd></button></div></div>`;
+        const lim = (id, key) => { $(id).oninput = () => { const x = parseFloat($(id).value); d[key] = isFinite(x) && x >= 0 ? x : null; d.auto = true; opsAuto(); opsPlansUI(); opsLayers(); }; };
+        lim("ops-lim-seen", "maxSeen"); lim("ops-lim-time", "arriveBy");
+        $("ops-approve").onclick = opsApprove; $("ops-draft-cancel").onclick = () => opsCancelDraft();
+        opsPlansUI();
+      } else if (e.kind === "tower") {
+        OE.right.innerHTML = head(KIND.tower, "", "")
+          + `<dl class="ops-kv"><div><dt>Grid</dt><dd>${opsGrid(e.cell)}</dd></div><div><dt>Tracking</dt><dd data-f="trk"></dd></div><div><dt>Reach</dt><dd>${AIRC.sight} m</dd></div><div><dt>Eye above ground</dt><dd>${AIRC.eye} m</dd></div></dl>`
+          + `<div class="ops-sec"><p>A watchtower sees ${AIRC.sight} m along clear lines of sight. Hills and trees block its view; the red shading on the ground is what the towers cover.</p></div>`;
+      } else {
+        const live = ops.view === null;
+        OE.right.innerHTML = head(KIND[e.kind], "", "")
+          + `<dl class="ops-kv"><div><dt>Grid</dt><dd data-f="grid"></dd></div><div><dt>${e.kind === "uav" ? "Height above ground" : "Elevation"}</dt><dd data-f="alt"></dd></div>`
+          + `<div><dt>Heading</dt><dd data-f="hdg"></dd></div><div><dt>Speed</dt><dd data-f="spd"></dd></div><div><dt>Sight</dt><dd data-f="sight"></dd></div><div><dt>Travelled</dt><dd data-f="dist"></dd></div></dl>`
+          + (tk ? `<div class="ops-sec"><h3>${tk.id} · move to ${opsGrid(tk.dest)}<span class="ops-pill ${opsStClass(tk.status)}">${opsTaskWord(tk.status)}</span></h3><div class="ops-bar"><i data-f="bar"></i></div><p data-f="task"></p>`
+              + `<div class="ops-row"><button id="ops-cancel">Cancel task</button>${e.kind === "ugv" ? `<button id="ops-block" aria-pressed="${ops.picking === "block"}">Drop a roadblock <kbd>B</kbd></button>` : ""}<button class="grow" id="ops-task">Re-task <kbd>T</kbd></button></div></div>`
+            : `<div class="ops-sec"><h3>Task</h3><p>${e.id} has no task.${live ? "" : " (Replay: go live to task it.)"}</p><div class="ops-row"><button class="primary" id="ops-task">New task <kbd>T</kbd></button></div></div>`)
+          + (ops.picking === "block" ? `<div class="ops-sec"><p><b>Click the map</b> to put a roadblock there. ${ops.vehs[0].id} finds it when it comes within ${OPS_SENSE} m. <kbd>Esc</kbd> cancels.</p></div>` : "");
+        $("ops-task").onclick = () => opsBeginTask(e);
+        if ($("ops-cancel")) $("ops-cancel").onclick = () => opsCancel(e);
+        if ($("ops-block")) $("ops-block").onclick = () => (ops.picking === "block" ? opsCancelDraft() : opsArmBlock());
+      }
+    }
+    const set = (f, val, cls) => { const el = OE.right.querySelector(`[data-f="${f}"]`); if (el) { if (el.textContent !== val) el.textContent = val; if (cls !== undefined) el.className = cls; } };
+    if (d) return;
+    const row = opsEntRow(e, st);
+    set("pill", row.st.replace("_", " "), `ops-pill ${opsStClass(row.st)}`);
+    if (e.kind === "tower") { const seen = ops.vehs.filter((v, k) => st[k].mask >> e.n & 1).map(v => v.id); set("trk", seen.join(", ") || "nothing", seen.length ? "seen" : ""); return; }
+    const s = row.s, gy = groundH(s.x, s.z);
+    set("grid", row.grid); set("hdg", `${row.hdg}°`); set("spd", `${row.spd} m/s`);
+    set("alt", e.kind === "uav" ? `${Math.max(0, s.y - gy).toFixed(1)} m` : `${gy.toFixed(1)} m`);
+    set("sight", s.mask ? `Seen by ${opsNames(s.mask).join(", ")}` : "Hidden", s.mask ? "seen" : "hid");
+    set("dist", `${e.dist.toFixed(0)} m`);
+    if (tk) {
+      const total = e.route ? e.route.tAt[e.route.tAt.length - 1] : 0, left = Math.max(0, total - e.rt);
+      const bar = OE.right.querySelector('[data-f="bar"]'); if (bar) bar.style.width = (total ? e.rt / total * 100 : 0).toFixed(1) + "%";
+      set("task", `${tk.plan} plan · ${tk.status === "SENT" ? "waiting for the vehicle to acknowledge" : `${left.toFixed(0)} s to go`} · seen ${tk.seen.toFixed(1)}${tk.maxSeen != null ? ` of ${tk.maxSeen}` : ""} s${tk.arriveBy != null ? ` · ${tk.elapsed.toFixed(0)} of ${tk.arriveBy} s` : ""}${tk.replans ? ` · ${tk.replans} re-plan${tk.replans > 1 ? "s" : ""}` : ""}`);
+    }
+  }
+  function opsPlansUI() {                           // the three plans, side by side
+    const d = ops.draft, body = $("ops-plans") && $("ops-plans").tBodies[0];
+    if (!d || !body) return;
+    body.textContent = "";
+    const limited = d.maxSeen != null || d.arriveBy != null;
+    (d.plans || OPS_PLANS.map(p => Object.assign({ rt: null }, p))).forEach((p, n) => {
+      const tr = document.createElement("tr"), rt = p.rt, ok = rt && opsMeets(d, p);
+      tr.setAttribute("aria-selected", String(!!rt && n === d.pick)); if (!rt) tr.setAttribute("aria-disabled", "true");
+      tr.innerHTML = `<td class="call"><i></i>${p.name}${p.same ? ` <small style="color:var(--muted);font-weight:500">= ${p.same.toLowerCase()}</small>` : ""}</td>`
+        + (rt ? `<td class="num">${rt.cost.toFixed(0)} s</td><td class="num">${rt.stats.distance_m.toFixed(0)} m</td><td class="num">${rt.seenS.toFixed(1)} s</td><td class="num ${limited ? (ok ? "ok" : "no") : ""}">${limited ? (ok ? "meets" : "breaks") : "—"}</td>`
+              : `<td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>`);
+      if (rt) tr.onclick = () => { d.pick = n; d.auto = false; opsPlansUI(); opsLayers(); };
+      body.appendChild(tr);
+    });
+    const msg = $("ops-plan-msg"), pk = d.plans && d.plans[d.pick];
+    msg.dataset.tone = d.tone || (pk && !opsMeets(d, pk) ? "bad" : "");
+    msg.textContent = d.msg || (!pk ? "Each plan is the quickest route that pays 0, 2 or 10 seconds for every second in a tower's sight."
+      : !opsMeets(d, pk) ? `${pk.name} breaks the limits. You can still send it; the task will be marked failed if it does.`
+      : `${pk.name}: ${pk.rt.cost.toFixed(0)} s, ${pk.rt.seenS.toFixed(1)} s in sight.${d.auto && limited ? " The fastest plan that keeps the limits." : ""}`);
+    $("ops-approve").disabled = !pk;
+  }
+  function opsViews() { [...document.querySelectorAll("#ops-views button")].forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === mode))); }
+
+  // -- the timeline: a lane per vehicle (a bar per task, red where a tower saw it), event ticks above, drag to replay
+  const TL = { left: 58, pad: 10, max: 60 };
+  const tlX = (t, W) => TL.left + (W - TL.left - TL.pad) * t / TL.max;
+  function opsDrawTL(now) {
+    const cv = OE.tl, dpr = Math.min(2, window.devicePixelRatio || 1), W = cv.clientWidth, Hh = cv.clientHeight;
+    if (!W) return;
+    if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(Hh * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(Hh * dpr); }
+    const g = cv.getContext("2d");
+    g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, Hh);
+    TL.max = Math.max(60, Math.ceil(ops.clock * 1.12 / 30) * 30);
+    const step = [5, 10, 15, 30, 60, 120, 300, 600].find(s => (W - TL.left) / (TL.max / s) >= 56) || 600;
+    const lanes = Hh < 56 ? [[18, 8], [30, 8]] : [[22, 10], [37, 10]], axis = Hh - 4;
+    g.font = `500 9.5px ${FONT_NUM}`; g.textBaseline = "alphabetic"; g.textAlign = "center";
+    for (let s = 0; s <= TL.max; s += step) {
+      const x = Math.round(tlX(s, W)) + 0.5;
+      g.strokeStyle = "rgba(230, 231, 232, 0.08)"; g.beginPath(); g.moveTo(x, 4); g.lineTo(x, axis - 10); g.stroke();
+      if (x < W - 22) { g.fillStyle = "#9a9fa5"; g.fillText(`T+${fmtTime(s)}`, x, axis); }
+    }
+    g.textAlign = "left"; g.font = `600 9.5px ${FONT_WORD}`;
+    ops.vehs.forEach((v, n) => {
+      const [y, h] = lanes[n];
+      g.fillStyle = "#9a9fa5"; g.fillText(v.id, 0, y + h - 1.5);
+      g.fillStyle = "rgba(230, 231, 232, 0.07)"; g.fillRect(TL.left, y, W - TL.left - TL.pad, h);
+      for (const tk of ops.tasks) if (tk.veh === v.id) {
+        const a = tlX(tk.tSent, W), b = tlX(tk.tEnd == null ? ops.clock : tk.tEnd, W);
+        g.fillStyle = "rgba(92, 194, 255, 0.34)"; g.fillRect(a, y, Math.max(1.5, b - a), h);
+        if (tk.tEnd != null) { g.fillStyle = tk.status === "DONE_OK" ? "#74d39a" : tk.status === "CANCELED" ? "#e2ad48" : "#ff5a52"; g.fillRect(b - 2, y, 2, h); }
+      }
+      g.fillStyle = "#ff5a52";
+      for (const [a, b] of v.spans) g.fillRect(tlX(a, W), y + h - 3, Math.max(1.5, tlX(b == null ? ops.clock : b, W) - tlX(a, W)), 3);
+    });
+    for (const e of ops.events) {
+      g.fillStyle = e.sev === "bad" ? "#ff5a52" : e.sev === "warn" ? "#e2ad48" : e.sev === "ok" ? "#74d39a" : "rgba(230, 231, 232, 0.5)";
+      g.fillRect(Math.round(tlX(e.t, W)) - 1, 6, 2, e.sev === "info" ? 6 : 9);
+    }
+    const xn = tlX(ops.clock, W), xv = tlX(now, W);
+    if (ops.view !== null) { g.fillStyle = "rgba(230, 231, 232, 0.3)"; g.fillRect(Math.round(xn), 4, 1, axis - 14); }
+    g.fillStyle = ops.view === null ? "#74d39a" : "#efe6d2"; g.fillRect(Math.round(xv) - 0.5, 2, 1.5, axis - 12);
+    g.beginPath(); g.moveTo(xv - 4, 1); g.lineTo(xv + 4.5, 1); g.lineTo(xv + 0.25, 7); g.closePath(); g.fill();
+    cv.setAttribute("aria-valuenow", now.toFixed(0)); cv.setAttribute("aria-valuemax", ops.clock.toFixed(0));
+  }
+  let tlDrag = false;
+  const tlAt = ev => { const r = OE.tl.getBoundingClientRect(); return (ev.clientX - r.left - TL.left) / (r.width - TL.left - TL.pad) * TL.max; };
+  OE.tl.addEventListener("pointerdown", ev => { tlDrag = true; OE.tl.setPointerCapture(ev.pointerId); opsScrub(tlAt(ev)); });
+  OE.tl.addEventListener("pointermove", ev => { if (tlDrag) opsScrub(tlAt(ev)); });
+  ["pointerup", "pointercancel"].forEach(k => OE.tl.addEventListener(k, () => { tlDrag = false; }));
+  OE.tl.addEventListener("keydown", ev => {
+    if (ev.key !== "ArrowLeft" && ev.key !== "ArrowRight") return;
+    ev.preventDefault(); opsScrub((ops.view === null ? ops.clock : ops.view) + (ev.key === "ArrowLeft" ? -2 : 2));
+  });
+
+  // -- the after-action report: a page of its own (pictures drawn here), shown over the console; it can be saved or printed
+  function opsReportHTML() {
+    const end = ops.clock, S = 560, k = S / C;
+    const map = document.createElement("canvas"); map.width = S; map.height = Math.round(S * R / C);
+    let g = map.getContext("2d");
+    g.imageSmoothingEnabled = true; g.drawImage(baseCv, 0, 0, map.width, map.height);
+    g.fillStyle = "rgba(10, 12, 15, 0.25)"; g.fillRect(0, 0, map.width, map.height);
+    const px = (x, z) => [(x + (C - 1) / 2 + 0.5) * k, (z + (R - 1) / 2 + 0.5) * k], pc = cell => [(cell[1] + 0.5) * k, (cell[0] + 0.5) * k];
+    for (const tw of air.list) { const [x, y] = pc([tw.r, tw.c]); g.beginPath(); g.arc(x, y, AIRC.sight * k, 0, 7); g.fillStyle = "rgba(255, 90, 82, 0.1)"; g.fill(); g.lineWidth = 1; g.strokeStyle = "rgba(255, 90, 82, 0.7)"; g.stroke(); }
+    g.lineCap = g.lineJoin = "round";
+    for (const v of ops.vehs) {                     // where each vehicle went: blue, red while a tower saw it
+      const r = v.rec;
+      for (const pass of [0, 1]) for (let i = 1; i < r.t.length; i++) {
+        const [x0, y0] = px(r.x[i - 1], r.z[i - 1]), [x1, y1] = px(r.x[i], r.z[i]);
+        if (x0 === x1 && y0 === y1) continue;
+        g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1);
+        if (!pass) { g.lineWidth = 5; g.strokeStyle = "rgba(0, 0, 0, 0.55)"; } else { g.lineWidth = 2.4; g.strokeStyle = r.mask[i] ? "#ff5a52" : "#5cc2ff"; g.setLineDash(v.kind === "uav" ? [6, 4] : []); }
+        g.stroke(); g.setLineDash([]);
+      }
+    }
+    for (const b of ops.blocks.values()) { const [x, y] = pc(b.cell); g.fillStyle = "#e2ad48"; g.strokeStyle = "#000"; g.lineWidth = 1.5; g.beginPath(); g.rect(x - 4.5, y - 4.5, 9, 9); g.fill(); g.stroke(); }
+    g.font = "600 11px Helvetica, Arial, sans-serif"; g.textBaseline = "middle";
+    const label = (text, x, y) => { g.lineWidth = 3; g.strokeStyle = "rgba(0, 0, 0, 0.8)"; g.strokeText(text, x, y); g.fillStyle = "#fff"; g.fillText(text, x, y); };
+    for (const tk of ops.tasks) { const [x, y] = pc(tk.dest); g.beginPath(); g.arc(x, y, 5, 0, 7); g.lineWidth = 3.5; g.strokeStyle = "rgba(0,0,0,0.7)"; g.stroke(); g.lineWidth = 1.8; g.strokeStyle = "#efe6d2"; g.stroke(); label(tk.id, x + 9, y); }
+    air.list.forEach((tw, n) => { const [x, y] = pc([tw.r, tw.c]); drawSymbol(g, "tower", x, y, 20); label(`TWR-${n + 1}`, x + 15, y); });
+    for (const v of ops.vehs) { const [x, y] = px(v.x, v.z); drawSymbol(g, v.kind, x, y, 22); label(v.id, x + 19, y); }
+    // time in sight, over the mission
+    const ch = document.createElement("canvas"), CW = 1120, CH = 250; ch.width = CW; ch.height = CH;
+    g = ch.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, CW, CH);
+    const L = 130, Rr = 20, X = t => L + (CW - L - Rr) * t / Math.max(end, 1), tick = [5, 10, 15, 30, 60, 120, 300].find(s => end / s <= 12) || 600;
+    g.font = "20px Helvetica, Arial, sans-serif"; g.textBaseline = "middle";
+    for (let s = 0; s <= end; s += tick) { g.strokeStyle = "#e3e5e8"; g.lineWidth = 1; g.beginPath(); g.moveTo(X(s), 14); g.lineTo(X(s), CH - 40); g.stroke(); g.fillStyle = "#6b7178"; g.textAlign = "center"; g.fillText(fmtTime(s), X(s), CH - 20); }
+    ops.vehs.forEach((v, n) => {
+      const y = 30 + n * 92, h = 62, r = v.rec;
+      g.textAlign = "left"; g.fillStyle = "#16181b"; g.fillText(v.id, 0, y + h / 2);
+      g.fillStyle = "#f1f2f4"; g.fillRect(L, y, CW - L - Rr, h);
+      g.fillStyle = "rgba(214, 48, 49, 0.28)";
+      for (const [a, b] of v.spans) g.fillRect(X(a), y, Math.max(2, X(b == null ? end : b) - X(a)), h);
+      const total = v.spans.reduce((q, [a, b]) => q + (b == null ? end : b) - a, 0);
+      if (total > 0) {                              // the running total of seconds in sight
+        let cum = 0; g.beginPath(); g.moveTo(X(0), y + h);
+        for (let i = 1; i < r.t.length; i++) { if (r.mask[i]) cum += r.t[i] - r.t[i - 1]; g.lineTo(X(r.t[i]), y + h - cum / total * (h - 6)); }
+        g.lineWidth = 3; g.strokeStyle = "#c0282b"; g.stroke();
+      }
+      g.textAlign = "right"; g.fillStyle = total > 0 ? "#c0282b" : "#2e8b57"; g.fillText(total > 0 ? `${total.toFixed(1)} s` : "0.0 s", CW - Rr - 8, y + 16);
+    });
+    const done = ops.tasks.filter(tk => tk.status === "DONE_OK").length, failed = ops.tasks.filter(tk => tk.status === "DONE_NOT_OK").length, cancelled = ops.tasks.filter(tk => tk.status === "CANCELED").length;
+    const seenOf = v => v.spans.reduce((q, [a, b]) => q + (b == null ? end : b) - a, 0), replans = ops.tasks.reduce((q, tk) => q + tk.replans, 0);
+    const word = s => ({ SENT: "Sent", RUNNING: "Running", DONE_OK: "Done", DONE_NOT_OK: "Failed", CANCELED: "Cancelled" }[s]);
+    const tile = (kk, vv, sub) => `<div class="tile"><span>${kk}</span><b>${vv}</b><small>${sub}</small></div>`;
+    const rows = ops.tasks.map(tk => `<tr><td><b>${tk.id}</b></td><td>${tk.veh}</td><td>${opsGrid(tk.dest)}</td><td>${tk.plan}</td>`
+      + `<td>${[tk.maxSeen != null ? `seen ≤ ${tk.maxSeen} s` : "", tk.arriveBy != null ? `≤ ${tk.arriveBy} s` : ""].filter(Boolean).join(", ") || "none"}</td>`
+      + `<td class="n">${tk.planned.time.toFixed(0)} s / ${tk.planned.seen.toFixed(1)} s</td><td class="n">${tk.tStart == null ? "—" : `${tk.elapsed.toFixed(0)} s / ${tk.seen.toFixed(1)} s`}</td><td class="n">${tk.replans}</td>`
+      + `<td class="${tk.status}">${word(tk.status)}${tk.reason ? `<small>${esc(tk.reason)}</small>` : ""}</td></tr>`).join("");
+    const evs = ops.events.map(e => `<tr class="${e.sev}"><td class="m">${opsUTC(e.t)}</td><td class="m">T+${fmtTime(e.t)}</td><td><b>${esc(e.src)}</b></td><td>${esc(e.msg)}</td></tr>`).join("");
+    return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>After-action report ${ops.mission}</title><style>
+body{margin:0;background:#fff;color:#16181b;font:13px/1.5 Inter,"Helvetica Neue",Helvetica,Arial,sans-serif}main{max-width:780px;margin:0 auto;padding:36px 32px 48px}
+h1{font-size:25px;line-height:1.1;margin:4px 0 6px;letter-spacing:-0.01em}h2{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#6b7178;margin:30px 0 10px;padding-bottom:6px;border-bottom:1px solid #d9dce0}
+.eyebrow{font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#6b7178}.meta{color:#4b5158;margin:0}.m,.n,.tile b{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}.tile{border:1px solid #d9dce0;border-radius:4px;padding:10px 12px}.tile span{display:block;font-size:9.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#6b7178}
+.tile b{display:block;font-size:20px;line-height:1.3}.tile small{color:#6b7178;font-size:11px}img{display:block;width:100%;height:auto;border:1px solid #d9dce0;border-radius:4px}
+.fig{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:18px;align-items:start}.key{margin:0;padding:0;list-style:none;color:#4b5158;font-size:12px}.key li{margin-bottom:6px}.key i{display:inline-block;width:18px;height:3px;vertical-align:3px;margin-right:8px}
+table{width:100%;border-collapse:collapse;font-size:12px}th{text-align:left;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#6b7178;padding:5px 6px;border-bottom:1px solid #16181b}td{padding:5px 6px;border-bottom:1px solid #e3e5e8;vertical-align:top}
+td small{display:block;color:#6b7178;font-size:11px}.n{white-space:nowrap}.DONE_OK{color:#1f7a47;font-weight:600}.DONE_NOT_OK{color:#c0282b;font-weight:600}.CANCELED{color:#9a6a00;font-weight:600}tr.bad td:last-child{color:#c0282b}tr.warn td:last-child{color:#9a6a00}tr.ok td:last-child{color:#1f7a47}
+footer{margin-top:28px;color:#6b7178;font-size:11px}@media(max-width:640px){.tiles{grid-template-columns:repeat(2,1fr)}.fig{grid-template-columns:1fr}main{padding:22px 16px 32px}.scroll{overflow-x:auto}}@media print{main{padding:0}h2{break-after:avoid}tr{break-inside:avoid}}
+</style></head><body><main><div class="eyebrow">After-action report · simulation</div><h1>Mission ${ops.mission}</h1>
+<p class="meta">${esc(MAP.name)} map (${C}×${R} m, seed ${MAP.seed}) · <span class="m">${opsUTC(0, true)}</span> to <span class="m">${opsUTC(end)}</span> · ${ops.vehs.length} vehicles, ${air.list.length} hostile sensors</p>
+<div class="tiles">${tile("Duration", fmtTime(end), "mission time")}${tile("Tasks", `${done} / ${ops.tasks.length}`, `done${failed ? ` · ${failed} failed` : ""}${cancelled ? ` · ${cancelled} cancelled` : ""}`)}${tile("Time in sight", `${ops.vehs.reduce((q, v) => q + seenOf(v), 0).toFixed(1)} s`, ops.vehs.map(v => `${v.id.slice(0, 3)} ${seenOf(v).toFixed(1)} s`).join(" · "))}${tile("Re-plans", replans, `${ops.blocks.size} roadblock${ops.blocks.size === 1 ? "" : "s"} placed`)}</div>
+<h2>Routes taken</h2><div class="fig"><img alt="Map of the routes taken" src="${map.toDataURL("image/png")}"><ul class="key"><li><i style="background:#5cc2ff"></i>Where a vehicle went (dashed: the drone)</li><li><i style="background:#ff5a52"></i>While a watchtower saw it</li><li><i style="background:rgba(255,90,82,.35);height:10px;vertical-align:-1px"></i>A watchtower's ${AIRC.sight} m reach</li><li><i style="background:#e2ad48;height:9px;width:9px;vertical-align:-1px"></i>Roadblock</li>
+${ops.vehs.map(v => `<li><b>${v.id}</b>: ${v.dist.toFixed(0)} m travelled, ${seenOf(v).toFixed(1)} s in sight</li>`).join("")}</ul></div>
+<h2>Time in sight</h2><img alt="When each vehicle was in a watchtower's sight" src="${ch.toDataURL("image/png")}"><p class="meta" style="margin-top:6px;font-size:12px">Shaded: a watchtower had the vehicle in sight. Line: the running total, up to the figure at the right.</p>
+<h2>Tasks</h2><div class="scroll">${ops.tasks.length ? `<table><thead><tr><th>ID</th><th>Entity</th><th>To</th><th>Plan</th><th>Limits</th><th>Planned time / seen</th><th>Actual time / seen</th><th>Re-plans</th><th>Outcome</th></tr></thead><tbody>${rows}</tbody></table>` : "<p class=\"meta\">No tasks were sent.</p>"}</div>
+<h2>Event log</h2><div class="scroll"><table><thead><tr><th>UTC</th><th>Mission</th><th>Source</th><th>Event</th></tr></thead><tbody>${evs}</tbody></table></div>
+<footer>Simulated data from the brubus robot navigation simulator. Times are mission time; positions are metres east and north on the map grid.</footer></main></body></html>`;
+  }
+  let opsReportDoc = "";
+  function opsReport() {
+    opsPalette(false);
+    opsReportDoc = opsReportHTML();
+    OE.frame.srcdoc = opsReportDoc; OE.aar.hidden = false; $("ops-aar-close").focus();
+  }
+  $("ops-aar-close").onclick = () => { OE.aar.hidden = true; };
+  $("ops-aar-print").onclick = () => { try { OE.frame.contentWindow.focus(); OE.frame.contentWindow.print(); } catch (e) { /* printing isn't allowed here */ } };
+  $("ops-aar-dl").onclick = () => {
+    const a = document.createElement("a"), url = URL.createObjectURL(new Blob([opsReportDoc], { type: "text/html" }));
+    a.href = url; a.download = `after-action-${ops.mission}.html`; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  };
+  OE.aar.addEventListener("pointerdown", ev => { if (ev.target === OE.aar) OE.aar.hidden = true; });
+
+  // -- the command bar: every action by name (Ctrl or Cmd + K)
+  let palItems = [], palAt = 0;
+  function opsCommands() {
+    const c = [], add = (title, hint, run) => c.push({ title, hint, run });
+    for (const v of ops.vehs) add(`Task ${v.id}: move to a point`, v.id === ops.sel ? "T" : "", () => opsBeginTask(v));
+    for (const v of ops.vehs) if (v.task) add(`Cancel ${v.task.id} (${v.id})`, "", () => opsCancel(v));
+    add("Run the demo mission", "", opsDemo);
+    add("Open the after-action report", "R", opsReport);
+    add("Drop a roadblock on the map", "B", opsArmBlock);
+    add(ops.view !== null ? (ops.viewPlay ? "Pause the replay" : "Play the replay") : ops.paused ? "Resume the mission" : "Pause the mission", "Space", opsTogglePlay);
+    if (ops.view !== null) add("Go live", "L", opsGoLive);
+    else if (ops.clock > 1) add("Replay the mission from the start", "", () => { opsScrub(0); ops.viewPlay = true; });
+    opsEnts().forEach((e, n) => add(`Select ${e.id}`, String(n + 1), () => opsSelect(e.id)));
+    [["drone", "Follow the selected entity"], ["top", "Top-down"], ["course", "Overview"]].forEach(([m, name]) => add(`View: ${name}`, "", () => { setMode(m); opsViews(); }));
+    [1, 4, 10].forEach(s => add(`Speed: ${s}×`, "", () => opsSpeed(s)));
+    SCENE.maps.forEach((m, i) => { if (i !== mapIdx) add(`Map: ${m.name}`, "", () => opsMap(i)); });
+    add("Start a new mission", "", opsReset);
+    add("Exit the console", "", () => setOps(false));
+    return c;
+  }
+  function opsPalette(open) {
+    OE.pal.hidden = !open;
+    if (!open) return;
+    OE.palIn.value = ""; palAt = 0; opsPalFill(); OE.palIn.focus();
+  }
+  function opsPalFill() {
+    const words = OE.palIn.value.toLowerCase().split(/\s+/).filter(Boolean);
+    palItems = opsCommands().filter(c => words.every(w => c.title.toLowerCase().includes(w)));
+    palAt = clamp(palAt, 0, Math.max(0, palItems.length - 1));
+    OE.palList.innerHTML = palItems.length ? palItems.map((c, n) => `<li role="option" data-n="${n}" aria-selected="${n === palAt}"><span>${esc(c.title)}</span>${c.hint ? `<small>${c.hint}</small>` : ""}</li>`).join("") : `<li class="none">No command matches.</li>`;
+    const on = OE.palList.querySelector('[aria-selected="true"]'); if (on) on.scrollIntoView({ block: "nearest" });
+  }
+  const opsPalRun = n => { const c = palItems[n]; if (!c) return; opsPalette(false); c.run(); };
+  OE.palIn.addEventListener("input", () => { palAt = 0; opsPalFill(); });
+  OE.palIn.addEventListener("keydown", ev => {
+    if (ev.key === "ArrowDown" || ev.key === "ArrowUp") { ev.preventDefault(); palAt = (palAt + (ev.key === "ArrowDown" ? 1 : palItems.length - 1)) % Math.max(1, palItems.length); opsPalFill(); }
+    else if (ev.key === "Enter") { ev.preventDefault(); opsPalRun(palAt); }
+    else if (ev.key === "Escape") { ev.preventDefault(); ev.stopPropagation(); opsPalette(false); }
+  });
+  OE.palList.addEventListener("click", ev => { const li = ev.target.closest("li[data-n]"); if (li) opsPalRun(+li.dataset.n); });
+  OE.pal.addEventListener("pointerdown", ev => { if (ev.target === OE.pal) opsPalette(false); });
+  addEventListener("keydown", ev => {
+    if (!ops.on) return;
+    if ((ev.ctrlKey || ev.metaKey) && (ev.key === "k" || ev.key === "K")) { ev.preventDefault(); opsPalette(OE.pal.hidden); return; }
+    if (!OE.pal.hidden) return;
+    if (!OE.aar.hidden) { if (ev.key === "Escape") OE.aar.hidden = true; return; }
+    if (ev.target instanceof HTMLInputElement || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+    const key = ev.key.toLowerCase(), e = opsEnt(ops.sel);
+    if (ev.key === "Escape") { if (ops.draft || ops.picking) opsCancelDraft(); else if (ops.view !== null) opsGoLive(); }
+    else if (key === "t") { if (e && e.kind !== "tower") opsBeginTask(e); }
+    else if (key === "b") opsArmBlock();
+    else if (key === "r") opsReport();
+    else if (key === "l") opsGoLive();
+    else if (ev.key === " " && !(ev.target instanceof HTMLButtonElement)) { ev.preventDefault(); opsTogglePlay(); }
+    else if (/^[1-9]$/.test(ev.key)) { const x = opsEnts()[+ev.key - 1]; if (x) opsSelect(x.id); }
+  });
+
+  // -- the demo mission: both vehicles tasked past a tower, and a roadblock dropped in front of the tank
+  function opsTarget(v, avoid, spread) {            // a far point with a tower near the straight line to it
+    let best = null, bestS = -Infinity;
+    const cands = [];
+    for (const p of MAP.presets) for (const cell of [p.start, p.goal]) {
+      const d = Math.hypot(cell[0] - v.cell[0], cell[1] - v.cell[1]);
+      if (d < 25 || opsDestWhy(v, cell) || (avoid && Math.hypot(cell[0] - avoid[0], cell[1] - avoid[1]) < 20)) continue;
+      let near = Infinity;
+      for (const tw of air.list) {
+        const f = clamp(((tw.r - v.cell[0]) * (cell[0] - v.cell[0]) + (tw.c - v.cell[1]) * (cell[1] - v.cell[1])) / (d * d), 0, 1);
+        near = Math.min(near, Math.hypot(v.cell[0] + f * (cell[0] - v.cell[0]) - tw.r, v.cell[1] + f * (cell[1] - v.cell[1]) - tw.c));
+      }
+      const s = -Math.abs(d - 50) - 2.5 * near;
+      if (s > bestS) { bestS = s; best = cell; }
+      cands.push([s, cell]);
+    }
+    if (!spread) return best;
+    let pick = best, most = -1;                     // of the six likeliest, where hiding changes the route most
+    for (const [, cell] of cands.sort((a, b) => b[0] - a[0]).slice(0, 6)) {
+      const pl = opsPlan(v, cell);
+      if (!pl[0].rt.found) continue;
+      const gain = pl[0].rt.seenS - pl[2].rt.seenS + (pl[1].same ? 0 : 1) + (pl[2].same ? 0 : 1);
+      if (gain > most) { most = gain; pick = cell; }
+    }
+    return pick;
+  }
+  function opsDemo() { opsReset(); ops.demo = { step: 0, uavDest: null }; }
+  function opsDemoTick() {
+    const d = ops.demo, [ugv, uav] = ops.vehs;
+    if (ops.draft && !ops.draft.quiet) return;      // you've started a task of your own: wait
+    if (d.step === 0 && ops.clock > 0.8) {
+      d.step = 1; d.uavDest = opsTarget(uav, null, true);
+      if (d.uavDest) { opsBeginTask(uav, true); if (opsSetDest(d.uavDest)) { const dr = ops.draft; dr.maxSeen = Math.ceil(dr.plans[1].rt.seenS) + 1; opsAuto(); opsApprove(); } else opsCancelDraft(true); }
+    } else if (d.step === 1 && ops.clock > 4) {
+      d.step = 2;
+      const dest = opsTarget(ugv, d.uavDest, true);
+      if (dest) { opsBeginTask(ugv, true); if (opsSetDest(dest)) { const dr = ops.draft; dr.maxSeen = Math.ceil(dr.plans[1].rt.seenS) + 1; opsAuto(); opsApprove(); } else opsCancelDraft(true); }
+      opsSelect("UAV-01");
+    } else if (d.step === 2 && ugv.task && ugv.task.status === "RUNNING" && ugv.k >= 8) {
+      d.step = 3;
+      for (let a = 8; a <= 14; a++) { const i = ugv.route.idx[ugv.k + a]; if (i === undefined) break; if (opsDropBlock([(i / C) | 0, i % C])) break; }
+    } else if (d.step >= 2 && !ugv.task && !uav.task) ops.demo = null;
+  }
+
+  // -- in and out, and the bar's buttons
+  function opsSpeed(s) { ops.speed = s; [...document.querySelectorAll("#ops-speed button")].forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.speed === s))); ops.dirty = true; }
+  function opsMap(i) {
+    opsClear(); loadMap(i, false); parkRover(); opsReset(); setMode("course", true); opsViews();
+    opsMapBtns.forEach((b, k) => b.setAttribute("aria-pressed", String(k === i)));
+  }
+  const opsMapBtns = SCENE.maps.map((m, i) => {
+    const b = document.createElement("button");
+    b.textContent = m.name; b.setAttribute("aria-pressed", "false"); b.onclick = () => { if (i !== mapIdx) opsMap(i); };
+    $("ops-maps").appendChild(b);
+    return b;
+  });
+  function setOps(on) {
+    if (on === ops.on) return;
+    if (on) {
+      if (tour) stopTour();
+      stopReplay(); if (plan.mode) exitPlan(); if (senseView.arming) armBlock(false); showPaths(false);
+      if (air.on) setAir(false, true);
+      parkRover();
+      ops.on = true; document.body.classList.add("ops-on"); OE.root.hidden = false;
+      opsMapBtns.forEach((b, k) => b.setAttribute("aria-pressed", String(k === mapIdx)));
+      opsReset(); setMode("course"); opsViews();
+    } else {
+      opsPalette(false); OE.aar.hidden = true; opsClear();
+      ops.on = false; document.body.classList.remove("ops-on"); OE.root.hidden = true;
+      air.list.forEach(tw => { tw.line.visible = false; tw.watching = false; tw.tag.set("", ""); });
+      loadMap(mapIdx, false);
+    }
+  }
+  [...document.querySelectorAll("#ops-speed button")].forEach(b => { b.onclick = () => opsSpeed(+b.dataset.speed); });
+  [...document.querySelectorAll("#ops-views button")].forEach(b => { b.onclick = () => { if (ops.picking) opsCancelDraft(true); setMode(b.dataset.view); opsViews(); }; });
+  OE.play.onclick = opsTogglePlay; OE.live.onclick = opsGoLive; $("ops-demo-btn").onclick = opsDemo;
+  $("ops-cmd-btn").onclick = () => opsPalette(true); $("ops-report-btn").onclick = opsReport; $("ops-exit").onclick = () => setOps(false);
+  if (/Mac|iPhone|iPad/.test(navigator.platform || "")) document.querySelector("#ops-cmd-btn kbd").textContent = "⌘K";
+  const opsBtn = document.createElement("button");   // the way in, beside the map buttons
+  opsBtn.id = "ops-btn"; opsBtn.textContent = "▣ Console"; opsBtn.title = "Operator console: task the vehicles, watch the timeline, get a report";
+  opsBtn.onclick = () => setOps(true);
+  $("maps").appendChild(opsBtn);
+  /* ops:js:end */
   // ---------------------------------------------------------------- links to a view: #desert/p19/drone, or #tour
   // The address keeps up with the map, the path being driven and the camera, so a copied link opens the same view.
   const VIEW_WORD = { drone: "drone", top: "top", chase: "chase" };
@@ -4724,7 +5787,7 @@ void main() {
       const pm = /^p(\d{1,2})$/.exec(w);
       if (pm) out.path = +pm[1] - 1;
       if (Object.keys(VIEW_WORD).includes(w)) out.view = w;
-      if (w === "search" || w === "sensor" || w === "bench" || w === "air") out[w] = true;
+      if (w === "search" || w === "sensor" || w === "bench" || w === "air" || w === "ops" || w === "demo") out[w] = true;
     }
     return out;
   }
@@ -4733,10 +5796,11 @@ void main() {
     if (tour || !MAP) return;
     const d = drivenPreset(), parts = [MAP.key];
     if (d >= 0) parts.push(`p${d + 1}`);
-    if (air.on) parts.push("air");
+    if (ops.on) parts.push("ops");
+    else if (air.on) parts.push("air");
     else if (replay.on) parts.push("search");
     else if (sensing()) parts.push("sensor");
-    if (!plan.mode && VIEW_WORD[mode]) parts.push(VIEW_WORD[mode]);
+    if (!plan.mode && !ops.on && VIEW_WORD[mode]) parts.push(VIEW_WORD[mode]);
     const h = "#" + parts.join("/");
     if (h === hashNow) return;
     hashNow = h;
@@ -4985,12 +6049,13 @@ void main() {
     current.curve.getPointAt(u, P); current.curve.getTangentAt(u, T);
     fwd.set(T.x, 0, T.z); if (fwd.lengthSq() < 1e-8) fwd.set(0, 0, 1); fwd.normalize();
     rightH.set(fwd.z, 0, -fwd.x);
-    const gy = groundH(P.x, P.z);
+    let gy = groundH(P.x, P.z);
     const grade = (groundH(P.x + fwd.x * 0.8, P.z + fwd.z * 0.8) - groundH(P.x - fwd.x * 0.8, P.z - fwd.z * 0.8)) / 1.6;
     const surf = SURF[clamp(Math.round(P.z + (R - 1) / 2), 0, R - 1) * C + clamp(Math.round(P.x + (C - 1) / 2), 0, C - 1)];
 
     // 2. sit on the terrain, pitch and roll with it (or, in the air, fly)
-    if (air.on) airTick(dt, t, v, P, T);
+    if (ops.on) gy = opsTick(dt, t);
+    else if (air.on) airTick(dt, t, v, P, T);
     else {
     up.copy(normalAt(P.x, P.z, 0.9));
     f2.copy(fwd).addScaledVector(up, -fwd.dot(up)).normalize();
@@ -5030,7 +6095,7 @@ void main() {
 
     // 4. drone camera
     camera.position.sub(bob);
-    followP.lerp(tmpV.set(P.x, air.on && !current.park ? P.y : gy + 0.6, P.z), snap ? 1 : 1 - Math.exp(-dt * 5));
+    followP.lerp(tmpV.set(P.x, ops.on ? ops.followY : air.on && !current.park ? P.y : gy + 0.6, P.z), snap ? 1 : 1 - Math.exp(-dt * 5));
     if (snap) headS.copy(fwd);
     else { headS.lerp(fwd, 1 - Math.exp(-dt * 1.2)); if (headS.lengthSq() > 0.01) headS.normalize(); else headS.copy(fwd); }
     snap = false;
@@ -5085,18 +6150,19 @@ void main() {
     updateSky(t);
 
     // 5. map, tags and telemetry
-    if (!plan.mode && !replay.on) drawMinimap(P);
+    if (!plan.mode && !replay.on && !ops.on) drawMinimap(P);
     senseTick(dt, t);
     const tagsOn = !plan.mode && !replay.on;        // callsign tags stay out of the planner and the search replay
-    roverTag.sprite.visible = tagsOn && !air.on; air.drone.tag.sprite.visible = tagsOn && air.on;
+    roverTag.sprite.visible = tagsOn && (!air.on || ops.on); air.drone.tag.sprite.visible = tagsOn && (air.on || ops.on);
     air.list.forEach(tw => { tw.tag.sprite.visible = tagsOn; });
-    if (!air.on) roverTag.sprite.position.set(P.x, gy + 1.45, P.z);
+    if (!air.on && !ops.on) roverTag.sprite.position.set(P.x, gy + 1.45, P.z);
     drawHud();
     G.bar.style.width = (driving && total ? simT / total * 100 : 0) + "%";
     if ((hudT += dt) > 0.1) {
       hudT = 0;
       const spd = playing && driving && simT < total ? mps : 0;
-      if (air.on) air.drone.tag.set(current.park ? "LANDED" : `${(P.y - gy).toFixed(1)} m AGL · ${spd.toFixed(1)} m/s`);
+      if (ops.on) { /* the console labels its own vehicles */ }
+      else if (air.on) air.drone.tag.set(current.park ? "LANDED" : `${(P.y - gy).toFixed(1)} m AGL · ${spd.toFixed(1)} m/s`);
       else roverTag.set(current.park ? "PARKED" : `${spd.toFixed(1)} m/s`);
       G.time.textContent = driving ? `${fmtTime(simT)} / ${fmtTime(total)}` : "—";
       G.dist.textContent = s.toFixed(0);
@@ -5144,7 +6210,7 @@ void main() {
   // changes, the planner bar opens. The picture glides to the new framing (easeView).
   if (window.ResizeObserver) {
     const refit = new ResizeObserver(() => { if (MAP && mode === "course") viewFit = computeOverviewFit(); });
-    for (const id of ["title-board", "board", "drone", "paths", "tele", "planbar", "tour-cap", "sense"]) refit.observe($(id));
+    for (const id of ["title-board", "board", "drone", "paths", "tele", "planbar", "tour-cap", "sense", "ops-top", "ops-left", "ops-right", "ops-bottom"]) refit.observe($(id));
   }
   if (matchMedia("(max-width: 760px)").matches) $("board").open = false;
   resize();
@@ -5158,6 +6224,7 @@ void main() {
     if (link.air) setAir(true, !!link.view);
     if (link.view && mode !== link.view) setMode(link.view);
     if (link.search && !parked) startReplay();
+    if (link.ops) { setOps(true); if (link.demo) opsDemo(); }
     if (link.bench) setTimeout(runBench, 800);
   }
   requestAnimationFrame(frame);

@@ -14,7 +14,8 @@ reading the terrain buys you. You can **watch the search**: two planners side by
 And the rover can drive **seeing only a few metres around it**, re-planning with **D\* Lite** as it
 discovers the hills, the water and any roadblock you drop in its way. Press **✈ Air** and our drone,
 UAV-01, flies to the finish through the sky instead, keeping **out of the watchtowers' sight** behind
-the hills.
+the hills. Press **▣ Console** and the same map becomes a small **mission-planning system**: you task the
+tank and the drone, compare three plans, approve one, watch it run on a timeline and get a report.
 
 Python generates the maps and picks the routes. The code that decides every route exists three times:
 in Python (the reference), in C++ (a core 27 to 68 times faster, with a command-line tool and a Python
@@ -40,6 +41,9 @@ report the same times, to the last bit.
   [`#grassland/p15/air`](https://r0ck574r.github.io/brubus/#grassland/p15/air) the air route,
   [`#desert/p19/drone`](https://r0ck574r.github.io/brubus/#desert/p19/drone) the desert's path P19 past
   both oases with the drone camera, and `#tour/island` starts the tour on the island.
+- **The operator console**: [`#grassland/ops/demo`](https://r0ck574r.github.io/brubus/#grassland/ops/demo) opens the
+  console and runs a short mission by itself: both vehicles are tasked, a roadblock appears in front of
+  the tank and it plans again. See [The operator console](#the-operator-console).
 - **How fast it runs**: add `#bench` to the address for a frame-rate benchmark on that device, or
   `?fps` (or press F) for a live frame counter. See [Frame rate](#frame-rate).
 
@@ -121,7 +125,7 @@ Run these from the same terminal, with the virtual environment active.
 | `python main.py parity` | The C++ core against Python on all 60 preset trips: identical results, and how much faster (about 3 minutes) |
 | `python main.py explore-bench` | Every preset at 5, 10 and 20 m: time lost to not knowing, D\* Lite's work against A\* from scratch (about a minute) |
 | `python main.py terrain-bench` | Hills, slope limit and obstacle sweep (about 25 seconds) |
-| `python -m pytest -q` | Run the 217 tests (30 of them hold the C++ core against Python; skipped until it's built) |
+| `python -m pytest -q` | Run the 218 tests (30 of them hold the C++ core against Python; skipped until it's built) |
 | `python main.py demo`, `python main.py benchmark` | The original 2D grid version |
 
 `python main.py course` writes the viewer twice: `output/course_3d.html` to open yourself, and
@@ -267,6 +271,61 @@ ground, the climb rate, and **Seen** (red) or **Hidden** (green).
 `robotnav/airspace.py` is the reference (`python main.py fly`), and the browser runs a line-for-line
 port: the same free cells, the same cells seen by each tower, and the same flights, checked in a
 headless browser on every map.
+
+## The operator console
+
+![The operator console on the grassland: the entity list and tasks on the left, UGV-01 selected on the right (seen by TWR-4, on a balanced plan, one re-plan), the map with the towers' sight domes in the middle, and the timeline and event log along the bottom](docs/console.png)
+
+Press **▣ Console** (next to the map buttons, or add `#ops` to the address) and the map is run as a
+mission. Our two vehicles, the tank UGV-01 and the drone UAV-01, and the hostile watchtowers become
+**entities** in a list with their status, grid position (metres east and north), heading and speed.
+Select one (click its row, click it on the map, or press its number) and the panel on the right shows
+the rest: height above ground, which tower sees it, and the task it's on.
+
+**Tasking.** Select a vehicle and press **T**. The camera rises to a top-down map; click where it should
+go, and set limits if you want them: how many seconds it may be **seen** and how soon it must
+**arrive**. The console answers with three plans side by side:
+
+| Plan | Pays, per second in a tower's sight | What you get |
+|---|---|---|
+| Fastest | 0 s | The quickest route, whatever sees it |
+| Balanced | 2 s | Gives up a little time to cut most of the exposure |
+| Stealthiest | 10 s | Hides wherever it can (the Stealth A\* of the air route) |
+
+All three are the same A\*, each optimal for what it weighs. The table shows each plan's time, distance
+and seconds in sight, and whether it keeps your limits; the fastest plan that does is picked for you,
+and you can pick another. **Approve & send** and the task goes through its life: **sent**, **running**
+once the vehicle acknowledges, then **done**, or **failed** if it arrived over a limit or couldn't
+arrive at all. Here the towers watch the tank too: a ground cell is seen where the line from a tower's
+eye to a metre above it is clear.
+
+![Planning a task for the drone: three flights on the top-down map, the fastest in sight for 9.7 s, the balanced one for 3.9 s and the stealthiest for none; with "seen for at most 5 s" the console picks the balanced plan](docs/console-plan.png)
+
+**Timeline and event log.** Everything that happens is logged with a UTC time, the way an operations
+log reads: `07:49:07Z UGV-01 re-planned: roadblock at 047 031, 97 s to go`, `07:49:10Z TWR-4 acquired
+UGV-01`. The timeline above the log has a lane per vehicle with a bar per task, red where a tower had
+it in sight, and a tick per event. **Drag the timeline** (or click a log line) and the map shows that
+moment again: the vehicles go back to where they were, the mission itself waits, and **Live** returns
+to now. Drop a roadblock (**B**) in front of the tank and it notices it from 5 m away and plans again
+from where it stands; if nothing gets past, the task fails and the log says why.
+
+**After-action report.** **Report** (or **R**) puts the mission on one page: how long it took, tasks
+done and failed, a map of where each vehicle went (red where it was seen), time in sight over the
+mission, each task as planned against how it went, and the whole log. It's a self-contained HTML page
+you can download or print.
+
+![The after-action report: duration, tasks, time in sight and re-plans at the top, then the map of the routes taken](docs/console-report.png)
+
+**Command bar.** **Ctrl+K** (or **⌘K**) lists every action by name; type a few letters and press Enter:
+"task uav", "report", "sel twr-3", "map desert", "demo". The keys: **T** task, **B** roadblock, **R**
+report, **Space** pause, **L** live, **1** to **6** select, **Esc** cancel.
+
+What's checked: a headless browser clicks through all of it (41 checks): a task's fastest and
+stealthiest flights are the direct and stealth flights of the air route to the last bit, a vehicle's
+time and seconds in sight match its plan, a task sent over its limit ends failed, the tank never drives
+through a roadblock, and the replay puts it back where its recording says. The console itself (the
+balanced plan, the towers seeing the tank, tasks and the log) lives in the browser only; the Python
+and C++ planners don't have a counterpart for it yet.
 
 ## The rover
 
@@ -487,14 +546,14 @@ Hand-drawn routes are scored by the same rules in both (`robotnav.terrain.evalua
 | `robotnav/scene3d.py` | Exports the three maps and their preset paths into the self-contained viewer (and the live demo page, with link previews) |
 | `robotnav/intro_art.py` | The intro's art: draws the blacked-out flag (official proportions, flat, greys only, horizontal and vertical) as SVG and inlines the bison badge |
 | `tools/bison_logo.py` | The badge (`robotnav/assets/bison.webp`): a shield with a bison's head, drawn as outlines, raised into a relief (bevels from exact distances to each outline) and shaded as polished silver in a studio, on black enamel (NumPy, SciPy) |
-| `robotnav/viewer3d.html` | Three.js viewer: maps, sky, water, contour lines, palms and trees, planners, D\* Lite and the air route in the browser, watching the search, the sensor drive, the drone and its watchtowers, MIL-STD-2525 symbols and callsign tags, preset paths, picking, drawing, drone camera and its compass and altitude read-outs, the spiked tank, the tour, links to a view, the frame-rate benchmark |
+| `robotnav/viewer3d.html` | Three.js viewer: maps, sky, water, contour lines, palms and trees, planners, D\* Lite and the air route in the browser, watching the search, the sensor drive, the drone and its watchtowers, the operator console (entities, tasking, timeline, report, command bar), MIL-STD-2525 symbols and callsign tags, preset paths, picking, drawing, drone camera and its compass and altitude read-outs, the spiked tank, the tour, links to a view, the frame-rate benchmark |
 | `cpp/` | The C++ core: planners, D\* Lite, the air route, map files, the `robotnav` tool, unit tests and the pybind11 module ([cpp/README.md](cpp/README.md)) |
 | `robotnav/cpp.py`, `parity.py`, `mapfile.py` | Run the C++ core from Python, compare it with the reference, and write the map files it reads |
 | `maps/` | The live demo's three maps as map files, for the C++ tool |
 | `docs/` | The live demo served by GitHub Pages (`index.html`, built by `python main.py course`), its preview image, and the README's pictures |
 | `robotnav/terrain_bench.py` | Sweeps hill height, slope limit and obstacle density |
 | `robotnav/grid.py`, `visualize.py`, `benchmark.py` | Original 2D grid world, plots and benchmark |
-| `tests/` | 217 checks: optimality on every map, the shortest route, all 20 presets per map, the desert's oases, grade limit, water, route rules, D\* Lite (legal routes, optimal repairs, roadblocks), the air route (towers, lines of sight, hiding behind a ridge), the C++ core against Python, map rebuilds, the command line, the page head and link previews, the console look (fonts, map symbols, tags, read-outs), the intro's flag and logo |
+| `tests/` | 218 checks: optimality on every map, the shortest route, all 20 presets per map, the desert's oases, grade limit, water, route rules, D\* Lite (legal routes, optimal repairs, roadblocks), the air route (towers, lines of sight, hiding behind a ridge), the C++ core against Python, map rebuilds, the command line, the page head and link previews, the console look (fonts, map symbols, tags, read-outs), the intro's flag and logo |
 
 ## Findings
 

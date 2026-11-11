@@ -32,6 +32,17 @@ def test_viewer_has_the_console_look(tmp_path):
     assert "UAV-01" in page and "TWR-" in page and "TRACKING" in page                # callsign tags
 
 
+def test_viewer_has_the_operator_console(tmp_path):
+    page = _page(tmp_path)
+    for part in ("ops-ents", "ops-tasks", "ops-tl", "ops-log", "ops-pal", "ops-aar"):   # lists, timeline, log, command bar, report
+        assert f'id="{part}"' in page
+    assert '{ key: "balanced", name: "Balanced", w: 2 }' in page                # the three plans' weights
+    for status in ("SENT", "RUNNING", "DONE_OK", "DONE_NOT_OK"):                 # a task's life
+        assert f'"{status}"' in page
+    assert "re-planned: roadblock at" in page and "getUTCHours" in page          # the log's wording and its UTC clock
+    assert 'w === "ops"' in page                                                 # the #ops link
+
+
 def test_intro_art_is_inlined(tmp_path):
     page = _page(tmp_path)
     assert "__FLAG__" not in page and "__BISON_URI__" not in page   # both placeholders were filled
