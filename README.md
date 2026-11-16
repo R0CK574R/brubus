@@ -45,8 +45,8 @@ report the same times, to the last bit.
   [`#desert/p19/drone`](https://r0ck574r.github.io/brubus/#desert/p19/drone) the desert's path P19 past
   both oases with the drone camera, and `#tour/island` starts the tour on the island.
 - **The operator console**: [`#grassland/ops/demo`](https://r0ck574r.github.io/brubus/#grassland/ops/demo) opens the
-  console and runs a short mission by itself: both vehicles are tasked, a roadblock appears in front of
-  the tank and it plans again. See [The operator console](#the-operator-console).
+  console and runs a short mission by itself: the tank is tasked, three drones are assigned a survey
+  and fly it together, a roadblock appears in front of the tank and it plans again. See [The operator console](#the-operator-console).
 - **How fast it runs**: add `#bench` to the address for a frame-rate benchmark on that device, or
   `?fps` (or press F) for a live frame counter. See [Frame rate](#frame-rate).
 
@@ -128,7 +128,7 @@ Run these from the same terminal, with the virtual environment active.
 | `python main.py parity` | The C++ core against Python on all 60 preset trips: identical results, and how much faster (about 3 minutes) |
 | `python main.py explore-bench` | Every preset at 5, 10 and 20 m: time lost to not knowing, D\* Lite's work against A\* from scratch (about a minute) |
 | `python main.py terrain-bench` | Hills, slope limit and obstacle sweep (about 25 seconds) |
-| `python -m pytest -q` | Run the 238 tests (42 of them hold the C++ core against Python; skipped until it's built) |
+| `python -m pytest -q` | Run the 252 tests (42 of them hold the C++ core against Python; skipped until it's built) |
 | `python main.py demo`, `python main.py benchmark` | The original 2D grid version |
 
 `python main.py course` writes the viewer twice: `output/course_3d.html` to open yourself, and
@@ -277,10 +277,10 @@ headless browser on every map.
 
 ## The operator console
 
-![The operator console on the grassland: the entity list and tasks on the left, UAV-01 selected on the right with a confirmed hostile track on it, the map with the towers' sight domes in the middle, and the timeline and event log along the bottom](docs/console.png)
+![The operator console on the grassland: the entity list (a tank, three drones, four towers) and the tasks on the left, the tank UGV-01 selected on the right, in view of a tower after a re-plan, the map with the towers' sight domes in the middle, and the timeline with a lane per vehicle and the event log along the bottom](docs/console.png)
 
 Press **▣ Console** (next to the map buttons, or add `#ops` to the address) and the map is run as a
-mission. Our two vehicles, the tank UGV-01 and the drone UAV-01, and the hostile watchtowers become
+mission. Our four vehicles, the tank UGV-01 and the drones UAV-01 to UAV-03, and the hostile watchtowers become
 **entities** in a list with their status, grid position (metres east and north), heading and speed.
 Select one (click its row, click it on the map, or press its number) and the panel on the right shows
 the rest: height above ground, which towers have it in view, the track the towers hold on it, and its
@@ -304,7 +304,7 @@ chance and reports how often it was detected, with a 95% interval, next to the p
 **Approve & send** and the task goes through its life: **sent**, **running** once the vehicle
 acknowledges, then **done**, or **failed**: late, no way through, or detected when you set a risk limit.
 
-![Planning a task for the drone: three flights on the top-down map; the fastest runs a 99% risk of detection, the balanced one 31% and the stealthiest none; the chart shows every trade between time and risk, and 1,000 trials put the balanced plan at 34% (31% to 37%)](docs/console-plan.png)
+![Planning a task for a drone: three flights on the top-down map; the fastest runs a 97% risk of detection, the balanced one 17% and the stealthiest 1.1%; the chart shows every trade between time and risk, and 1,000 trials put the balanced plan at 18% (16% to 20%)](docs/console-plan.png)
 
 **Timeline and event log.** Everything that happens is logged with a UTC time, the way an operations
 log reads: `19:11:13Z TWR-1 detected UAV-01 at 7 m (87% a look)`, `19:11:14Z TWR-1 track on UAV-01
@@ -320,11 +320,39 @@ done and failed, detections, a map of where each vehicle went (amber in view, re
 task as planned against how it went, and the whole log. It's a self-contained HTML page you can download
 or print.
 
-![The after-action report: duration, tasks, detections and re-plans at the top, then the map of the routes taken](docs/console-report.png)
+![The after-action report: duration, tasks, detections and re-plans at the top, then the map of the routes all four vehicles took](docs/console-report.png)
 
 **Command bar.** **Ctrl+K** (or **⌘K**) lists every action by name; type a few letters and press Enter:
 "task uav", "report", "sel twr-3", "map desert", "demo". The keys: **T** task, **B** roadblock, **R**
-report, **Space** pause, **L** live, **1** to **6** select, **Esc** cancel.
+report, **S** survey, **Space** pause, **L** live, the number keys select, **Esc** cancel.
+
+### Several vehicles at once
+
+![A survey being planned: three points marked on the top-down map, the table giving each point its drone with the time and risk of the flight, while the tank is already under way on its own task](docs/console-survey.png)
+
+The fleet is a tank and three drones, and a **survey** (**S**) tasks several of them in one go. Click up
+to three points on the map (one for each free vehicle) and the console decides **who goes where**. It
+plans every vehicle's route to every point with the same planners as a single task, prices each at its
+time plus 4 s per unit of hazard, and then picks the pairing whose total is least. That is the
+assignment problem, solved exactly with the Hungarian method (`robotnav/assign.py`, O(n³)), not by
+giving each point its nearest vehicle: nearest-first can hand the first point a vehicle that another
+point needed more. The panel shows both totals, so you can see when the simple rule would have cost
+more. The tests compare the method with trying every pairing on several hundred random cases.
+
+**Keeping apart.** Two drones in the air keep 3 m between them. The plans are checked against each
+other before anything is sent: each flight is stepped through in quarter seconds against the flights
+already approved (and the ones already in the air), and if it would come too close, it **holds on the
+ground** a second at a time until the way is clear. The table shows each hold, the timeline shows it
+as a gap before the flight's bar, and the log says why: `UAV-02 holds 2 s on the ground: keeps 3 m
+from UAV-03`. Sent the same way without the hold, the browser test's three flights pass 1.9 m
+apart; with holds of 0, 2 and 1 s they never come within 4.2 m.
+
+![Three drones in the air at once on survey tasks while the tank drives its own route; the timeline has a lane for each vehicle](docs/console-fleet.png)
+
+Everything else works per vehicle as before: each has its own task, its own lane on the timeline and
+its own tracks if the towers pick it up, and the after-action report draws all four routes. **Demo**
+in the command bar runs the lot: the tank is sent off, three points are surveyed by the drones, and a
+roadblock drops in front of the tank.
 
 ### Detection, tracks and risk
 
@@ -677,12 +705,13 @@ the C++ tests under AddressSanitizer and UndefinedBehaviorSanitizer.
 | `tools/bison_logo.py` | The badge (`robotnav/assets/bison.webp`): a shield with a bison's head, drawn as outlines, raised into a relief (bevels from exact distances to each outline) and shaded as polished silver in a studio, on black enamel (NumPy, SciPy) |
 | `robotnav/viewer3d.html` | Three.js viewer: maps, sky, water, contour lines, palms and trees, planners, D\* Lite and the air route in the browser, watching the search, the sensor drive, the drone and its watchtowers, the operator console (entities, tasking, timeline, report, command bar), MIL-STD-2525 symbols and callsign tags, preset paths, picking, drawing, drone camera and its compass and altitude read-outs, the spiked tank, the tour, links to a view, the frame-rate benchmark |
 | `cpp/` | The C++ core: planners, D\* Lite, the air route, the detection field and Monte Carlo trials on a thread pool, map files, the `robotnav` tool, unit tests, the pybind11 module and the WebAssembly build (`cpp/wasm/`, `tools/build_wasm.sh`) ([cpp/README.md](cpp/README.md)) |
+| `robotnav/assign.py` | Who goes where: the Hungarian method for a survey's assignment, and the nearest-first rule it is compared with |
 | `robotnav/cpp.py`, `parity.py`, `mapfile.py` | Run the C++ core from Python, compare it with the reference, and write the map files it reads |
 | `maps/` | The live demo's three maps as map files, for the C++ tool |
 | `docs/` | The live demo served by GitHub Pages (`index.html`, built by `python main.py course`), its preview image, and the README's pictures |
 | `robotnav/terrain_bench.py` | Sweeps hill height, slope limit and obstacle density |
 | `robotnav/grid.py`, `visualize.py`, `benchmark.py` | Original 2D grid world, plots and benchmark |
-| `tests/` | 238 checks: optimality on every map, the shortest route, all 20 presets per map, the desert's oases, grade limit, water, route rules, D\* Lite (legal routes, optimal repairs, roadblocks), the air route (towers, lines of sight, hiding behind a ridge), the C++ core against Python, map rebuilds, the command line, the page head and link previews, the console look (fonts, map symbols, tags, read-outs), the intro's flag and logo |
+| `tests/` | 252 checks: optimality on every map, the shortest route, all 20 presets per map, the desert's oases, grade limit, water, route rules, D\* Lite (legal routes, optimal repairs, roadblocks), the air route (towers, lines of sight, hiding behind a ridge), the C++ core against Python, map rebuilds, the command line, the page head and link previews, the survey's assignment against every pairing, the console look (fonts, map symbols, tags, read-outs), the intro's flag and logo |
 
 ## Findings
 

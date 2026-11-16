@@ -46,6 +46,14 @@ def test_viewer_has_the_operator_console(tmp_path):
     assert 'w === "ops"' in page                                                 # the #ops link
 
 
+def test_viewer_tasks_several_vehicles(tmp_path):
+    page = _page(tmp_path)
+    assert "const OPS_DRONES = 3, OPS_SEP = 3, OPS_W_FLEET = 4;" in page          # a tank and three drones, kept 3 m apart
+    for fn in ("function hungarian(", "function opsAssign(", "function opsHold(", "function opsSurveyApprove("):
+        assert fn in page                                                        # who goes where, and the hold on the ground
+    assert 'id="ops-survey-btn"' in page and "Nearest-first happens to give the same here." in page
+
+
 def test_the_cpp_core_rides_in_the_page_as_webassembly(tmp_path):
     import base64
     from robotnav.scene3d import CORE_WASM
