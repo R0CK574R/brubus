@@ -38,6 +38,9 @@ jobs:
         run: cmake --build cpp/build --config Release --parallel
       - name: Unit tests, and every result bit for bit against the reference
         run: ctest --test-dir cpp/build -C Release --output-on-failure
+      - name: Monte Carlo on the thread pool (how the trials speed up with threads, and the same result on any number)
+        if: runner.os != 'Windows'
+        run: ./cpp/build/robotnav mc-bench maps/grassland.map maps/desert.map maps/island.map --trials 4000 --repeat 2
       - name: Python planners against the C++ ones, on this machine
         if: matrix.python != 'none'
         run: python main.py parity

@@ -108,6 +108,10 @@ struct PathStats {
 };
 PathStats path_stats(const Map& m, const std::vector<int>& path);
 
+// Give up on a request that can't be met: throws std::invalid_argument where the build has exceptions, and stops the
+// program with the message where it has none (the WebAssembly build).
+[[noreturn]] void fail(const std::string& what);
+
 // Python's round(x, digits): the nearest double to x rounded to `digits` decimals (ties to even).
 double py_round(double x, int digits);
 

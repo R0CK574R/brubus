@@ -23,9 +23,12 @@
 #include <vector>
 
 #include "robotnav/airspace.hpp"
+#include "robotnav/digest.hpp"
 #include "robotnav/mapio.hpp"
 #include "robotnav/planners.hpp"
 #include "robotnav/replan.hpp"
+#include "robotnav/sensing.hpp"
+#include "robotnav/thread_pool.hpp"
 
 using namespace robotnav;
 
@@ -95,6 +98,11 @@ struct Args {
     std::string prior = "none";
     std::vector<std::string> blocks;
     int repeat = 3;
+    std::string vehicle = "ugv";
+    double w = 4.0, arrive = -1.0;
+    long trials = 100000;
+    int threads = 0;
+    std::uint32_t seed = 20261111;
 };
 
 const char* kUsage =
@@ -109,6 +117,8 @@ const char* kUsage =
     "  fly       the air route: a drone flies out of the watchtowers' sight\n"
     "  bench     time every planner on every preset trip (one or more map files)\n"
     "  digest    every result on every preset trip, down to the last bit (to compare builds and machines)\n"
+    "  mc        Monte Carlo: a plan run many times against the towers' looks, on a thread pool\n"
+    "  mc-bench  how the trials speed up with threads (one or more map files)\n"
     "\n"
     "options:\n"
     "  --preset N     plan one of the map's preset trips (1-20)\n"
@@ -117,7 +127,13 @@ const char* kUsage =
     "  --sensor M     explore: how far the rover sees, in metres (default 5)\n"
     "  --prior P      explore: what it knows beforehand: none, elevation or map (default none)\n"
     "  --block R,C    explore: a roadblock that is not on the map (repeatable)\n"
-    "  --repeat N     bench: runs per measurement, the fastest is kept (default 3)\n";
+    "  --repeat N     bench, mc-bench: runs per measurement, the fastest is kept (default 3)\n"
+    "  --vehicle V    mc: ugv, the tank (default), or uav, the drone\n"
+    "  --w S          mc: seconds the plan pays per unit of hazard (default 4)\n"
+    "  --trials N     mc: how many runs (default 100000)\n"
+    "  --threads N    mc: worker threads (default: as many as the machine runs at once)\n"
+    "  --arrive S     mc: a run is late if it takes longer than this many seconds\n"
+    "  --seed N       mc: the random seed (default 20261111)\n";
 
 Args parse(int argc, char** argv) {
     Args a;
@@ -154,6 +170,12 @@ Args parse(int argc, char** argv) {
             else if (opt == "--prior") a.prior = val;
             else if (opt == "--block") a.blocks.push_back(val);
             else if (opt == "--repeat") a.repeat = std::max(1, std::stoi(val));
+            else if (opt == "--vehicle") a.vehicle = val;
+            else if (opt == "--w") a.w = std::max(0.0, std::stod(val));
+            else if (opt == "--trials") a.trials = std::max(1L, std::stol(val));
+            else if (opt == "--threads") a.threads = std::stoi(val);
+            else if (opt == "--arrive") a.arrive = std::stod(val);
+            else if (opt == "--seed") a.seed = static_cast<std::uint32_t>(std::stoul(val));
             else throw Exit("robotnav: unknown option " + opt + " (see robotnav --help)");
         } catch (const std::logic_error&) {
             throw Exit("robotnav: " + opt + " takes a number, not '" + val + "'");
@@ -314,52 +336,6 @@ int fly_cmd(const Args& a, const Map& m) {
     return 0;
 }
 
-// A double's 64 bits, and a hash of a list of cells: nothing rounded, so two builds that print the same digest computed
-// the same thing. cpp/tests/golden.digest holds the digest of the three maps; ctest compares every build with it.
-std::string bits(double x) {
-    std::uint64_t u;
-    std::memcpy(&u, &x, sizeof u);
-    return format("%016llx", static_cast<unsigned long long>(u));
-}
-
-std::string cells_hash(const std::vector<int>& cells) {      // FNV-1a over the cells' bytes, low byte first
-    std::uint64_t h = 1469598103934665603ull;
-    for (const int c : cells)
-        for (int k = 0; k < 4; ++k) {
-            h ^= (static_cast<std::uint32_t>(c) >> (8 * k)) & 0xffu;
-            h *= 1099511628211ull;
-        }
-    return format("%016llx", static_cast<unsigned long long>(h));
-}
-
-int digest(const Args&, const Map& m) {
-    const Airspace air = make_airspace(m);
-    std::printf("map %s %dx%d trips %zu\n", m.theme.c_str(), m.rows, m.cols, m.presets.size());
-    int k = 0;
-    for (const Preset& p : m.presets) {
-        ++k;
-        const int s = p.start, g = p.goal;
-        const std::pair<const char*, SearchResult> searches[] = {
-            {"bfs", bfs(m, s, g)}, {"dijkstra", dijkstra(m, s, g)}, {"astar", astar(m, s, g)},
-            {"weighted", weighted_astar(m, s, g)}, {"greedy", greedy(m, s, g)}, {"shortest", shortest_route(m, s, g)}};
-        for (const auto& [name, r] : searches)
-            std::printf("P%d %s time %s searched %ld peak %ld route %s order %s\n", k, name, bits(r.cost).c_str(),
-                        r.nodes_expanded, r.max_frontier, cells_hash(r.path).c_str(), cells_hash(r.explored).c_str());
-        for (const double range : {5.0, 20.0}) {
-            const SensorRun run = sensor_drive(m, s, g, range);
-            std::printf("P%d dstar-%g time %s work %ld again %ld replans %d sensed %d driven %s\n", k, range,
-                        bits(run.time).c_str(), run.dstar_work, run.astar_work, run.replans, run.sensed,
-                        cells_hash(run.driven).c_str());
-        }
-        for (const bool stealth : {true, false}) {
-            const Flight f = fly(air, s, g, stealth);
-            std::printf("P%d %s time %s seen %s searched %ld voxels %s\n", k, stealth ? "stealth" : "direct",
-                        bits(f.time).c_str(), bits(f.seen).c_str(), f.nodes, cells_hash(f.voxels).c_str());
-        }
-    }
-    return 0;
-}
-
 template <class F>
 double fastest_ms(int repeat, F&& f) {                // best of `repeat` runs, in milliseconds
     double best = kInf;
@@ -369,6 +345,80 @@ double fastest_ms(int repeat, F&& f) {                // best of `repeat` runs, 
         best = std::min(best, detail::ms_since(t0));
     }
     return best;
+}
+
+// Every result on every preset trip, down to the last bit (robotnav/digest.hpp).
+int digest(const Args&, const Map& m) {
+    std::fputs(digest_text(m).c_str(), stdout);
+    return 0;
+}
+
+// The plan for a trip that pays --w seconds per unit of hazard, and what happens to it over many runs.
+int mc(const Args& a, const Map& m) {
+    const auto [s, g] = trip(a, m);
+    const Airspace air = make_airspace(m);
+    const Field field = make_field(m, air);
+    const bool flying = a.vehicle == "uav";
+    if (!flying && a.vehicle != "ugv") throw Exit("--vehicle is ugv (the tank) or uav (the drone), not '" + a.vehicle + "'.");
+    const RiskRoute rt = flying ? risk_flight(air, field, s, g, a.w) : risk_drive(m, field, s, g, a.w);
+    if (!rt.found) throw Exit("No route between those cells.");
+    const int threads = a.threads < 1 ? ThreadPool::hardware() : a.threads;
+    const auto t0 = std::chrono::steady_clock::now();
+    const McResult r = monte_carlo(m, field, rt, a.w, a.trials, a.seed, a.arrive, threads);
+    const double ms = detail::ms_since(t0);
+    auto pct = [](double x) { return format("%.1f%%", x * 100.0); };
+    auto share = [&](long k, long n) {
+        const auto [lo, hi] = wilson(k, std::max(1L, n));
+        return format("%6s  (95%% interval %s to %s)", pct(static_cast<double>(k) / std::max(1L, n)).c_str(), pct(lo).c_str(), pct(hi).c_str());
+    };
+    std::printf("%s: %s %s -> %s, paying %g s per unit of hazard\n", header(m).c_str(), flying ? "drone" : "tank",
+                cell_text(m, s).c_str(), cell_text(m, g).c_str(), a.w);
+    std::printf("  plan      %s, hazard %.3f: detected with probability %s\n", clock(rt.time).c_str(), rt.hazard, pct(rt.risk).c_str());
+    std::printf("  %s trials on %d thread%s in %.0f ms (%s trials a second), seed %u\n", grouped(r.n).c_str(), threads,
+                threads == 1 ? "" : "s", ms, grouped(static_cast<long>(r.n / std::max(ms, 1e-3) * 1000.0)).c_str(), a.seed);
+    std::printf("  detected  %s   without a roadblock; the plan says %s\n", share(r.clean_detected, r.clean).c_str(), pct(rt.risk).c_str());
+    std::printf("  tracked   %s   two detections within %g s\n", share(r.tracked, r.n).c_str(), SENSE.drop);
+    if (r.block) std::printf("  roadblock in %s trials, no way past in %s\n", grouped(r.block).c_str(), grouped(r.stuck).c_str());
+    std::printf("  succeeds  %s   arrives%s undetected; mean time %s\n", share(r.ok, r.n).c_str(),
+                a.arrive >= 0 ? format(" within %g s,", a.arrive).c_str() : "", clock(r.time_sum / std::max(1L, r.n - r.stuck)).c_str());
+    return 0;
+}
+
+// How the trials speed up with threads: the tank's balanced plan on every preset trip, the same trials each time.
+int mc_bench(const Args& a, const std::vector<Map>& maps) {
+    const int hw = ThreadPool::hardware();
+    std::vector<int> counts;
+    for (int n = 1; n < hw; n *= 2) counts.push_back(n);
+    counts.push_back(hw);
+    if (a.threads > hw) counts.push_back(a.threads);
+    std::printf("Monte Carlo trials of the tank's plan (w = %g) on every preset trip: %s trials a trip, fastest of %d run(s).\n"
+                "This machine runs %d thread%s at once.\n", a.w, grouped(a.trials).c_str(), a.repeat, hw, hw == 1 ? "" : "s");
+    for (const Map& m : maps) {
+        const Airspace air = make_airspace(m);
+        const Field field = make_field(m, air);
+        std::vector<RiskRoute> plans;
+        for (const Preset& p : m.presets) plans.push_back(risk_drive(m, field, p.start, p.goal, a.w));
+        std::printf("  %s\n  %8s%12s%14s%10s%12s\n", title(m.theme).c_str(), "threads", "seconds", "trials/s", "speed-up", "same result");
+        double base = 0.0;
+        std::vector<McResult> first;
+        for (const int n : counts) {
+            std::vector<McResult> got;
+            const double ms = fastest_ms(a.repeat, [&] {
+                got.clear();
+                for (const RiskRoute& rt : plans) got.push_back(monte_carlo(m, field, rt, a.w, a.trials, a.seed, -1.0, n));
+            });
+            bool same = true;
+            if (first.empty()) first = got;
+            for (std::size_t k = 0; k < got.size(); ++k)
+                same = same && got[k].ok == first[k].ok && got[k].detected == first[k].detected && got[k].tracked == first[k].tracked &&
+                       got[k].stuck == first[k].stuck && got[k].time_sum == first[k].time_sum;
+            if (base == 0.0) base = ms;
+            std::printf("  %8d%12.2f%14s%9.2fx%12s\n", n, ms / 1000.0,
+                        grouped(static_cast<long>(a.trials * static_cast<double>(plans.size()) / ms * 1000.0)).c_str(), base / ms, same ? "yes" : "NO");
+            if (!same) return 1;
+        }
+    }
+    return 0;
 }
 
 int bench(const Args& a, const std::vector<Map>& maps) {
@@ -411,6 +461,7 @@ int main(int argc, char** argv) {
         std::vector<Map> maps;
         for (const std::string& f : a.files) maps.push_back(load_map(f));
         if (a.command == "bench") return bench(a, maps);
+        if (a.command == "mc-bench") return mc_bench(a, maps);
         if (a.command == "digest") {
             for (const Map& m : maps) digest(a, m);
             return 0;
@@ -419,11 +470,12 @@ int main(int argc, char** argv) {
         if (a.command == "route") return route(a, maps[0]);
         if (a.command == "explore") return explore(a, maps[0]);
         if (a.command == "fly") return fly_cmd(a, maps[0]);
+        if (a.command == "mc") return mc(a, maps[0]);
         if (a.command == "paths") {
             for (const Map& m : maps) paths(a, m);
             return 0;
         }
-        throw Exit("robotnav: unknown command '" + a.command + "' (route, paths, explore, fly, bench or digest)");
+        throw Exit("robotnav: unknown command '" + a.command + "' (route, paths, explore, fly, bench, digest, mc or mc-bench)");
     } catch (const Exit& e) {
         std::fflush(stdout);
         std::fprintf(stderr, "%s\n", e.what());

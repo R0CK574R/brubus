@@ -12,7 +12,7 @@ Prior parse_prior(const std::string& name) {
     if (name == "none") return Prior::None;
     if (name == "elevation") return Prior::Elevation;
     if (name == "map") return Prior::Map;
-    throw std::invalid_argument("prior must be one of none, elevation, map (not '" + name + "')");
+    fail("prior must be one of none, elevation, map (not '" + name + "')");
 }
 
 const char* prior_name(Prior p) {

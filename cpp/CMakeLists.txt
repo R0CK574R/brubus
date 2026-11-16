@@ -12,8 +12,10 @@ endif()
 
 # The core: the five planners, the hill-blind shortest route, D* Lite with a limited sensor, the air route.
 add_library(robotnav_core STATIC
-  src/map.cpp src/planners.cpp src/replan.cpp src/airspace.cpp src/mapio.cpp)
+  src/map.cpp src/planners.cpp src/replan.cpp src/airspace.cpp src/mapio.cpp src/sensing.cpp src/digest.cpp)
 target_include_directories(robotnav_core PUBLIC include)
+find_package(Threads REQUIRED)                    # the Monte Carlo trials run on a thread pool
+target_link_libraries(robotnav_core PUBLIC Threads::Threads)
 # Bit-for-bit agreement with Python and the browser: every + and * rounds on its own (no fused multiply-add, which
 # compilers may otherwise use on ARM and on x86 with FMA), and nothing is reordered (no fast-math). PUBLIC, because
 # the headers' inline code (edge costs, the D* Lite belief) is compiled into every target that uses them.

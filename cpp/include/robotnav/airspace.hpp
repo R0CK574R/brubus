@@ -79,6 +79,8 @@ struct Flight {
 // The quickest route from the ground at `start` to the ground at `goal` (flat cell indices). stealth also pays for
 // time in sight; heuristic = false searches without the straight-line estimate (Dijkstra), to check A*.
 Flight fly(const Airspace& air, int start, int goal, bool stealth = true, bool heuristic = true);
+// The same search paying w seconds per unit of `hazard` (per voxel) where a move ends, instead of for time in sight.
+Flight fly(const Airspace& air, int start, int goal, double w, const std::vector<float>& hazard);
 
 struct FlightStats {
     double time = 0.0, seen = 0.0, distance = 0.0, top = 0.0;

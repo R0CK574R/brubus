@@ -65,7 +65,7 @@ int Airspace::voxel(int cell) const {
     const int r = cell / C, c = cell % C;
     for (int k = 0; k < L; ++k)
         if (free[(k * R + r) * C + c]) return (k * R + r) * C + c;
-    throw std::invalid_argument("no free airspace over cell (" + std::to_string(r) + ", " + std::to_string(c) + ")");
+    fail("no free airspace over cell (" + std::to_string(r) + ", " + std::to_string(c) + ")");
 }
 
 Airspace make_airspace(const Map& m) { return make_airspace(m, place_towers(m)); }
@@ -147,13 +147,13 @@ struct Later {
 };
 }  // namespace
 
-Flight fly(const Airspace& air, int start, int goal, bool stealth, bool heuristic) {
+namespace {
+Flight search(const Airspace& air, int start, int goal, bool stealth, bool heuristic, double w, const std::vector<float>* hazard) {
     const auto t0 = std::chrono::steady_clock::now();
     const int R = air.R, C = air.C, RC = R * C;
     const std::size_t V = static_cast<std::size_t>(air.L) * RC;
     const int s = air.voxel(start), g = air.voxel(goal);
     const int gk = g / RC, gr = (g % RC) / C, gc = g % C;
-    const double w = stealth ? AIR.exposure : 0.0;
     const auto& moves = air_moves();
     std::vector<double> MT;
     for (const Move& mv : moves) MT.push_back(move_time(mv.dr, mv.dc, mv.dk));
@@ -184,7 +184,7 @@ Flight fly(const Airspace& air, int start, int goal, bool stealth, bool heuristi
             const Move& mv = moves[mi];
             if (!move_ok(air, r, c, k, mv.dr, mv.dc, mv.dk)) continue;
             const int u = v + (mv.dk * R + mv.dr) * C + mv.dc;
-            const double step = MT[mi] + (air.seen[u] ? w * MT[mi] : 0.0);
+            const double step = MT[mi] + (hazard ? w * MT[mi] * (*hazard)[u] : (air.seen[u] ? w * MT[mi] : 0.0));
             const double ng = gs[v] + step;
             if (ng < gs[u]) {
                 gs[u] = ng;
@@ -208,6 +208,15 @@ Flight fly(const Airspace& air, int start, int goal, bool stealth, bool heuristi
         out.top = st.top;
     }
     return out;
+}
+}  // namespace
+
+Flight fly(const Airspace& air, int start, int goal, bool stealth, bool heuristic) {
+    return search(air, start, goal, stealth, heuristic, stealth ? AIR.exposure : 0.0, nullptr);
+}
+
+Flight fly(const Airspace& air, int start, int goal, double w, const std::vector<float>& hazard) {
+    return search(air, start, goal, w != 0.0, true, w, &hazard);
 }
 
 FlightStats flight_stats(const Airspace& air, const std::vector<int>& voxels) {

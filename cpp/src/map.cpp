@@ -2,8 +2,19 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <stdexcept>
 
 namespace robotnav {
+
+void fail(const std::string& what) {
+#if defined(__cpp_exceptions)
+    throw std::invalid_argument(what);
+#else
+    std::fprintf(stderr, "robotnav: %s\n", what.c_str());
+    std::abort();
+#endif
+}
+
 
 std::vector<double> Map::water_levels() const {
     std::vector<double> wl(static_cast<std::size_t>(size()), std::nan(""));

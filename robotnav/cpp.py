@@ -162,3 +162,15 @@ def fly(air: Airspace, start, goal, stealth: bool = True, heuristic: bool = True
     f = core().fly(air._air, _flat(air.t, start), _flat(air.t, goal), stealth, heuristic)
     return Flight(name=f.name, voxels=list(f.voxels), found=f.found, cost=f.cost, time=f.time, seen=f.seen,
                   nodes=f.nodes, runtime_ms=f.runtime_ms, distance=f.distance, top=f.top)
+
+
+# ---------------------------------------------------------------- sensing: the field, risk-weighted plans, Monte Carlo
+def make_field(cmap, air: Airspace):
+    """Every place as the towers see it (robotnav_cpp.Field), for a C++ map and its airspace."""
+    return core().make_field(cmap, air._air)
+
+
+def monte_carlo(cmap, field, route, w: float, trials: int, seed: int = 20261111, arrive_by: float = -1.0,
+                threads: int = 1) -> dict:
+    """`trials` runs of a plan (a robotnav_cpp.RiskRoute) on `threads` worker threads (0: all the machine has)."""
+    return core().monte_carlo(cmap, field, route, w, trials, seed, arrive_by, threads)

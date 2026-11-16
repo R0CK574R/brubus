@@ -21,6 +21,7 @@ from robotnav.airspace import fly, make_airspace  # noqa: E402
 from robotnav.mapfile import read_map, write_map  # noqa: E402
 from robotnav.parity import DRIVE_FIELDS, FLIGHT_FIELDS, PLANNER_FIELDS, compare_edges  # noqa: E402
 from robotnav.replan import Roadblock, sensor_drive  # noqa: E402
+from robotnav import sensing  # noqa: E402
 from robotnav.terrain import THEMES, plan_pair, preset_routes, shortest_route, solvable_map  # noqa: E402
 
 pytestmark = pytest.mark.skipif(not cpp.available(), reason="the C++ core is not built (cmake -S cpp -B cpp/build)")
@@ -140,3 +141,65 @@ def test_the_cli_runs_on_either_engine(capsys):
     py = capsys.readouterr().out
     main.route(Namespace(**vars(args), engine="cpp"))
     assert _without_ms(capsys.readouterr().out) == _without_ms(py)
+
+
+# ---------------------------------------------------------------- sensing: field, risk-weighted routes, Monte Carlo
+@pytest.fixture(scope="module")
+def sensed(themed):
+    """A map, its C++ twin, the airspace, and the towers' field from C++ and from the Python reference."""
+    cmap = cpp.to_cpp(themed)
+    air = cpp.make_airspace(themed)
+    return themed, cmap, air, cpp.make_field(cmap, air), sensing.ground_field(themed, make_airspace(themed))
+
+
+def test_detection_field_matches_to_the_last_bit(sensed):
+    t, _, _, field, (pd, haz) = sensed
+    assert pd.any() and haz.any()
+    assert np.array_equal(field.ground_pd.reshape(pd.shape), pd)            # every cell, every tower: the same 32 bits
+    assert np.array_equal(field.ground_hazard.reshape(haz.shape), haz)
+    assert cpp.core().pd_at(7.25) == sensing.pd_at(7.25) and cpp.core().hazard_of(0.37) == sensing.hazard(0.37)
+    assert cpp.core().wilson(37, 200) == pytest.approx(sensing.wilson(37, 200), abs=1e-15)
+
+
+def test_risk_weighted_routes_match_cell_for_cell(sensed):
+    t, cmap, _, field, (_, haz) = sensed
+    C = t.cols
+    for s, g in _pairs(t, 8, seed=11):
+        for w in (0.0, 4.0, 25.0):
+            cells, steps = sensing.risk_drive(t, haz, s, g, w)
+            for plan in (cpp.core().risk_drive, cpp.core().risk_drive_reference):
+                got = plan(cmap, field, s[0] * C + s[1], g[0] * C + g[1], w)
+                assert got.found == bool(cells) and [divmod(i, C) for i in got.nodes] == cells and list(got.step) == steps
+                if cells:
+                    assert got.risk == sensing.route_risk(haz, cells, steps)
+
+
+def test_trials_match_the_python_reference(sensed):
+    t, cmap, _, field, (pd, haz) = sensed
+    C, core, checked, blocked = t.cols, cpp.core(), 0, 0
+    for s, g in _pairs(t, 12, seed=5):
+        rt = core.risk_drive(cmap, field, s[0] * C + s[1], g[0] * C + g[1], 4.0)
+        if not rt.found or len(rt.nodes) < 20:
+            continue
+        cells = [divmod(i, C) for i in rt.nodes]
+        for number in range(40):
+            want = sensing.trial(t, pd, haz, cells, list(rt.step), 4.0, 99, number)
+            assert core.run_trial(cmap, field, rt, 4.0, 99, number) == want     # stuck, roadblock, detected, tracked, seconds
+            checked += 1
+            blocked += want[1]
+    assert checked >= 120 and 0.25 < blocked / checked < 0.75                   # about half meet a roadblock
+
+
+def test_monte_carlo_is_the_same_on_any_number_of_threads(sensed):
+    t, cmap, _, field, (_, haz) = sensed
+    C, core = t.cols, cpp.core()
+    plans = [core.risk_drive(cmap, field, s[0] * C + s[1], g[0] * C + g[1], 4.0) for s, g in _pairs(t, 12, seed=5)]
+    rt = max(plans, key=lambda r: len(r.nodes))                               # the longest drive of a dozen
+    one = cpp.monte_carlo(cmap, field, rt, 4.0, 6000, seed=3, threads=1)
+    assert one["n"] == 6000 and one["block"] > 2000
+    for threads in (2, 5, 0):
+        assert cpp.monte_carlo(cmap, field, rt, 4.0, 6000, seed=3, threads=threads) == one
+    lo, hi = sensing.wilson(one["clean_detected"], one["clean"])              # the plan's risk is what the trials find
+    assert lo - 0.02 <= rt.risk <= hi + 0.02
+    assert sum(sensing.trial(t, sensed[4][0], haz, [divmod(i, C) for i in rt.nodes], list(rt.step), 4.0, 3, n)[2]
+               for n in range(300)) == sum(core.run_trial(cmap, field, rt, 4.0, 3, n)[2] for n in range(300))

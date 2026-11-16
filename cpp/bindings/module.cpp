@@ -8,6 +8,9 @@
 #include "robotnav/mapio.hpp"
 #include "robotnav/planners.hpp"
 #include "robotnav/replan.hpp"
+#include "robotnav/digest.hpp"
+#include "robotnav/sensing.hpp"
+#include "robotnav/thread_pool.hpp"
 
 namespace py = pybind11;
 using namespace robotnav;
@@ -194,9 +197,59 @@ PYBIND11_MODULE(robotnav_cpp, mod) {
                 return towers ? make_airspace(m, *towers) : make_airspace(m);
             },
             py::arg("map"), py::arg("towers") = py::none());
-    mod.def("fly", &fly, py::arg("air"), py::arg("start"), py::arg("goal"), py::arg("stealth") = true,
+    mod.def("fly", py::overload_cast<const Airspace&, int, int, bool, bool>(&fly), py::arg("air"), py::arg("start"), py::arg("goal"), py::arg("stealth") = true,
             py::arg("heuristic") = true, release);
     mod.def("move_time", &move_time);
+
+    // Sensing: the towers' detection field, plans that pay for hazard, and Monte Carlo trials on a thread pool.
+    py::class_<Field>(mod, "Field", "Every place as the towers see it: a look's chance of detection, and the hazard.")
+        .def_readonly("towers", &Field::T)
+        .def_property_readonly("ground_pd", [](const Field& f) { return grid(f.ground_pd, {f.N, f.T}); })
+        .def_property_readonly("ground_hazard", [](const Field& f) { return grid(f.ground_hazard, {f.N}); })
+        .def_property_readonly("air_pd", [](const Field& f) { return grid(f.air_pd, {static_cast<py::ssize_t>(f.L) * f.N, f.T}); })
+        .def_property_readonly("air_hazard", [](const Field& f) { return grid(f.air_hazard, {static_cast<py::ssize_t>(f.L) * f.N}); });
+    py::class_<RiskRoute>(mod, "RiskRoute", "A route with its steps' times and its risk of detection.")
+        .def_readonly("found", &RiskRoute::found)
+        .def_readonly("air", &RiskRoute::air)
+        .def_readonly("nodes", &RiskRoute::nodes)
+        .def_readonly("step", &RiskRoute::step)
+        .def_readonly("time", &RiskRoute::time)
+        .def_readonly("hazard", &RiskRoute::hazard)
+        .def_readonly("risk", &RiskRoute::risk)
+        .def_readonly("searched", &RiskRoute::searched);
+    mod.def("make_field", &make_field, py::arg("map"), py::arg("air"), release);
+    mod.def("risk_drive", &risk_drive, py::arg("map"), py::arg("field"), py::arg("start"), py::arg("goal"), py::arg("w"),
+            py::arg("avoid") = -1, release);
+    mod.def("risk_drive_reference", &risk_drive_reference, py::arg("map"), py::arg("field"), py::arg("start"), py::arg("goal"),
+            py::arg("w"), py::arg("avoid") = -1, release);
+    mod.def("risk_flight", &risk_flight, py::arg("air"), py::arg("field"), py::arg("start"), py::arg("goal"), py::arg("w"), release);
+    mod.def("route_from", &route_from, py::arg("map"), py::arg("air"), py::arg("field"), py::arg("is_air"), py::arg("nodes"));
+    mod.def("run_trial",
+            [](const Map& m, const Field& f, const RiskRoute& rt, double w, std::uint32_t seed, long number) {
+                const Trial t = run_trial(m, f, rt, w, seed, number);
+                return py::make_tuple(t.stuck, t.block, t.detected, t.tracked, t.time);
+            },
+            py::arg("map"), py::arg("field"), py::arg("route"), py::arg("w"), py::arg("seed"), py::arg("number"),
+            "One run: (stuck, met a roadblock, detected, tracked, seconds).");
+    mod.def("monte_carlo",
+            [](const Map& m, const Field& f, const RiskRoute& rt, double w, long trials, std::uint32_t seed, double arrive_by, int threads) {
+                McResult r;
+                {
+                    py::gil_scoped_release unlocked;
+                    r = monte_carlo(m, f, rt, w, trials, seed, arrive_by, threads);
+                }
+                py::dict d;
+                d["n"] = r.n; d["block"] = r.block; d["stuck"] = r.stuck; d["detected"] = r.detected; d["tracked"] = r.tracked;
+                d["late"] = r.late; d["clean"] = r.clean; d["clean_detected"] = r.clean_detected; d["ok"] = r.ok; d["time_sum"] = r.time_sum;
+                return d;
+            },
+            py::arg("map"), py::arg("field"), py::arg("route"), py::arg("w"), py::arg("trials"), py::arg("seed") = 20261111u,
+            py::arg("arrive_by") = -1.0, py::arg("threads") = 1);
+    mod.def("pd_at", &pd_at);
+    mod.def("hazard_of", &hazard_of);
+    mod.def("wilson", &wilson);
+    mod.def("hardware_threads", &ThreadPool::hardware);
+    mod.def("digest_text", &digest_text, py::arg("map"), release);
     mod.def("load_map", &load_map, py::arg("path"));
     mod.def("save_map", &save_map, py::arg("map"), py::arg("path"));
 

@@ -11,6 +11,8 @@
 #include "robotnav/mapio.hpp"
 #include "robotnav/planners.hpp"
 #include "robotnav/replan.hpp"
+#include "robotnav/sensing.hpp"
+#include "robotnav/thread_pool.hpp"
 
 using namespace robotnav;
 
@@ -195,6 +197,103 @@ void test_airspace_and_terrain_masking() {
               (picked[0].second - picked[1].second) * (picked[0].second - picked[1].second) >= 900);
 }
 
+void test_detection_model() {
+    CHECK_NEAR(pd_at(SENSE.r50), 0.5, 1e-12);                       // one half at r50, by construction
+    CHECK(pd_at(2.0) > 0.99 && pd_at(AIR.sight + 0.1) == 0.0);
+    for (double r = 4.0; r + 0.5 <= AIR.sight; r += 0.5) CHECK(pd_at(r + 0.5) < pd_at(r));   // falls with range
+    CHECK_NEAR(hazard_of(0.5), std::log(2.0), 1e-15);
+    const auto [lo, hi] = wilson(50, 100);
+    CHECK_NEAR(lo, 0.4038, 5e-4);
+    CHECK_NEAR(hi, 0.5962, 5e-4);
+    CHECK(wilson(0, 10).first < 1e-12 && wilson(10, 10).second > 1.0 - 1e-12);
+}
+
+// A 40 x 40 field with a ridge of rocks to drive round and one tower in the middle.
+Map tower_field() {
+    Map m = flat_map(40, 40);
+    for (int r = 8; r < 32; ++r) m.obstacle[m.at(r, 14)] = ROCK;
+    for (int c = 22; c < 30; ++c) m.surface[m.at(30, c)] = 1;
+    return m;
+}
+
+void test_risk_routes() {
+    const Map m = tower_field();
+    const Airspace air = make_airspace(m, {{20, 22}});
+    const Field f = make_field(m, air);
+    CHECK(f.T == 1 && f.ground_hazard[m.at(20, 25)] > 0.0f && f.ground_hazard[m.at(2, 2)] == 0.0f);
+    CHECK(f.ground_pd[m.at(20, 25)] > f.ground_pd[m.at(20, 35)]);   // nearer the tower, likelier seen
+    const int trips[][2] = {{m.at(2, 2), m.at(37, 37)}, {m.at(20, 2), m.at(20, 38)}, {m.at(38, 20), m.at(1, 24)}, {m.at(5, 30), m.at(35, 5)}};
+    for (const auto& t : trips) {
+        const SearchResult plain = astar(m, t[0], t[1]);
+        double last_hazard = kInf, last_time = 0.0;
+        for (const double w : {0.0, 2.0, 4.0, 10.0, 40.0}) {
+            const RiskRoute a = risk_drive(m, f, t[0], t[1], w), b = risk_drive_reference(m, f, t[0], t[1], w);
+            CHECK(a.found && a.nodes == b.nodes && a.time == b.time && a.hazard == b.hazard && a.searched == b.searched);
+            CHECK(legal_route(m, a.nodes));
+            if (w == 0.0) CHECK(a.nodes == plain.path && a.time == plain.cost);       // no weight: plain A*
+            CHECK(a.hazard <= last_hazard + 1e-12 && a.time >= last_time - 1e-12);    // more weight: safer, never quicker
+            CHECK_NEAR(a.risk, 1.0 - std::exp(-a.hazard), 1e-15);
+            last_hazard = a.hazard;
+            last_time = a.time;
+            for (std::size_t k = 3; k + 3 < a.nodes.size(); k += 5) {                 // and the same with a cell closed
+                const RiskRoute c = risk_drive(m, f, a.nodes[1], t[1], w, a.nodes[k]), d = risk_drive_reference(m, f, a.nodes[1], t[1], w, a.nodes[k]);
+                CHECK(c.found == d.found && c.nodes == d.nodes && c.time == d.time);
+                CHECK(std::find(c.nodes.begin(), c.nodes.end(), a.nodes[k]) == c.nodes.end());
+            }
+        }
+    }
+    const RiskRoute fl = risk_flight(air, f, m.at(20, 2), m.at(20, 38), 0.0), hid = risk_flight(air, f, m.at(20, 2), m.at(20, 38), 40.0);
+    const Flight direct = fly(air, m.at(20, 2), m.at(20, 38), false);
+    CHECK(fl.found && fl.nodes == direct.voxels && fl.time == direct.time);           // no weight: the direct flight
+    CHECK(hid.found && hid.hazard < fl.hazard && hid.time > fl.time);
+    const RiskRoute again = route_from(m, air, f, true, hid.nodes);
+    CHECK(again.time == hid.time && again.hazard == hid.hazard);
+}
+
+void test_thread_pool() {
+    std::vector<int> done(500, 0);
+    {
+        ThreadPool pool(4);
+        CHECK(pool.size() == 4 && ThreadPool::hardware() >= 1);
+        for (int k = 0; k < 500; ++k) pool.run([&done, k] { done[k] = k + 1; });   // each job writes its own slot
+        pool.wait();
+        long sum = 0;
+        for (int v : done) sum += v;
+        CHECK(sum == 500L * 501 / 2);
+        pool.run([&done] { done[0] = -7; });                                        // and it takes more work after a wait
+        pool.wait();
+        CHECK(done[0] == -7);
+    }
+}
+
+void test_monte_carlo() {
+    const Map m = tower_field();
+    const Airspace air = make_airspace(m, {{20, 22}});
+    const Field f = make_field(m, air);
+    const RiskRoute rt = risk_drive(m, f, m.at(34, 16), m.at(34, 38), 2.0);
+    CHECK(rt.found && rt.risk > 0.05 && rt.risk < 0.95);
+    const Trial a = run_trial(m, f, rt, 2.0, 7u, 12), b = run_trial(m, f, rt, 2.0, 7u, 12);
+    CHECK(a.detected == b.detected && a.tracked == b.tracked && a.time == b.time && a.block == b.block);   // a trial is its seed and number
+    const long n = 20000;
+    const McResult one = monte_carlo(m, f, rt, 2.0, n, 7u, -1.0, 1);
+    for (const int threads : {2, 3, 8}) {                                          // the same answer on any number of threads
+        const McResult r = monte_carlo(m, f, rt, 2.0, n, 7u, -1.0, threads);
+        CHECK(r.n == n && r.ok == one.ok && r.detected == one.detected && r.tracked == one.tracked && r.block == one.block &&
+              r.stuck == one.stuck && r.clean == one.clean && r.clean_detected == one.clean_detected && r.time_sum == one.time_sum);
+    }
+    CHECK(monte_carlo(m, f, rt, 2.0, n, 8u, -1.0, 2).detected != one.detected);    // another seed, other luck
+    const auto [lo, hi] = wilson(one.clean_detected, one.clean);                   // the plan's risk is what the trials find
+    CHECK(one.clean > n / 3 && lo - 0.01 <= rt.risk && rt.risk <= hi + 0.01);
+    CHECK(one.block > n / 3 && one.tracked <= one.detected && one.ok <= n - one.detected);
+    const McResult late = monte_carlo(m, f, rt, 2.0, 2000, 7u, 5.0, 2);            // a deadline no drive can keep: all late
+    CHECK(late.late == 2000 && late.ok == 0);
+    const RiskRoute fl = risk_flight(air, f, m.at(20, 2), m.at(20, 38), 0.0);
+    const McResult up = monte_carlo(m, f, fl, 0.0, n, 7u, -1.0, 2);
+    CHECK(up.block == 0 && up.clean == n);                                         // nothing blocks the drone
+    const auto [flo, fhi] = wilson(up.detected, n);
+    CHECK(flo - 0.01 <= fl.risk && fl.risk <= fhi + 0.01);
+}
+
 void test_map_file_round_trip() {
     Map m = flat_map(4, 5);
     m.theme = "island";
@@ -232,6 +331,10 @@ int main() {
         {"sensor disk", test_sensor_disk},
         {"D* Lite drives", test_dstar_lite_drives},
         {"airspace and terrain masking", test_airspace_and_terrain_masking},
+        {"detection model", test_detection_model},
+        {"risk routes", test_risk_routes},
+        {"thread pool", test_thread_pool},
+        {"Monte Carlo", test_monte_carlo},
         {"map file round trip", test_map_file_round_trip},
     };
     for (const auto& [name, run] : tests) {

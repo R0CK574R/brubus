@@ -18,6 +18,10 @@ Each detection is a noisy range and bearing from its tower. An extended Kalman f
 shaken by random accelerations, turns them into a track: an estimate of where the vehicle is and a covariance that
 says how sure the towers are. Two detections confirm a track; `drop` seconds without one and it is dropped.
 
+A *trial* runs a plan once with the looks left to chance (`trial`), and many trials say how often it gets through.
+The C++ core runs them on a thread pool (cpp/src/sensing.cpp); tests/test_cpp.py holds its field, its routes and
+its trials to the plain Python here, number for number.
+
 This module is the reference. The viewer (robotnav/viewer3d.html) carries the same arithmetic in JavaScript and takes
 its constants from SENSE here; the browser test compares the two number for number.
 """
@@ -36,7 +40,8 @@ SENSE = dict(pfa=1e-4,      # false-alarm probability a look is tuned to
              sb_deg=5.0,    # and its bearing error (degrees, one sigma)
              qa=1.5,        # how hard the target is assumed to manoeuvre (m/s^2, one sigma)
              drop=4.0,      # a track with no detection for this long is dropped (s)
-             vel0=4.0)      # a new track's speed is unknown to about this much (m/s, one sigma)
+             vel0=4.0,      # a new track's speed is unknown to about this much (m/s, one sigma)
+             notice=5.0)    # how far off the tank notices a roadblock (m)
 SNR50 = math.log(SENSE["pfa"]) / math.log(0.5) - 1
 
 
@@ -121,3 +126,127 @@ def ellipse(P) -> tuple[float, float, float]:
     c = math.sqrt(5.991)
     ang = (0.0 if a >= d else math.pi / 2) if abs(b) < 1e-12 else math.atan2(l1 - a, b)
     return c * math.sqrt(l1), c * math.sqrt(l2), ang
+
+
+# ---------------------------------------------------------------- the field, risk-weighted routes and trials
+def ground_field(t, air):
+    """What the towers make of a mover a metre above each open ground cell: (pd, hazard), a look's chance of detection
+    per tower, shape (rows, cols, towers), and the hazard, shape (rows, cols). 32-bit floats, as the viewer and the
+    C++ core keep them."""
+    from .airspace import ground_top
+    R, C, T = t.rows, t.cols, len(air.towers)
+    top = ground_top(t)
+    pd = np.zeros((R, C, T), np.float32)
+    haz = np.zeros((R, C), np.float32)
+    sight2 = AIR["sight"] * AIR["sight"]
+    for n, (tr, tc) in enumerate(air.towers):
+        E = air.eyes[n]
+        for r in range(R):
+            for c in range(C):
+                if t.blocked[r, c] or (r == tr and c == tc):
+                    continue
+                a = float(t.height[r, c]) + 1.0
+                dr, dc, dy = r - tr, c - tc, a - E
+                d2 = (dr * dr + dc * dc) + dy * dy
+                if d2 > sight2:
+                    continue
+                steps = max(abs(dr), abs(dc))
+                clear = True
+                for j in range(1, steps):                # one sample per cell crossed, as the airspace takes them
+                    f = j / steps
+                    if top[math.floor(tr + f * dr + 0.5), math.floor(tc + f * dc + 0.5)] > E + f * (a - E):
+                        clear = False
+                        break
+                if clear:
+                    p = pd_at(math.sqrt(d2))
+                    pd[r, c, n] = p
+                    haz[r, c] = np.float32(float(haz[r, c]) + hazard(p))
+    return pd, haz
+
+
+class _RiskGrid:
+    """The terrain with hazard priced in: a move costs its drive time plus w seconds per unit of hazard where it ends."""
+
+    def __init__(self, t, haz, start, goal, w, avoid=None):
+        self.t, self.haz, self.start, self.goal, self.w, self.avoid = t, haz, start, goal, w, avoid
+
+    def neighbors(self, c):
+        for n, cost in self.t.neighbors(c):
+            if n == self.avoid:
+                continue
+            h = float(self.haz[n])
+            yield n, (cost + self.w * cost * h if self.w and h else cost)
+
+    def heuristic(self, a, b):
+        return self.t.heuristic(a, b)
+
+    def path_cost(self, path):
+        return self.t.path_cost(path)
+
+
+def risk_drive(t, haz, start, goal, w: float, avoid=None):
+    """The tank's quickest route paying w seconds per unit of hazard, never through `avoid`: (cells, seconds per step),
+    or ([], []) if there is none."""
+    from .algorithms import _best_first
+    path = _best_first(_RiskGrid(t, haz, tuple(start), tuple(goal), w, avoid), "risk", lambda g, h: g + h).path
+    return path, ([0.0] + [t.edge_cost(a, b) for a, b in zip(path, path[1:])] if path else [])
+
+
+def route_risk(haz, cells, steps) -> float:
+    """The chance of being detected at least once on a route over a ground hazard field."""
+    total = 0.0
+    for k in range(1, len(cells)):           # added left to right, as the viewer and the C++ core add (sum() rounds otherwise)
+        total += steps[k] * float(haz[cells[k]])
+    return 1 - math.exp(-total)
+
+
+def mulberry32(seed: int):
+    """The small random generator the viewer and the C++ core share: uniform numbers in [0, 1)."""
+    state = seed & 0xFFFFFFFF
+
+    def rng() -> float:
+        nonlocal state
+        state = (state + 0x6D2B79F5) & 0xFFFFFFFF
+        x = ((state ^ (state >> 15)) * (1 | state)) & 0xFFFFFFFF
+        x = ((x + (((x ^ (x >> 7)) * (61 | x)) & 0xFFFFFFFF)) & 0xFFFFFFFF) ^ x
+        return (x ^ (x >> 14)) / 4294967296.0
+    return rng
+
+
+def trial(t, pd, haz, cells, steps, w: float, seed: int, number: int):
+    """One run of the tank's plan with the looks left to chance: (stuck, met a roadblock, detected, tracked, seconds).
+
+    Half the runs meet a roadblock somewhere along the route (not near its ends); the tank notices it from `notice`
+    metres away and plans again from there. Each tower's first look falls at a random moment and it looks every `look`
+    seconds; a look in clear view detects with its probability; two detections within `drop` seconds make a track."""
+    rng = mulberry32(seed + (number + 1) * 0x9E3779B9)
+    legs = [(cells, steps, len(cells) - 1)]
+    block = False
+    if len(cells) > 14 and rng() < 0.5:
+        j = 6 + math.floor(rng() * (len(cells) - 12))
+        at = cells[j]
+        frm = j - 1
+        while frm > 0 and math.hypot(cells[frm - 1][0] - at[0], cells[frm - 1][1] - at[1]) <= SENSE["notice"]:
+            frm -= 1
+        nxt, nsteps = risk_drive(t, haz, cells[frm], cells[-1], w, at)
+        block = True
+        if not nxt:
+            return True, True, False, False, math.inf
+        legs = [(cells, steps, frm), (nxt, nsteps, len(nxt) - 1)]
+    T = pd.shape[2]
+    look = [rng() * SENSE["look"] for _ in range(T)]
+    now, hits, last_hit, tracked = 0.0, 0, -math.inf, False
+    for path, secs, to in legs:
+        for k in range(1, to + 1):
+            t1 = now + secs[k]
+            for n in range(T):
+                while look[n] < t1:
+                    p = float(pd[path[k]][n])
+                    if p > 0 and rng() < p:
+                        hits += 1
+                        if look[n] - last_hit <= SENSE["drop"]:
+                            tracked = True
+                        last_hit = look[n]
+                    look[n] += SENSE["look"]
+            now = t1
+    return False, block, hits > 0, tracked, now
