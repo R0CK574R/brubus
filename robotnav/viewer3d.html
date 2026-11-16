@@ -715,6 +715,7 @@ body.ops-on .hud { display: none; }
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
 const SCENE = /*__SCENE__*/null;
+const CORE_B64 = "__CORE_WASM__";   // the C++ core as WebAssembly, in base64 (robotnav/assets/robotnav_core.wasm)
 
 (function () {
   "use strict";
@@ -4911,6 +4912,52 @@ void main() {
     else if (senseView.arming) armBlock(false);
   });
 
+  // ---------------------------------------------------------------- the C++ core, in the page (WebAssembly)
+  // cpp/ compiled to WebAssembly (tools/build_wasm.sh) rides in the page as base64: the same sources that the command
+  // line tool and the Python module are built from. cpp/wasm/test.mjs holds that build to the golden results, bit for
+  // bit. The console runs its Monte Carlo trials in it, twenty times as many as the JavaScript below manages in the
+  // same wait; without WebAssembly (or with a roadblock already on the map) the JavaScript runs them.
+  const core = { x: null, ready: false, map: null };
+  if (CORE_B64 && typeof WebAssembly === "object") {
+    const wasi = { clock_time_get: () => 0, fd_close: () => 0, fd_seek: () => 0, fd_write: () => 0 };   // it needs no system
+    WebAssembly.instantiate(Uint8Array.from(atob(CORE_B64), ch => ch.charCodeAt(0)), { wasi_snapshot_preview1: wasi })
+      .then(({ instance }) => { core.x = instance.exports; core.x._initialize(); core.ready = true; }).catch(() => {});
+  }
+  function corePut(Type, values) {                  // an array into the core's memory; the caller frees it
+    const at = core.x.rn_alloc(values.length * Type.BYTES_PER_ELEMENT);
+    new Type(core.x.memory.buffer, at, values.length).set(values);
+    return at;
+  }
+  function coreLoad() {                             // hand it this map and its towers, once per map
+    if (!core.ready) return false;
+    if (core.map === MAP) return true;
+    airReady();
+    const x = core.x, h = corePut(Float64Array, H), sf = corePut(Int32Array, SURF), ob = corePut(Int32Array, OBS), sc = corePut(Float64Array, SCOST);
+    x.rn_map_begin(R, C, COST.cell, MAP.max_grade, COST.uphill, COST.short_tie);
+    x.rn_map_grids(h, sf, ob); x.rn_map_surfaces(sc, SCOST.length);
+    if (MAP.sea != null) x.rn_map_sea(MAP.sea);
+    for (const pond of MAP.ponds || []) { const at = corePut(Int32Array, pond.cells); x.rn_map_pond(pond.level, at, pond.cells.length); x.rn_free(at); }
+    const tw = corePut(Int32Array, airspace.towers.flat());
+    x.rn_map_towers(tw, airspace.towers.length);
+    for (const at of [h, sf, ob, sc, tw]) x.rn_free(at);
+    x.rn_map_done();
+    core.map = MAP;
+    return true;
+  }
+  function coreRoute(call) {                        // a route out of the core: its cells or voxels, or null
+    const cap = 4 * R * C, out = core.x.rn_alloc(4 * cap), n = call(out, cap);
+    const nodes = n > 0 ? Array.from(new Int32Array(core.x.memory.buffer, out, n)) : null;
+    core.x.rn_free(out);
+    return nodes;
+  }
+  function coreTrials(rt, w, first, count, seed, arriveBy) {   // trials `first` to `first + count` of a route, counted
+    const nodes = rt.voxels || rt.idx, at = corePut(Int32Array, nodes), out = core.x.rn_alloc(80);
+    core.x.rn_trials(rt.voxels ? 1 : 0, at, nodes.length, w, first, count, seed, arriveBy == null ? -1 : arriveBy, out);
+    const r = Array.from(new Float64Array(core.x.memory.buffer, out, 10));
+    core.x.rn_free(at); core.x.rn_free(out);
+    return r;
+  }
+
   /* ops:js:begin */
   // ---------------------------------------------------------------- the operator console: #ops
   // The same map run as a mission. Two vehicles of ours (UGV-01, the tank, and UAV-01, the drone) and the hostile
@@ -5636,6 +5683,7 @@ void main() {
       : !opsMeets(d, pk) ? `${pk.name} breaks the limits. You can still send it: the task fails if it is detected, or late.`
       : `${pk.name}: ${pk.rt.cost.toFixed(0)} s, ${pctOf(pk.rt.risk)} chance of being detected.${d.auto && limited ? " The fastest plan that keeps the limits." : ""}`);
     $("ops-approve").disabled = !pk; $("ops-mc").disabled = !pk;
+    $("ops-mc").textContent = `Run ${core.ready ? "20,000" : "1,000"} trials`;
     opsChart(); opsMCUI();
   }
   function opsChart() {                             // time against risk: every trade the planner found, the three plans, the limits
@@ -5718,7 +5766,7 @@ void main() {
   function opsMC(v, p, arriveBy, res, budget) {     // run trials into res until it has them all, or the time budget is spent
     const until = performance.now() + budget;
     while (res.n < res.N && (budget === Infinity || performance.now() < until)) {
-      const r = opsTrial(v, p.rt, p.w, res.rng), late = arriveBy != null && r.time > arriveBy + 1e-9;
+      const r = opsTrial(v, p.rt, p.w, mulberry((res.seed + Math.imul(res.n + 1, 0x9E3779B9)) >>> 0)), late = arriveBy != null && r.time > arriveBy + 1e-9;
       res.n++; if (r.block) res.block++; if (r.stuck) res.stuck++; if (r.detected) res.det++; if (r.tracked) res.trk++; if (late) res.late++;
       if (!r.block) { res.clean++; if (r.detected) res.cleanDet++; }
       if (!r.stuck && !r.detected && !late) res.ok++;
@@ -5726,14 +5774,24 @@ void main() {
     res.ci = wilson(res.cleanDet, Math.max(1, res.clean)); res.okCi = wilson(res.ok, Math.max(1, res.n));
     return res;
   }
-  const opsMCNew = (p, N, seed) => ({ n: 0, N, rng: mulberry(seed), rt: p.rt, block: 0, stuck: 0, det: 0, trk: 0, late: 0, clean: 0, cleanDet: 0, ok: 0, ci: [0, 1], okCi: [0, 1] });
+  const opsMCNew = (p, N, seed) => ({ n: 0, N, seed, core: false, rt: p.rt, block: 0, stuck: 0, det: 0, trk: 0, late: 0, clean: 0, cleanDet: 0, ok: 0, ci: [0, 1], okCi: [0, 1] });
+  const opsCoreMC = () => ![...ops.blocks.values()].some(b => b.known) && coreLoad();   // can the C++ core run the trials?
   function opsRunMC() {
     const d = ops.draft;
     if (!d || !d.plans || (d.mc && d.mc.n < d.mc.N)) return;
-    const p = d.plans[d.pick], res = d.mc = opsMCNew(p, 1000, 20261111);
+    const inCore = opsCoreMC(), p = d.plans[d.pick], res = d.mc = opsMCNew(p, inCore ? 20000 : 1000, 20261111);
+    res.core = inCore;
     const more = () => {
       if (ops.draft !== d || d.mc !== res) return;   // the draft is gone, or another plan was picked
-      opsMC(d.veh, p, d.arriveBy, res, 14); opsMCUI();
+      if (inCore) {                                  // the C++ core runs them, a few hundred at a time
+        const until = performance.now() + 14, batch = p.rt.voxels ? 2000 : 250;
+        do {
+          const n = Math.min(batch, res.N - res.n), r = coreTrials(p.rt, p.w, res.n, n, res.seed, d.arriveBy);
+          res.n += r[0]; res.block += r[1]; res.stuck += r[2]; res.det += r[3]; res.trk += r[4]; res.late += r[5]; res.clean += r[6]; res.cleanDet += r[7]; res.ok += r[8];
+        } while (res.n < res.N && performance.now() < until);
+        res.ci = wilson(res.cleanDet, Math.max(1, res.clean)); res.okCi = wilson(res.ok, Math.max(1, res.n));
+      } else opsMC(d.veh, p, d.arriveBy, res, 14);
+      opsMCUI();
       if (res.n < res.N) setTimeout(more, 0); else opsChart();
     };
     more();
@@ -5744,7 +5802,7 @@ void main() {
     const m = d.mc, pk = d.plans && d.plans[d.pick];
     if (!m) { out.textContent = pk ? "Checks the risk figure the hard way, and how often the task would succeed." : ""; return; }
     if (m.n < m.N) { out.textContent = `${m.n} of ${m.N.toLocaleString("en-US")} runs…`; return; }
-    out.innerHTML = `<b>${m.N.toLocaleString("en-US")} runs.</b> Detected in <b>${pctOf(m.cleanDet / Math.max(1, m.clean))}</b> (95% interval ${pctOf(m.ci[0])} to ${pctOf(m.ci[1])}); the plan's figure is ${pctOf(m.rt.risk)}. Tracked in ${pctOf(m.trk / m.n)}.`
+    out.innerHTML = `<b>${m.N.toLocaleString("en-US")} runs${m.core ? " in the C++ core" : ""}.</b> Detected in <b>${pctOf(m.cleanDet / Math.max(1, m.clean))}</b> (95% interval ${pctOf(m.ci[0])} to ${pctOf(m.ci[1])}); the plan's figure is ${pctOf(m.rt.risk)}. Tracked in ${pctOf(m.trk / m.n)}.`
       + (m.block ? ` A roadblock met in ${m.block} runs${m.stuck ? `, ${m.stuck} with no way past` : ", a way past every time"}; those are left out of the detection figure.` : "")
       + ` Arrives${d.arriveBy != null ? " on time and" : ""} undetected in <b>${pctOf(m.ok / m.n)}</b> (${pctOf(m.okCi[0])} to ${pctOf(m.okCi[1])}).`;
   }

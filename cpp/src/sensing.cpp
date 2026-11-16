@@ -179,7 +179,11 @@ RiskRoute risk_drive_reference(const Map& m, const Field& f, int start, int goal
 RiskRoute risk_drive(const Map& m, const Field& f, int start, int goal, double w, int avoid) {
     // A* as best_first runs it (the same order off the frontier, the same sums), with each move's time read from the
     // field's table instead of worked out again.
-    thread_local Workspace ws;
+#ifdef ROBOTNAV_NO_THREADS
+    static Workspace ws;
+#else
+    thread_local Workspace ws;                       // one per worker thread
+#endif
     ws.begin(static_cast<std::size_t>(m.size()));
     const int C = m.cols, gr = goal / C, gc = goal % C;
     const std::vector<float>& haz = f.ground_hazard;

@@ -19,7 +19,15 @@ from .intro_art import bison_uri, flags_svg
 from .terrain import SHORTEST_TIE, Terrain, preset_routes
 
 TEMPLATE = Path(__file__).with_name("viewer3d.html")
+CORE_WASM = Path(__file__).with_name("assets") / "robotnav_core.wasm"
 NAMES = {"grassland": "Grassland", "desert": "Desert", "island": "Island"}
+
+
+
+def core_wasm() -> str:
+    """The C++ core compiled to WebAssembly (tools/build_wasm.sh), as base64 for the page; "" if it isn't built."""
+    import base64
+    return base64.b64encode(CORE_WASM.read_bytes()).decode("ascii") if CORE_WASM.exists() else ""
 
 
 def map_scene(t: Terrain) -> dict:
@@ -60,7 +68,8 @@ def write_viewer(maps: list[Terrain], out: str | Path, scenes: list[dict] | None
     scene = dict(cost=dict(uphill=maps[0].uphill_penalty, cell=maps[0].cell_size, short_tie=SHORTEST_TIE), air=AIR, sense=SENSE,
                  maps=scenes if scenes is not None else [map_scene(t) for t in maps])
     body = (TEMPLATE.read_text().replace("/*__SCENE__*/null", json.dumps(scene, separators=(",", ":")))
-            .replace("<!--__FLAG__-->", flags_svg()).replace("__BISON_URI__", bison_uri()))
+            .replace("<!--__FLAG__-->", flags_svg()).replace("__BISON_URI__", bison_uri())
+            .replace("__CORE_WASM__", core_wasm()))
     head = ["<!doctype html>", '<html lang="en">', '<meta charset="utf-8">',
             f'<meta name="description" content="{escape(DESCRIPTION)}">']
     if site_url:

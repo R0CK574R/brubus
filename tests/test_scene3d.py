@@ -46,6 +46,18 @@ def test_viewer_has_the_operator_console(tmp_path):
     assert 'w === "ops"' in page                                                 # the #ops link
 
 
+def test_the_cpp_core_rides_in_the_page_as_webassembly(tmp_path):
+    import base64
+    from robotnav.scene3d import CORE_WASM
+    wasm = CORE_WASM.read_bytes()
+    assert wasm[:4] == b"\0asm" and len(wasm) < 400_000                         # a WebAssembly module, small enough to carry
+    for name in (b"rn_map_done", b"rn_astar", b"rn_plan", b"rn_trials", b"rn_digest"):
+        assert name in wasm                                                     # what the page and the Node test call
+    page = _page(tmp_path)
+    assert base64.b64encode(wasm).decode() in page and "__CORE_WASM__" not in page
+    assert "coreTrials(" in page and "WebAssembly.instantiate(" in page
+
+
 def test_intro_art_is_inlined(tmp_path):
     page = _page(tmp_path)
     assert "__FLAG__" not in page and "__BISON_URI__" not in page   # both placeholders were filled

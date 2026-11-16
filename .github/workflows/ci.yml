@@ -61,3 +61,17 @@ jobs:
         run: cmake --build cpp/build --parallel
       - name: Unit tests and the reference results, under the sanitizers
         run: ctest --test-dir cpp/build --output-on-failure
+
+  wasm:
+    name: "WebAssembly, under Node"
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: The WebAssembly build in the repository gives the golden results, bit for bit
+        run: node cpp/wasm/test.mjs
+      - name: Build it again from the sources (wasi-sdk)
+        run: |
+          curl -sSL https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-24/wasi-sdk-24.0-x86_64-linux.tar.gz | tar xz -C "$RUNNER_TEMP"
+          WASI_SDK="$RUNNER_TEMP/wasi-sdk-24.0-x86_64-linux" tools/build_wasm.sh "$RUNNER_TEMP/core.wasm"
+      - name: And the fresh build gives them too
+        run: node cpp/wasm/test.mjs "$RUNNER_TEMP/core.wasm"

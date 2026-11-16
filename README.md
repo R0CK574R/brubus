@@ -128,7 +128,7 @@ Run these from the same terminal, with the virtual environment active.
 | `python main.py parity` | The C++ core against Python on all 60 preset trips: identical results, and how much faster (about 3 minutes) |
 | `python main.py explore-bench` | Every preset at 5, 10 and 20 m: time lost to not knowing, D\* Lite's work against A\* from scratch (about a minute) |
 | `python main.py terrain-bench` | Hills, slope limit and obstacle sweep (about 25 seconds) |
-| `python -m pytest -q` | Run the 225 tests (30 of them hold the C++ core against Python; skipped until it's built) |
+| `python -m pytest -q` | Run the 238 tests (42 of them hold the C++ core against Python; skipped until it's built) |
 | `python main.py demo`, `python main.py benchmark` | The original 2D grid version |
 
 `python main.py course` writes the viewer twice: `output/course_3d.html` to open yourself, and
@@ -569,6 +569,75 @@ Apple Silicon and with `-march=native`. With it on, 51 of the 360 planner times 
 bits and D\* Lite searched a different number of cells on half the drives. [cpp/README.md](cpp/README.md)
 has the details, the layout and the commands.
 
+### Monte Carlo on a thread pool
+
+The console's trials are in the C++ core too (`cpp/src/sensing.cpp`): the towers' detection field, the
+plans that pay for hazard, and a plan run thousands of times with the towers' looks left to chance.
+For the tank, half the runs meet a roadblock and it plans again from where it notices it, so a trial
+is mostly a fresh A\* search. `monte_carlo` spreads the trials over a small thread pool
+(`cpp/include/robotnav/thread_pool.hpp`: worker threads on one queue).
+
+```bash
+./cpp/build/robotnav mc maps/grassland.map --preset 3 --trials 200000
+./cpp/build/robotnav mc-bench maps/grassland.map maps/desert.map maps/island.map
+```
+
+```
+Grassland (seed 3): tank (43, 71) -> (15, 27), paying 4 s per unit of hazard
+  plan      1:21, hazard 0.166: detected with probability 15.3%
+  200,000 trials on 2 threads in 6602 ms (30,294 trials a second), seed 20261111
+  detected   15.3%  (95% interval 15.1% to 15.5%)   without a roadblock; the plan says 15.3%
+  tracked     0.4%  (95% interval 0.3% to 0.4%)   two detections within 4 s
+  roadblock in 99,978 trials, no way past in 0
+  succeeds   84.7%  (95% interval 84.5% to 84.8%)   arrives undetected; mean time 1:21
+```
+
+**The same answer on any number of threads.** Every trial draws from its own random stream, set by
+the seed and the trial's number, and the results are added up in a fixed order. So one thread and
+sixty-four give the same counts and the same sum of times, bit for bit; the unit tests and
+`mc-bench` check it on every run. `mc-bench` runs the tank's plan on all 20 preset trips of a map.
+On the build machines (GitHub's runners, from the CI log; trials a second on the grassland):
+
+| Machine | 1 thread | 2 threads | all threads | Speed-up |
+|---|---:|---:|---:|---:|
+| Linux ARM64, 4 cores | 15,200 | 30,200 | 56,700 (4) | 3.7× |
+| Linux x86-64, 2 cores × 2 threads | 11,900 | 23,600 | 34,900 (4) | 2.9× |
+| macOS ARM64, 3 cores | 10,200 | 18,700 | 28,700 (3) | 2.8× |
+
+Two real cores double the speed; the two extra hyperthreads of the x86-64 runner add half as much again.
+
+**Where the time went.** A profile (`valgrind --tool=callgrind`) of the first version put 80% of a
+run in the tank's re-plan: working out each move's drive time again (a square root, two divisions and
+the grade check per move), and more in allocating and clearing the search's arrays. `risk_drive`
+now reads each move's time from a table built once per map and keeps its arrays from one search to
+the next, marking a cell as "touched in this search" with a stamp instead of clearing. That cut the
+instructions per trial by a third and the time by 22 to 30%, and it returns exactly the route the
+planners' shared search returns (`risk_drive_reference`; the tests compare them on every trip, with
+and without a closed cell). What's left is the search itself, about a third of it in the heap. A
+better estimate of the distance to go would search far fewer cells, but it could break ties between
+equal routes differently, so it stays out until that can be shown not to change a result.
+
+**Checked against plain Python.** `robotnav/sensing.py` has the same field, the same plans and the
+same trial in a few dozen lines of Python. `tests/test_cpp.py` compares the C++ with it: every cell
+of the field to the last bit, the risk-weighted routes cell for cell, and trials one by one (roadblock
+met, detected, tracked, seconds).
+
+### The same core in the browser: WebAssembly
+
+`tools/build_wasm.sh` compiles the same sources to WebAssembly with wasi-sdk (no threads, no
+exceptions, still `-ffp-contract=off`): `robotnav/assets/robotnav_core.wasm`, 121 KB, carried inside
+the page. `node cpp/wasm/test.mjs` loads the three map files into it and compares its digest with
+`cpp/tests/golden.digest`: every result on every preset trip is the same **byte for byte** as the
+native builds, so the routes agree across x86-64, ARM64 and WebAssembly. CI runs that test on the
+committed file and on a fresh build.
+
+In the page the console runs its Monte Carlo trials in this core: 20,000 of them in the time the
+JavaScript takes for 1,000, which narrows the 95% interval about four and a half times. The
+JavaScript version stays as the fallback and as an independent check. The browser test compares the
+two in the page itself: the core's A\* gives the page's own routes and times on all 20 trips to the
+last bit, the same risk-weighted plans, and the same trials one for one (the drone's first 1,000, and
+600 of the tank's with roadblocks and re-plans).
+
 ## Python, C++ and the browser give identical answers
 
 Driving a route can't wait for Python, so the browser runs the five planners and the shortest
@@ -607,13 +676,13 @@ the C++ tests under AddressSanitizer and UndefinedBehaviorSanitizer.
 | `robotnav/intro_art.py` | The intro's art: draws the blacked-out flag (official proportions, flat, greys only, horizontal and vertical) as SVG and inlines the bison badge |
 | `tools/bison_logo.py` | The badge (`robotnav/assets/bison.webp`): a shield with a bison's head, drawn as outlines, raised into a relief (bevels from exact distances to each outline) and shaded as polished silver in a studio, on black enamel (NumPy, SciPy) |
 | `robotnav/viewer3d.html` | Three.js viewer: maps, sky, water, contour lines, palms and trees, planners, D\* Lite and the air route in the browser, watching the search, the sensor drive, the drone and its watchtowers, the operator console (entities, tasking, timeline, report, command bar), MIL-STD-2525 symbols and callsign tags, preset paths, picking, drawing, drone camera and its compass and altitude read-outs, the spiked tank, the tour, links to a view, the frame-rate benchmark |
-| `cpp/` | The C++ core: planners, D\* Lite, the air route, map files, the `robotnav` tool, unit tests and the pybind11 module ([cpp/README.md](cpp/README.md)) |
+| `cpp/` | The C++ core: planners, D\* Lite, the air route, the detection field and Monte Carlo trials on a thread pool, map files, the `robotnav` tool, unit tests, the pybind11 module and the WebAssembly build (`cpp/wasm/`, `tools/build_wasm.sh`) ([cpp/README.md](cpp/README.md)) |
 | `robotnav/cpp.py`, `parity.py`, `mapfile.py` | Run the C++ core from Python, compare it with the reference, and write the map files it reads |
 | `maps/` | The live demo's three maps as map files, for the C++ tool |
 | `docs/` | The live demo served by GitHub Pages (`index.html`, built by `python main.py course`), its preview image, and the README's pictures |
 | `robotnav/terrain_bench.py` | Sweeps hill height, slope limit and obstacle density |
 | `robotnav/grid.py`, `visualize.py`, `benchmark.py` | Original 2D grid world, plots and benchmark |
-| `tests/` | 225 checks: optimality on every map, the shortest route, all 20 presets per map, the desert's oases, grade limit, water, route rules, D\* Lite (legal routes, optimal repairs, roadblocks), the air route (towers, lines of sight, hiding behind a ridge), the C++ core against Python, map rebuilds, the command line, the page head and link previews, the console look (fonts, map symbols, tags, read-outs), the intro's flag and logo |
+| `tests/` | 238 checks: optimality on every map, the shortest route, all 20 presets per map, the desert's oases, grade limit, water, route rules, D\* Lite (legal routes, optimal repairs, roadblocks), the air route (towers, lines of sight, hiding behind a ridge), the C++ core against Python, map rebuilds, the command line, the page head and link previews, the console look (fonts, map symbols, tags, read-outs), the intro's flag and logo |
 
 ## Findings
 
