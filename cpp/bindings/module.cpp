@@ -141,6 +141,33 @@ PYBIND11_MODULE(robotnav_cpp, mod) {
             "A* with h[row, col] as the estimate of the time left (times w).");
     mod.def("octile_table", [](const Map& m, int goal) { return grid(octile_table(m, goal), {m.rows, m.cols}); },
             py::arg("map"), py::arg("goal"));
+    using Costs = py::array_t<double, py::array::c_style | py::array::forcecast>;
+    auto costs_of = [](const Map& m, const Costs& c) {
+        if (c.ndim() != 2 || c.shape(0) != m.size() || c.shape(1) != 8)
+            throw std::invalid_argument("move times must be a (rows * cols) x 8 array");
+        return std::vector<double>(c.data(), c.data() + c.size());
+    };
+    mod.def("astar_costs",
+            [costs_of](const Map& m, const Costs& c, int start, int goal, const std::string& name) {
+                const std::vector<double> costs = costs_of(m, c);
+                py::gil_scoped_release unlocked;
+                return astar_costs(m, costs, start, goal, name);
+            },
+            py::arg("map"), py::arg("costs"), py::arg("start"), py::arg("goal"), py::arg("name") = "A* (move times)");
+    mod.def("cost_to_go_costs",
+            [costs_of](const Map& m, const Costs& c, int goal) {
+                const std::vector<double> costs = costs_of(m, c);
+                std::vector<double> d;
+                {
+                    py::gil_scoped_release unlocked;
+                    d = cost_to_go_costs(m, costs, goal);
+                }
+                return grid(d, {m.rows, m.cols});
+            },
+            py::arg("map"), py::arg("costs"), py::arg("goal"));
+    mod.def("route_time", [costs_of](const Map& m, const Costs& c, const std::vector<int>& path) {
+                return route_time(m, costs_of(m, c), path); },
+            py::arg("map"), py::arg("costs"), py::arg("path"));
 
     py::class_<Heuristic>(mod, "Heuristic", "The learned estimate of the time left to the goal (robotnav/assets/heuristic.txt).")
         .def(py::init([](const std::string& text) { return parse_heuristic(text); }), py::arg("text"))

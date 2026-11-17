@@ -92,7 +92,8 @@ class Model:
         return Path(path)
 
 
-def parse(text: str) -> Model:
+def parse(text: str, header: str = "brubus-heuristic", inputs: int = FEATURES) -> Model:
+    """Read a network file (this layout also serves stage 3's speeds file, with its own header and inputs)."""
     note, words = [], []
     for line in text.splitlines():
         if line.startswith("#"):
@@ -110,14 +111,14 @@ def parse(text: str) -> Model:
             raise ValueError(f"heuristic file: expected {expected!r}, got {w!r}")
         return w
 
-    take("brubus-heuristic"); take("1"); take("inputs")
-    if int(take()) != FEATURES:
-        raise ValueError(f"heuristic file: the network must take {FEATURES} inputs")
+    take(header); take("1"); take("inputs")
+    if int(take()) != inputs:
+        raise ValueError(f"heuristic file: the network must take {inputs} inputs")
     take("mean")
-    mean = np.array([float(take()) for _ in range(FEATURES)])
+    mean = np.array([float(take()) for _ in range(inputs)])
     take("scale")
-    scale = np.array([float(take()) for _ in range(FEATURES)])
-    layers, width = [], FEATURES
+    scale = np.array([float(take()) for _ in range(inputs)])
+    layers, width = [], inputs
     while (w := take()) != "end":
         if w != "layer":
             raise ValueError(f"heuristic file: expected 'layer' or 'end', got {w!r}")

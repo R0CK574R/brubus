@@ -26,4 +26,15 @@ SearchResult astar_table(const Map& m, int start, int goal, const std::vector<do
 // The octile estimate as a table, the one A* uses: one value per cell, for this goal.
 std::vector<double> octile_table(const Map& m, int goal);
 
+// Every move's time read from a table instead of the drive-time model: costs[cell * 8 + k] is the time of move k
+// (the planners' order) out of the cell, kInf where it can't be made. Stage 3 plans with Bruce's learned speeds and
+// scores routes with the hidden true ones this way. Every time must be at least the move's flat length (1 s per
+// metre at best), so the octile estimate stays a lower bound and A* stays optimal.
+SearchResult astar_costs(const Map& m, const std::vector<double>& costs, int start, int goal,
+                         std::string name = "A* (move times)");
+// The fewest seconds from every cell to `goal` with those move times (Dijkstra backwards).
+std::vector<double> cost_to_go_costs(const Map& m, const std::vector<double>& costs, int goal);
+// A route's time with those move times, added up from its start.
+double route_time(const Map& m, const std::vector<double>& costs, const std::vector<int>& path);
+
 }  // namespace robotnav

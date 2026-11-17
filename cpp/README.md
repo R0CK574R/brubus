@@ -55,7 +55,7 @@ From Python, every command that plans can use the C++ core instead (`--engine cp
 | `include/robotnav/replan.hpp`, `src/replan.cpp` | D\* Lite (the optimised version), the rover's belief, the sensor drive with roadblocks, the A\*-from-scratch baseline |
 | `include/robotnav/airspace.hpp`, `src/airspace.cpp` | Flight levels, watchtowers and their lines of sight, 3-D A\* for the stealth and direct flights |
 | `include/robotnav/mapio.hpp`, `src/mapio.cpp` | Map files (the format is described in the header) |
-| `include/robotnav/fields.hpp`, `src/fields.cpp` | For the learning work: the true drive time from every cell to a goal (Dijkstra backwards, the labels of the data set) and A\* guided by a table of estimates |
+| `include/robotnav/fields.hpp`, `src/fields.cpp` | For the learning work: the true drive time from every cell to a goal (Dijkstra backwards, the labels of the data set), A\* guided by a table of estimates, and planning on a table of move times (stage 3: Bruce's learned speeds, and the hidden true ones that score his routes) |
 | `include/robotnav/learned.hpp`, `src/learned.cpp` | The learned estimate: its 16 features, the network read from its file, and A\* guided by it (re-expanding, optionally capped) |
 | `include/robotnav/landmarks.hpp`, `src/landmarks.cpp` | A\* with landmarks (ALT): farthest-point landmarks, their fields, the lower bound and the search |
 | `src/cli.cpp` | The `robotnav` tool |

@@ -212,6 +212,53 @@ void test_landmarks() {
     CHECK_NEAR(d[goal], dijkstra(m, lm.cells[0], goal).cost, 1e-12 * d[goal]);
 }
 
+// Every move's time as a table, filled from the map's own drive-time model: planning on it must be the plain A*.
+std::vector<double> move_table(const Map& m) {
+    std::vector<double> costs(static_cast<std::size_t>(m.size()) * 8, kInf);
+    for (int u = 0; u < m.size(); ++u) {
+        if (m.blocked(u)) continue;                                     // nothing drives out of a rock
+        m.neighbours(u, [&](int v, double step) {
+            for (int k = 0; k < 8; ++k)
+                if (v == (u / m.cols + NB_R[k]) * m.cols + u % m.cols + NB_C[k]) costs[static_cast<std::size_t>(u) * 8 + k] = step;
+        });
+    }
+    return costs;
+}
+
+void test_move_time_tables() {
+    const Map m = hilly_map();
+    std::vector<double> costs = move_table(m);
+    const int goal = m.at(1, 12);
+    CHECK(cost_to_go_costs(m, costs, goal) == cost_to_go(m, goal));     // the same field, bit for bit
+    for (int s : {m.at(13, 13), m.at(12, 0), m.at(8, 9)}) {
+        const SearchResult a = astar(m, s, goal), t = astar_costs(m, costs, s, goal);
+        CHECK(t.path == a.path && t.cost == a.cost && t.nodes_expanded == a.nodes_expanded && t.explored == a.explored);
+        CHECK(route_time(m, costs, a.path) == m.path_cost(a.path));
+    }
+    for (int r = 0; r < 5; ++r)                                         // now the mud can't be driven into at all
+        for (int k = 0; k < 8; ++k) {
+            const int pr = r - NB_R[k], pc = 6 - NB_C[k];
+            if (m.inside(pr, pc)) costs[static_cast<std::size_t>(pr * m.cols + pc) * 8 + k] = kInf;
+        }
+    const int s = m.at(0, 0);
+    const SearchResult t = astar_costs(m, costs, s, goal);
+    CHECK(t.found() && legal_route(m, t.path));
+    for (int v : t.path) CHECK(m.surface[v] == 0);
+    CHECK_NEAR(t.cost, cost_to_go_costs(m, costs, goal)[s], 1e-12 * t.cost);
+    CHECK(t.cost > astar(m, s, goal).cost);
+    int refused = 0;
+    std::vector<double> bad = costs;
+    bad.pop_back();
+    try { astar_costs(m, bad, s, goal); } catch (const std::exception&) { ++refused; }
+    bad = costs;
+    bad[8] = -1.0;
+    try { astar_costs(m, bad, s, goal); } catch (const std::exception&) { ++refused; }
+    bad = costs;
+    bad[0] = 1.0;                                                       // move 0 out of the corner leaves the map
+    try { cost_to_go_costs(m, bad, goal); } catch (const std::exception&) { ++refused; }
+    CHECK(refused == 3);
+}
+
 void test_learned_estimate() {
     // A network that outputs 0.25 everywhere (all weights 0, last bias 0.25): the estimate is 1.25 x climb-aware.
     std::string text = "# a test network\nbrubus-heuristic 1\ninputs 16\nmean";
@@ -441,6 +488,7 @@ int main() {
         {"hills and mud shape the quickest route", test_hills_and_mud_shape_the_quickest_route},
         {"cost to go and table A*", test_cost_to_go_and_table_astar},
         {"landmarks", test_landmarks},
+        {"move-time tables", test_move_time_tables},
         {"learned estimate", test_learned_estimate},
         {"Python rounding", test_python_rounding},
         {"sensor disk", test_sensor_disk},

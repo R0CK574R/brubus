@@ -234,3 +234,23 @@ def astar_landmarks(t: Terrain, lm, start, goal, cmap=None) -> SearchResult:
     return _result(core().astar_landmarks(cmap if cmap is not None else to_cpp(t), lm, _flat(t, start), _flat(t, goal)),
                    t.cols)
 
+
+def astar_costs(t: Terrain, costs, start, goal, name: str = "A* (move times)", cmap=None) -> SearchResult:
+    """robotnav.learn.speeds.astar_costs, in C++: A* with every move's time read from a (cells, 8) table."""
+    r = core().astar_costs(cmap if cmap is not None else to_cpp(t), np.asarray(costs, dtype=float).reshape(-1, 8),
+                           _flat(t, start), _flat(t, goal), name)
+    return _result(r, t.cols)
+
+
+def cost_to_go_costs(t: Terrain, costs, goal, cmap=None) -> np.ndarray:
+    """robotnav.learn.speeds.cost_to_go_costs, in C++: the same field, to the last bit, shape (rows, cols)."""
+    d = core().cost_to_go_costs(cmap if cmap is not None else to_cpp(t), np.asarray(costs, dtype=float).reshape(-1, 8),
+                                _flat(t, goal))
+    return np.asarray(d, dtype=float).reshape(t.rows, t.cols)
+
+
+def route_time(t: Terrain, costs, path, cmap=None) -> float:
+    """robotnav.learn.speeds.route_time, in C++."""
+    return core().route_time(cmap if cmap is not None else to_cpp(t), np.asarray(costs, dtype=float).reshape(-1, 8),
+                             [_flat(t, c) for c in path])
+

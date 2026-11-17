@@ -22,10 +22,13 @@
     python main.py learn train          # train the network that estimates the time left (needs PyTorch)
     python main.py learn eval           # the benchmark: the network and landmarks against the classical planners
     python main.py route --map desert --preset 19 --landmarks   # add A* guided by 8 landmarks to the race
+    python main.py speeds learn         # Bruce learns his terrain speeds from his driving (needs PyTorch)
+    python main.py speeds eval          # plan with what he learned on maps he never drove, scored in the true world
 """
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 from pathlib import Path
@@ -402,6 +405,37 @@ def learn(args) -> None:
         print(f"saved {args.out}")
 
 
+def speeds(args) -> None:
+    """Stage 3: Bruce learns his own terrain speeds from his driving logs."""
+    from robotnav.learn import speeds as sp
+
+    folder = Path(args.dir)
+    if args.action == "learn":
+        try:
+            import torch  # noqa: F401
+        except ImportError:
+            raise SystemExit("Learning needs PyTorch: python -m pip install torch (nothing else in Brubus does)")
+        print(f"Bruce drives the train maps; a network is trained after {', '.join(map(str, args.checkpoints))} trips")
+        card = sp.run(folder, tuple(args.checkpoints), out=Path(args.model or sp.ASSET))
+        summary, learned = card["summary"], card["learned"]
+    else:
+        path = Path(args.model or sp.ASSET)
+        model = sp.load(path)
+        rows = sp.evaluate({"built-in": "built-in", "learned": model, "true": "true"}, folder, split=args.split)
+        summary = sp.summarize(rows)
+        card = path.with_suffix(".card.json")
+        learned = json.loads(card.read_text())["learned"] if card.exists() else sp.what_it_learned(model)
+    print("Routes planned with each model, driven in the true world:")
+    print(sp.table(summary))
+    print("What Bruce learned (seconds per metre on flat, smooth ground; what climbing adds, as a multiple of the flat "
+          "time per unit of grade):")
+    for w in learned:
+        drove = f"   ({w['logged']:,} moves driven, {w['logged_climbs']:,} of them climbs over 10%)" if "logged" in w else ""
+        print(f"  {w['ground']:<13} built-in {w['built_in']:.2f}  true {w['true']:.2f}  learned {w['learned']:.2f}   |  "
+              f"climbing: built-in {w['built_in_uphill']:.1f}  true {w['true_uphill']:.1f}  learned "
+              f"{w['learned_uphill']:.1f}{drove}")
+
+
 def parity(args) -> None:
     """The C++ core against the Python reference on the preset trips: identical results, and how much faster."""
     from robotnav import cpp
@@ -575,6 +609,15 @@ def main() -> None:
     le.add_argument("--starts", type=int, default=4, help="trips per goal (eval)")
     le.add_argument("--out", help="save the benchmark's numbers as JSON")
     le.set_defaults(func=learn)
+
+    spd = sub.add_parser("speeds", help="Bruce learns his terrain speeds from his driving, and plans with them")
+    spd.add_argument("action", choices=["learn", "eval"])
+    spd.add_argument("--dir", default="data/terrain-v1", help="the data set (python main.py dataset build)")
+    spd.add_argument("--model", help="the learned speeds file (default robotnav/assets/speeds.txt)")
+    spd.add_argument("--checkpoints", type=int, nargs="+", default=[10, 30, 100, 300],
+                     help="train a network after this many trips (learn)")
+    spd.add_argument("--split", choices=["train", "val", "test"], default="test", help="maps to score on (eval)")
+    spd.set_defaults(func=speeds)
 
     eb = sub.add_parser("explore-bench", help="sensor drives on every preset: time lost, D* Lite vs A* from scratch")
     eb.add_argument("--ranges", type=float, nargs="+", default=[5.0, 10.0, 20.0], help="sensor ranges in metres")

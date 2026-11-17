@@ -6,4 +6,4 @@ pandas
 pytest
 # only to build the C++ core's Python module (cpp/): pybind11
 pybind11
-# only to train the learned estimate again (python main.py learn train): torch
+# only to train the learned networks again (python main.py learn train, python main.py speeds learn): torch

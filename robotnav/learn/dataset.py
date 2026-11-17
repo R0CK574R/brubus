@@ -106,7 +106,8 @@ def terrain_of(arrays) -> Terrain:
                    height=np.asarray(arrays["height"], dtype=float), surface=np.asarray(arrays["surface"], dtype=np.int8),
                    obstacle=obstacle, cell_size=meta["cell_size"], max_grade=meta["max_grade"],
                    uphill_penalty=meta["uphill_penalty"], surface_costs=tuple(float(c) for c in arrays["surface_costs"]),
-                   sea_level=meta["sea_level"], meta=dict(theme=meta["theme"], seed=meta["seed"]))
+                   surface_names=tuple(meta["surface_names"]), sea_level=meta["sea_level"],
+                   meta=dict(theme=meta["theme"], seed=meta["seed"]))
 
 
 def _engine(engine: str) -> str:

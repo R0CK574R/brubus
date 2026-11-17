@@ -2,6 +2,7 @@
 
     python tools/learn_figure.py            # docs/learn-labels.png: one test map, one goal, one trip
     python tools/learn_figure.py bench      # docs/learn-benchmark.png: cells searched against longer routes
+    python tools/learn_figure.py speeds     # docs/learn-speeds.png: stage 3's learning curve (from its card)
 
 Left, the label: the true drive time from every cell to the goal. Middle, A*'s estimate of the same thing today,
 the octile distance, on the same colour scale: it ignores the hills and the slow ground. Right, what that costs: the
@@ -108,7 +109,6 @@ def main() -> None:
 def bench() -> None:
     """Every planner of the stage-2 benchmark (python main.py learn eval) as a point: cells searched (log scale)
     against how much longer its routes are than the quickest, on the 1,440 trips of the test maps."""
-    import math
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -161,5 +161,73 @@ def bench() -> None:
     print(out, f"landmarks set-up {sum(setup) / len(setup):.0f} ms per map")
 
 
+def speeds() -> None:
+    """Stage 3's learning curve, read from the card `python main.py speeds learn` writes: how much slower than the
+    quickest Bruce's routes are, and how many are within 1% of it, after each number of trips he has driven."""
+    import json
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib import font_manager
+    from robotnav.learn.speeds import ASSET
+
+    for f in font_manager.findSystemFonts():
+        if "Inter" in Path(f).name:
+            font_manager.fontManager.addfont(f)
+    plt.rcParams.update({"font.family": ["Inter", "DejaVu Sans"], "text.color": INK, "axes.labelcolor": DIM,
+                         "xtick.color": DIM, "ytick.color": DIM})
+    card = json.loads(ASSET.with_suffix(".card.json").read_text())
+    summary = {s["model"]: s for s in card["summary"] if s["theme"] == "all"}
+    steps = [("built-in", "0\n(built-in)")] + [(f"after {c['trips']} trips", f"{c['trips']}") for c in card["curve"]]
+    trips = summary["built-in"]["trips"]
+    x = np.arange(len(steps))
+    mean = [100 * summary[k]["regret"] for k, _ in steps]
+    close = [100 * summary[k]["within_1"] for k, _ in steps]
+
+    fig, axes = plt.subplots(1, 2, figsize=(11.5, 4.9), dpi=130, facecolor=BG)
+    fig.subplots_adjust(left=0.07, right=0.98, top=0.76, bottom=0.17, wspace=0.22)
+    for ax, values, title, sub in (
+            (axes[0], mean, "Slower than the quickest route", f"mean of {trips} trips on maps he never drove (log scale)"),
+            (axes[1], close, "Trips within 1% of the quickest route", f"share of the same {trips} trips")):
+        ax.set_facecolor(PANEL)
+        for side in ax.spines.values():
+            side.set_color("#2a3038")
+        ax.grid(True, axis="y", color="#1f252c", linewidth=0.8)
+        ax.plot(x, values, color=BLUE, lw=2.2, zorder=3)
+        ax.scatter(x, values, s=64, color=BLUE, edgecolor=PANEL, linewidth=1.6, zorder=4)
+        ax.set_xticks(x)
+        ax.set_xticklabels([label for _, label in steps])
+        ax.set_xlabel("trips Bruce has driven and learned from")
+        ax.set_title(title, loc="left", fontsize=13.5, color=INK, fontweight="semibold", pad=24)
+        ax.text(0, 1.03, sub, transform=ax.transAxes, fontsize=10.5, color=DIM, va="bottom")
+    ax = axes[0]
+    ax.set_yscale("log")
+    ax.set_ylim(0.05, 12)
+    ax.set_yticks([0.1, 0.3, 1, 3, 10])
+    ax.set_yticklabels(["0.1%", "0.3%", "1%", "3%", "10%"])
+    ax.minorticks_off()
+    ax.annotate(f"{mean[0]:.1f}%: his built-in model", (x[0], mean[0]), xytext=(10, 4), textcoords="offset points",
+                fontsize=10, color=INK)
+    ax.annotate(f"{mean[-1]:.2f}%", (x[-1], mean[-1]), xytext=(0, 10), textcoords="offset points", fontsize=10,
+                color=INK, ha="center")
+    ax = axes[1]
+    ax.set_ylim(0, 108)
+    ax.set_yticks([0, 25, 50, 75, 100])
+    ax.set_yticklabels(["0%", "25%", "50%", "75%", "100%"])
+    ax.axhline(100, color=DIM, lw=1, ls=(0, (4, 3)), zorder=2)
+    ax.text(x[0], 101.5, "knowing the true speeds", fontsize=9.5, color=DIM, va="bottom")
+    ax.annotate(f"{close[0]:.0f}%", (x[0], close[0]), xytext=(10, -4), textcoords="offset points", fontsize=10,
+                color=INK, va="top")
+    ax.annotate(f"{close[-1]:.0f}%", (x[-1], close[-1]), xytext=(-8, -14), textcoords="offset points", fontsize=10,
+                color=INK, ha="right", va="top")
+    fig.text(0.07, 0.94, "Bruce learns his terrain speeds from his own driving", fontsize=15, color=INK,
+             fontweight="semibold")
+    fig.text(0.07, 0.895, "routes planned with what he believes, driven in the simulator's hidden true world", fontsize=11,
+             color=DIM)
+    out = ROOT / "docs" / "learn-speeds.png"
+    fig.savefig(out, facecolor=BG)
+    print(out)
+
+
 if __name__ == "__main__":
-    bench() if sys.argv[1:] == ["bench"] else main()
+    {"bench": bench, "speeds": speeds}.get(sys.argv[1] if sys.argv[1:] else "", main)()
