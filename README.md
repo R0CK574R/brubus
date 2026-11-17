@@ -5,6 +5,12 @@
 **[▶ Open the live demo](https://r0ck574r.github.io/brubus/)**: it runs in your browser, on a laptop or a phone,
 with nothing to install. Press **▶ Tour** for a guided run through all three maps (under two minutes).
 
+[![Watch the 69-second demo: the operator console tasks a tank and three drones, a roadblock forces a re-plan, and a watchtower detects and tracks a drone](docs/demo-poster.jpg)](https://r0ck574r.github.io/brubus/brubus-demo.mp4)
+
+**[▶ Watch the demo video](https://r0ck574r.github.io/brubus/brubus-demo.mp4)** (69 seconds, no sound): the
+operator console tasks the tank, assigns a survey to three drones, re-plans around a roadblock, and a
+watchtower detects and tracks a drone. It is the real page, filmed frame by frame.
+
 A tracked rover, a matte-black rhomboid tank with a hedgehog coat of steel spikes, finds its way
 across three hilly maps (grassland, desert dunes with oasis ponds, and a tropical island) using five pathfinding
 algorithms. Each map opens empty: add any of its 20 preset routes, or set your own start and

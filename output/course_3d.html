@@ -413,6 +413,7 @@ body.ops-on .hud { display: none; }
 .ops-msg b { color: var(--ink); font-weight: 600; }
 .ops-sec { padding: 9px 12px 10px; border-bottom: 1px solid var(--edge); display: grid; gap: 7px; }
 .ops-sec:last-child { border-bottom: 0; }
+.ops-sec.ops-acts { position: sticky; bottom: 0; z-index: 1; background: #0e1114; border-top: 1px solid var(--edge); margin-top: -1px; }   /* approve and cancel stay in reach when the panel scrolls */
 .ops-sec h3 { margin: 0; font: 700 10px/1 var(--f-display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .ops-sec p { margin: 0; line-height: 1.5; color: var(--muted); }
 .ops-sec p b { color: var(--ink); font-weight: 600; }
@@ -5790,7 +5791,7 @@ void main() {
       + `<p class="ops-msg" id="ops-survey-msg" data-tone="${sv.msg ? "bad" : ""}">${sv.msg ? esc(sv.msg) : !pl ? "Each point goes to the vehicle that makes the total of time and hazard least, not simply to the nearest."
           : `The least total: ${pl.total.toFixed(0)} (seconds, plus ${OPS_W_FLEET} per unit of hazard). ${worse > 1e-6 ? `Giving each point in turn its nearest free vehicle would come to ${pl.greedy.toFixed(0)}, ${(worse / pl.total * 100).toFixed(0)}% more.` : "Nearest-first happens to give the same here."}`
             + (holds.length ? ` ${holds.map(q => `${q.v.id} waits ${q.hold} s on the ground to stay ${OPS_SEP} m clear of ${q.who}`).join("; ")}.` : "") + ` All there in ${pl.done.toFixed(0)} s.`}</p></div>`
-      + `<div class="ops-sec"><div class="ops-row"><button class="primary" id="ops-survey-go"${pl ? "" : " disabled"}>Approve &amp; send all</button><button id="ops-survey-cancel">Cancel <kbd>Esc</kbd></button></div></div>`;
+      + `<div class="ops-sec ops-acts"><div class="ops-row"><button class="primary" id="ops-survey-go"${pl ? "" : " disabled"}>Approve &amp; send all</button><button id="ops-survey-cancel">Cancel <kbd>Esc</kbd></button></div></div>`;
     $("ops-survey-go").onclick = opsSurveyApprove; $("ops-survey-cancel").onclick = () => opsSurveyEnd();
   }
   function opsDetail(st) {                          // the right-hand panel: the selected entity, or the task being planned
@@ -5807,7 +5808,7 @@ void main() {
           + `<label>Arrive within, s<input id="ops-lim-time" inputmode="decimal" placeholder="no limit" value="${d.arriveBy == null ? "" : d.arriveBy}"></label></div></div>`
           + `<div class="ops-sec"><h3>3 · Plan</h3><table class="ops-table ops-plans" id="ops-plans"><thead><tr><th>Plan</th><th class="num">Time</th><th class="num">Dist</th><th class="num">Risk</th><th class="num">Limits</th></tr></thead><tbody></tbody></table><canvas class="ops-chart" id="ops-chart" role="img" aria-label="Every trade between time and the risk of detection, with the three plans marked"></canvas><p class="ops-msg" id="ops-plan-msg"></p></div>`
           + `<div class="ops-sec"><h3>4 · Check it<button id="ops-mc" title="Fly or drive the chosen plan 1,000 times with the towers' looks left to chance">Run 1,000 trials</button></h3><p class="ops-msg" id="ops-mc-out"></p></div>`
-          + `<div class="ops-sec"><div class="ops-row"><button class="primary" id="ops-approve">Approve &amp; send</button><button id="ops-draft-cancel">Cancel <kbd>Esc</kbd></button></div></div>`;
+          + `<div class="ops-sec ops-acts"><div class="ops-row"><button class="primary" id="ops-approve">Approve &amp; send</button><button id="ops-draft-cancel">Cancel <kbd>Esc</kbd></button></div></div>`;
         const lim = (id, key) => { $(id).oninput = () => { const x = parseFloat($(id).value); d[key] = isFinite(x) && x >= 0 ? x : null; d.auto = true; d.mc = null; opsAuto(); opsPlansUI(); opsLayers(); }; };
         lim("ops-lim-risk", "maxRisk"); lim("ops-lim-time", "arriveBy"); $("ops-mc").onclick = opsRunMC;
         $("ops-approve").onclick = opsApprove; $("ops-draft-cancel").onclick = () => opsCancelDraft();
