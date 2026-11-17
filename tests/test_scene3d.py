@@ -68,6 +68,7 @@ def test_the_cpp_core_rides_in_the_page_as_webassembly(tmp_path):
 
 def test_intro_art_is_inlined(tmp_path):
     page = _page(tmp_path)
-    assert "__FLAG__" not in page and "__BISON_URI__" not in page   # both placeholders were filled
-    assert page.count('<svg class="intro-flag') == 2                 # flown flat, and hung for portrait screens
-    assert 'src="data:image/webp;base64,' in page                  # the bison travels inside the page
+    assert "__BACKDROP__" not in page and "__LOGO_URI__" not in page   # both placeholders were filled
+    assert page.count('<svg class="intro-back"') == 1                # one backdrop, cropped to fit any screen
+    assert 'src="data:image/webp;base64,' in page                  # the badge travels inside the page
+    assert '<div class="intro-word">BRUCE</div>' in page

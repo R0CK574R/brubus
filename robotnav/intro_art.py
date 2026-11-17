@@ -1,69 +1,67 @@
-"""Art for the viewer's intro: a blacked-out US flag (generated here as inline SVG) and the bison badge
-(robotnav/assets/bison.webp, rendered by tools/bison_logo.py), both inlined so the page stays one file.
+"""Art for the viewer's intro: the backdrop (generated here as inline SVG) and the badge
+(robotnav/assets/logo.webp, prepared by tools/shark_logo.py), both inlined so the page stays one file.
 
-The flag is flat, at the official proportions (hoist 1, fly 1.9, 13 stripes, a union 7 stripes deep and 0.76
-long, 50 stars in rows of 6 and 5), in near-blacks and greys only. It fills the screen: the page crops it like a
-cover photo, keeping the union's corner. Portrait screens get it hung vertically, union top left, stripes
-running down, stars upright."""
+The backdrop is a sonar plot in the badge's own colours: near-black, with range rings and bearing lines in the
+olive of the badge's ring, a scale of bearing ticks every 5 degrees, a faint glow at the centre and the corners
+falling off to black. It is one square drawing centred on the screen; the page crops it like a cover photo, so
+the same drawing serves a wide screen and a phone held upright."""
 from __future__ import annotations
 
 import base64
 import math
 from pathlib import Path
 
-BISON = Path(__file__).with_name("assets") / "bison.webp"
+LOGO = Path(__file__).with_name("assets") / "logo.webp"
 
-HOIST, FLY = 1000.0, 1900.0
-UNION_H, UNION_W = HOIST * 7 / 13, HOIST * 0.76
-STAR_STEP_Y, STAR_STEP_X, STAR_D = HOIST * 0.054, HOIST * 0.063, HOIST * 0.0616
-STRIPE = HOIST / 13
-COLOURS = dict(stripe_a="#161616", stripe_b="#0b0b0b", union="#0e0e0e", star="#272727")   # greys only
+SIZE = 2000.0                                        # the drawing is SIZE x SIZE, centred on (SIZE/2, SIZE/2)
+RING_STEP, RING_FIRST, RING_LAST = 125.0, 250.0, 1375.0
+SCALE_R = 750.0                                      # the ring that carries the bearing ticks
+COLOURS = dict(ground="#060807", line="#8c8a5c", glow="#1a1d14")   # near-black, and the badge's olive
 
 
 def _num(v: float) -> str:
     return f"{v:.1f}".rstrip("0").rstrip(".")
 
 
-def _star(cx: float, cy: float, r: float) -> str:
-    pts = []
-    for i in range(10):
-        a = -math.pi / 2 + i * math.pi / 5
-        rr = r if i % 2 == 0 else r * 0.382
-        pts.append((cx + rr * math.cos(a), cy + rr * math.sin(a)))
-    return "M" + " L".join(f"{_num(x)} {_num(y)}" for x, y in pts) + "Z"
+def ring_radii() -> list[float]:
+    return [RING_FIRST + RING_STEP * i for i in range(int((RING_LAST - RING_FIRST) / RING_STEP) + 1)]
 
 
-def star_centres() -> list[tuple[float, float]]:
-    """The 50 stars of the flag flown horizontally: 9 rows, alternately 6 and 5 stars, on the official grid."""
-    return [(STAR_STEP_X * c, STAR_STEP_Y * row) for row in range(1, 10)
-            for c in (range(1, 12, 2) if row % 2 else range(2, 11, 2))]
+def bearing_ticks() -> list[tuple[int, float]]:
+    """(bearing in degrees, tick length) around the scale ring: every 5 degrees, longer at every 30."""
+    return [(b, 34.0 if b % 30 == 0 else 14.0) for b in range(0, 360, 5)]
 
 
-def flag_svg(vertical: bool = False, colours: dict | None = None) -> str:
-    """The flat flag as one <svg class="intro-flag h|v">. Hung vertically, the union stays top left (the flag's
-    own right): stripes become columns and the star rows become columns of upright stars."""
+def backdrop_svg(colours: dict | None = None) -> str:
+    """The backdrop as one <svg class="intro-back">."""
     c = {**COLOURS, **(colours or {})}
-    w, h = (HOIST, FLY) if vertical else (FLY, HOIST)
-    out = [f'<svg class="intro-flag {"v" if vertical else "h"}" viewBox="0 0 {_num(w)} {_num(h)}" '
-           f'preserveAspectRatio="xMinYMin slice" aria-hidden="true">',
-           f'<rect width="{_num(w)}" height="{_num(h)}" fill="{c["stripe_b"]}"/>']
-    for i in range(0, 13, 2):                                   # the seven stripes that would be red
-        x0, s = i * STRIPE, STRIPE
-        rect = (f'x="{_num(x0)}" y="0" width="{_num(s)}" height="{_num(h)}"' if vertical
-                else f'x="0" y="{_num(x0)}" width="{_num(w)}" height="{_num(s)}"')
-        out.append(f'<rect {rect} fill="{c["stripe_a"]}"/>')
-    uw, uh = (UNION_H, UNION_W) if vertical else (UNION_W, UNION_H)
-    out.append(f'<rect width="{_num(uw)}" height="{_num(uh)}" fill="{c["union"]}"/>')
-    stars = [(y, x) if vertical else (x, y) for x, y in star_centres()]
-    out.append(f'<path fill="{c["star"]}" d="{"".join(_star(x, y, STAR_D / 2) for x, y in stars)}"/>')
-    out.append("</svg>")
+    m = SIZE / 2
+    out = [f'<svg class="intro-back" viewBox="0 0 {_num(SIZE)} {_num(SIZE)}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">',
+           '<defs>'
+           f'<radialGradient id="ib-glow"><stop offset="0" stop-color="{c["glow"]}"/><stop offset="0.55" stop-color="{c["glow"]}" stop-opacity="0"/></radialGradient>'
+           '<radialGradient id="ib-edge"><stop offset="0.45" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.9"/></radialGradient>'
+           '</defs>',
+           f'<rect width="{_num(SIZE)}" height="{_num(SIZE)}" fill="{c["ground"]}"/>',
+           f'<circle cx="{_num(m)}" cy="{_num(m)}" r="{_num(m)}" fill="url(#ib-glow)"/>',
+           f'<g fill="none" stroke="{c["line"]}">']
+    for k, r in enumerate(ring_radii()):                                 # range rings, every fourth one stronger
+        strong = k % 4 == 0
+        out.append(f'<circle cx="{_num(m)}" cy="{_num(m)}" r="{_num(r)}" stroke-width="{"2" if strong else "1.2"}" stroke-opacity="{"0.42" if strong else "0.2"}"/>')
+    spokes = []
+    for b in range(0, 360, 30):                                          # bearing lines, clear of the badge
+        s, co = math.sin(math.radians(b)), -math.cos(math.radians(b))
+        spokes.append(f'M{_num(m + RING_FIRST * 2 * s)} {_num(m + RING_FIRST * 2 * co)}L{_num(m + RING_LAST * s)} {_num(m + RING_LAST * co)}')
+    out.append(f'<path d="{"".join(spokes)}" stroke-width="1.2" stroke-opacity="0.13"/>')
+    ticks = []
+    for b, length in bearing_ticks():
+        s, co = math.sin(math.radians(b)), -math.cos(math.radians(b))
+        ticks.append(f'M{_num(m + SCALE_R * s)} {_num(m + SCALE_R * co)}L{_num(m + (SCALE_R + length) * s)} {_num(m + (SCALE_R + length) * co)}')
+    out.append(f'<path d="{"".join(ticks)}" stroke-width="2" stroke-opacity="0.5"/>')
+    out.append('</g>')
+    out.append(f'<rect width="{_num(SIZE)}" height="{_num(SIZE)}" fill="url(#ib-edge)"/>')
+    out.append('</svg>')
     return "".join(out)
 
 
-def flags_svg() -> str:
-    """Both hangings; the page shows the one that suits the screen."""
-    return flag_svg(False) + flag_svg(True)
-
-
-def bison_uri() -> str:
-    return "data:image/webp;base64," + base64.b64encode(BISON.read_bytes()).decode("ascii")
+def logo_uri() -> str:
+    return "data:image/webp;base64," + base64.b64encode(LOGO.read_bytes()).decode("ascii")

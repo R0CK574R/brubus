@@ -11,7 +11,7 @@ with nothing to install. Press **▶ Tour** for a guided run through all three m
 operator console tasks the tank, assigns a survey to three drones, re-plans around a roadblock, and a
 watchtower detects and tracks a drone. It is the real page, filmed frame by frame.
 
-A tracked rover, a matte-black rhomboid tank with a hedgehog coat of steel spikes, finds its way
+**Bruce**, a tracked rover (a matte-black rhomboid tank with a hedgehog coat of steel spikes), finds its way
 across three hilly maps (grassland, desert dunes with oasis ponds, and a tropical island) using five pathfinding
 algorithms. Each map opens empty: add any of its 20 preset routes, or set your own start and
 finish, and the rover works out the quickest path over the hills while a follow drone films it.
@@ -142,9 +142,9 @@ Run these from the same terminal, with the virtual environment active.
 
 ## Using the viewer
 
-- **The intro**: the page opens on BRUBUS in heavy, flat off-white type, like a poster, over a blacked-out
-  US flag that fills the screen (flat, greys only; hung vertically on a phone held upright), with the badge
-  underneath: a polished silver shield with a bison's head on black enamel. The word is revealed left to
+- **The intro**: the page opens on BRUCE in heavy, flat off-white type, like a poster, over a dark sonar
+  plot that fills the screen (near-black, with range rings and bearing ticks in the badge's olive), with the
+  badge underneath: a steel shark's head inside an olive ring. The word is revealed left to
   right, then wipes away as the badge rushes toward you, and the black lifts as the map flies in. Click, tap
   or press any key to skip it, or add `?intro=0` to the address to turn it off.
 - **Reading the screen**: graphite panels over a dark map with contour lines (a thin one every metre, a
@@ -362,7 +362,7 @@ roadblock drops in front of the tank.
 
 ### Detection, tracks and risk
 
-![A track up close: the drone UAV-01, the tower TWR-1 whose searchlight points at where it thinks the drone is, and the track's 95% ellipse on the ground a couple of metres off the drone's true position](docs/console-track.png)
+![A track up close, from the follow camera: the drone UAV-01 in the searchlight of the tower TWR-4, and the track's 95% ellipse on the ground a few metres off the drone's true position](docs/console-track.png)
 
 In the console a tower doesn't simply see or not see. It looks once a second, and each look detects a
 mover in clear view with a probability that falls with range, the textbook figure for one look at a
@@ -707,8 +707,8 @@ the C++ tests under AddressSanitizer and UndefinedBehaviorSanitizer.
 | `robotnav/airspace.py` | The air route: flight levels, watchtowers and their lines of sight, the stealth and direct flights |
 | `robotnav/sensing.py` | How the towers detect and track, for the operator console: the chance per look against range (Swerling 1), hazard and route risk, the extended Kalman filter, Wilson's interval; the page takes its constants from here |
 | `robotnav/scene3d.py` | Exports the three maps and their preset paths into the self-contained viewer (and the live demo page, with link previews) |
-| `robotnav/intro_art.py` | The intro's art: draws the blacked-out flag (official proportions, flat, greys only, horizontal and vertical) as SVG and inlines the bison badge |
-| `tools/bison_logo.py` | The badge (`robotnav/assets/bison.webp`): a shield with a bison's head, drawn as outlines, raised into a relief (bevels from exact distances to each outline) and shaded as polished silver in a studio, on black enamel (NumPy, SciPy) |
+| `robotnav/intro_art.py` | The intro's art: draws the sonar backdrop (range rings, bearing lines and a tick every 5 degrees, in the badge's olive on near-black) as SVG and inlines the badge |
+| `tools/shark_logo.py` | Prepares the badge (`robotnav/assets/logo.webp`) from the logo's artwork: clears its black ground so the backdrop shows around it, and saves a 900 px WebP |
 | `robotnav/viewer3d.html` | Three.js viewer: maps, sky, water, contour lines, palms and trees, planners, D\* Lite and the air route in the browser, watching the search, the sensor drive, the drone and its watchtowers, the operator console (entities, tasking, timeline, report, command bar), MIL-STD-2525 symbols and callsign tags, preset paths, picking, drawing, drone camera and its compass and altitude read-outs, the spiked tank, the tour, links to a view, the frame-rate benchmark |
 | `cpp/` | The C++ core: planners, D\* Lite, the air route, the detection field and Monte Carlo trials on a thread pool, map files, the `robotnav` tool, unit tests, the pybind11 module and the WebAssembly build (`cpp/wasm/`, `tools/build_wasm.sh`) ([cpp/README.md](cpp/README.md)) |
 | `robotnav/assign.py` | Who goes where: the Hungarian method for a survey's assignment, and the nearest-first rule it is compared with |

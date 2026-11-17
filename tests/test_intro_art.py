@@ -1,47 +1,44 @@
+"""The intro's art: the sonar backdrop and the badge."""
 import re
 
 import pytest
 
-from robotnav.intro_art import BISON, COLOURS, FLY, HOIST, STRIPE, UNION_H, UNION_W, flag_svg, flags_svg, star_centres
+from robotnav.intro_art import COLOURS, LOGO, RING_FIRST, RING_LAST, SCALE_R, SIZE, backdrop_svg, bearing_ticks, ring_radii
 
 
-def test_flag_has_fifty_stars_in_rows_of_six_and_five():
-    stars = star_centres()
-    assert len(stars) == 50
-    rows = {}
-    for x, y in stars:
-        rows.setdefault(round(y, 6), []).append(x)
-    assert [len(rows[y]) for y in sorted(rows)] == [6, 5, 6, 5, 6, 5, 6, 5, 6]
-    assert all(0 < x < UNION_W and 0 < y < UNION_H for x, y in stars)   # all inside the union
+def test_backdrop_is_one_square_drawing_cropped_to_fill_the_screen():
+    svg = backdrop_svg()
+    assert svg.count("<svg") == 1 and 'class="intro-back"' in svg
+    assert 'viewBox="0 0 2000 2000"' in svg and 'preserveAspectRatio="xMidYMid slice"' in svg   # centred, cropped like a cover photo
 
 
-def test_flag_proportions():
-    assert FLY / HOIST == 1.9
-    assert UNION_H == 7 * STRIPE                                        # the union is seven stripes deep
-    assert round(UNION_W / HOIST, 2) == 0.76
+def test_range_rings_are_evenly_spaced_about_the_centre():
+    radii = ring_radii()
+    assert radii[0] == RING_FIRST and radii[-1] == RING_LAST and len(radii) == 10
+    assert len({b - a for a, b in zip(radii, radii[1:])}) == 1
+    circles = re.findall(r'<circle cx="([\d.]+)" cy="([\d.]+)" r="([\d.]+)" stroke-width', backdrop_svg())
+    assert [float(r) for _, _, r in circles] == radii
+    assert all(float(x) == float(y) == SIZE / 2 for x, y, _ in circles)
+    assert RING_LAST < SIZE / 2 * 2 ** 0.5                              # the last ring still shows in the corners
 
 
-def test_flag_is_flat_grey_and_fills_the_screen():
-    for vertical in (False, True):
-        svg = flag_svg(vertical)
-        assert 'preserveAspectRatio="xMinYMin slice"' in svg             # covers the screen, keeps the union's corner
-        assert svg.count("<rect") == 1 + 7 + 1                           # the ground, seven darker stripes, the union
-        assert svg.count("Z") == 50                                      # the stars, and nothing waving
-        for colour in set(re.findall(r'fill="(#[0-9a-f]{6})"', svg)):
-            r, g, b = (int(colour[i:i + 2], 16) for i in (1, 3, 5))
-            assert r == g == b and r < 0x30                              # near-black greys, no red or blue
-    assert 'viewBox="0 0 1900 1000"' in flag_svg(False) and 'viewBox="0 0 1000 1900"' in flag_svg(True)
-    assert flags_svg().count("<svg") == 2
+def test_bearing_scale_has_a_tick_every_five_degrees():
+    ticks = bearing_ticks()
+    assert [b for b, _ in ticks] == list(range(0, 360, 5))
+    assert all((length > 20) == (b % 30 == 0) for b, length in ticks)   # the long ones mark every 30 degrees
+    assert RING_FIRST < SCALE_R < RING_LAST
 
 
-def test_vertical_flag_keeps_the_union_top_left():
-    svg = flag_svg(True)
-    union = re.search(r'<rect width="([\d.]+)" height="([\d.]+)" fill="' + COLOURS["union"] + '"', svg)
-    assert union and float(union.group(1)) < float(union.group(2))     # 7 stripes wide, 0.76 of the width tall
+def test_backdrop_is_dark_with_one_line_colour():
+    svg = backdrop_svg()
+    r, g, b = (int(COLOURS["ground"][i:i + 2], 16) for i in (1, 3, 5))
+    assert max(r, g, b) < 16                                            # near-black
+    assert set(re.findall(r'stroke="(#[0-9a-f]{6})"', svg)) == {COLOURS["line"]}
+    assert "#b22234" not in svg.lower() and "red" not in svg            # no flag colours
 
 
-def test_bison_badge_is_a_webp_with_alpha():
-    data = BISON.read_bytes()
+def test_badge_is_a_webp_with_alpha():
+    data = LOGO.read_bytes()
     assert data[:4] == b"RIFF" and data[8:12] == b"WEBP" and data[12:16] == b"VP8X"
     assert data[20] & 0x10                                              # it has an alpha channel
     w = 1 + int.from_bytes(data[24:27], "little")
@@ -50,12 +47,11 @@ def test_bison_badge_is_a_webp_with_alpha():
     assert len(data) < 120_000
 
 
-def test_bison_badge_is_shield_shaped():
+def test_badge_stands_clear_of_its_ground():
     Image = pytest.importorskip("PIL.Image")
-    alpha = Image.open(BISON).getchannel("A")
-    assert alpha.getpixel((450, 450)) == 255                            # solid in the middle
-    assert alpha.getpixel((450, 60)) == 255 and alpha.getpixel((450, 850)) == 255   # flat top, down to the point
-    for corner in ((10, 10), (889, 10), (10, 889), (889, 889), (200, 820), (700, 820)):
-        assert alpha.getpixel(corner) == 0                              # clear around it, the bottom tapering in
+    alpha = Image.open(LOGO).getchannel("A")
+    assert alpha.getpixel((450, 400)) > 200                             # the head is solid
+    for corner in ((10, 10), (889, 10), (10, 889), (889, 889)):
+        assert alpha.getpixel(corner) == 0                              # the ground around it is clear
     left, top, right, bottom = alpha.getbbox()
-    assert right - left < bottom - top                                  # taller than it is wide
+    assert right - left > 600 and bottom - top > 600                    # and the badge fills its square
