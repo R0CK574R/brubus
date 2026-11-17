@@ -11,7 +11,7 @@ with nothing to install. Press **▶ Tour** for a guided run through all three m
 operator console tasks the tank, assigns a survey to three drones, re-plans around a roadblock, and a
 watchtower detects and tracks a drone. It is the real page, filmed frame by frame.
 
-**Bruce**, a tracked rover (a matte-black rhomboid tank with a hedgehog coat of steel spikes), finds its way
+The rover is **Bruce**: a tracked, matte-black rhomboid tank with a hedgehog coat of steel spikes. He finds his way
 across three hilly maps (grassland, desert dunes with oasis ponds, and a tropical island) using five pathfinding
 algorithms. Each map opens empty: add any of its 20 preset routes, or set your own start and
 finish, and the rover works out the quickest path over the hills while a follow drone films it.
@@ -142,7 +142,7 @@ Run these from the same terminal, with the virtual environment active.
 
 ## Using the viewer
 
-- **The intro**: the page opens on BRUCE in heavy, flat off-white type, like a poster, over a dark sonar
+- **The intro**: the page opens on BRUBUS in heavy, flat off-white type, like a poster, over a dark sonar
   plot that fills the screen (near-black, with range rings and bearing ticks in the badge's olive), with the
   badge underneath: a steel shark's head inside an olive ring. The word is revealed left to
   right, then wipes away as the badge rushes toward you, and the black lifts as the map flies in. Click, tap

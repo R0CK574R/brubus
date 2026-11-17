@@ -71,4 +71,4 @@ def test_intro_art_is_inlined(tmp_path):
     assert "__BACKDROP__" not in page and "__LOGO_URI__" not in page   # both placeholders were filled
     assert page.count('<svg class="intro-back"') == 1                # one backdrop, cropped to fit any screen
     assert 'src="data:image/webp;base64,' in page                  # the badge travels inside the page
-    assert '<div class="intro-word">BRUCE</div>' in page
+    assert '<div class="intro-word">BRUBUS</div>' in page and '"Bruce · unmanned ground vehicle"' in page   # the project, and the tank's name

@@ -292,7 +292,7 @@ input[type=range] { accent-color: var(--accent); width: 84px; }
 .alt-tape { align-self: center; justify-self: end; width: 78px; height: min(220px, 46%); }
 .hudx canvas { display: block; width: 100%; height: 100%; }
 @media (max-width: 760px) { .hudx { grid-column: 1; } .compass { width: 100%; height: 54px; } .alt-tape { height: min(170px, 40%); width: 64px; } }
-/* The intro: BRUCE in heavy, flat off-white type, like a poster, over a sonar plot (near-black, range rings and bearing
+/* The intro: BRUBUS in heavy, flat off-white type, like a poster, over a sonar plot (near-black, range rings and bearing
    ticks in the badge's olive) that fills the screen; under it the badge, a steel shark's head inside an olive ring.
    The word is revealed left to right behind a hard edge, the badge grows toward the viewer, then the word wipes away,
    the badge rushes past and the black lifts. The wipe is a mask moved by one registered property (--reach); without
@@ -480,10 +480,10 @@ body.ops-on .hud { display: none; }
 /* ops:css:end */
 </style>
 
-<div class="intro" id="intro" role="img" aria-label="BRUCE">
+<div class="intro" id="intro" role="img" aria-label="BRUBUS">
   <!--__BACKDROP__-->
   <div class="intro-stack">
-    <div class="intro-sign"><div class="intro-word">BRUCE</div></div>
+    <div class="intro-sign"><div class="intro-word">BRUBUS</div></div>
     <img class="intro-logo" id="intro-logo" src="__LOGO_URI__" width="900" height="900" alt="" draggable="false">
   </div>
   <div class="intro-skip" aria-hidden="true">Click, tap or press a key to skip</div>
@@ -659,7 +659,7 @@ body.ops-on .hud { display: none; }
 <!-- ops:html:begin -->
 <div class="ops" id="ops" hidden>
   <header class="board ops-top" id="ops-top">
-    <div class="ops-brand"><b>BRUCE</b><span>Operator console</span></div>
+    <div class="ops-brand"><b>BRUBUS</b><span>Operator console</span></div>
     <div class="ops-seg" id="ops-maps" role="group" aria-label="Map"></div>
     <div class="ops-clock" title="Mission time (simulated), in UTC, and time since the mission began"><span class="ops-pill live" id="ops-state">Live</span><output id="ops-utc">—</output><output id="ops-tplus">T+00:00</output></div>
     <div class="ops-tools">
@@ -735,8 +735,8 @@ const CORE_B64 = "__CORE_WASM__";   // the C++ core as WebAssembly, in base64 (r
   const narrow = () => innerWidth <= 760;
   const tapWord = coarse ? "Tap" : "Click";
 
-  // ---------------------------------------------------------------- the intro: BRUCE over a sonar plot
-  // The page opens on the word BRUCE in flat off-white poster type over a dark sonar plot, with the steel shark
+  // ---------------------------------------------------------------- the intro: BRUBUS over a sonar plot
+  // The page opens on the word BRUBUS in flat off-white poster type over a dark sonar plot, with the steel shark
   // badge underneath; the word wipes away, the badge rushes past and the black lifts. Time stands still
   // underneath until then (the map is built and drawn meanwhile, which hides the loading), so the opening fly-in, a
   // tour or a link's drive starts as the black lifts. A click, tap or key skips it; ?intro=0 turns it off.
@@ -5772,7 +5772,8 @@ void main() {
     if (live && ops.logAt) { ops.logAt = null; OE.log.scrollTop = OE.log.scrollHeight; }
     opsDetail(st);
   }
-  const KIND = { ugv: "Friendly · unmanned ground vehicle", uav: "Friendly · unmanned aircraft", tower: "Hostile · ground sensor" };
+  const KIND = { ugv: "Bruce · unmanned ground vehicle",   // the tank has a name
+                  uav: "Friendly · unmanned aircraft", tower: "Hostile · ground sensor" };
   function opsSurveyPanel() {                       // the right-hand panel while a survey is planned: the points, and who takes which
     const sv = ops.survey, pl = sv.plan, free = opsIdle().length;
     const sig = "survey|" + sv.points.map(q => opsGrid(q.cell)).join() + "|" + (pl ? pl.pairs.map(q => q.v.id + q.hold).join() : "") + "|" + sv.msg + "|" + free;
@@ -6111,7 +6112,7 @@ ${ops.vehs.map(v => `<li><b>${v.id}</b>: ${v.dist.toFixed(0)} m travelled, ${see
 <h2>In view and tracked</h2><img alt="When each vehicle was in a watchtower's view, and when the towers held a track on it" src="${ch.toDataURL("image/png")}"><p class="meta" style="margin-top:6px;font-size:12px">Amber: in a watchtower's view, where each look may detect it. Red: the towers held a confirmed track. A look detects with a probability that falls with range (${pctOf(pdAt(8))} at 8 m, ${pctOf(pdAt(16))} at 16 m, ${pctOf(pdAt(24))} at 24 m).</p>
 <h2>Tasks</h2><div class="scroll">${ops.tasks.length ? `<table><thead><tr><th>ID</th><th>Entity</th><th>To</th><th>Plan</th><th>Limits</th><th>Planned time / risk</th><th>Actual time / detections</th><th>Re-plans</th><th>Outcome</th></tr></thead><tbody>${rows}</tbody></table>` : "<p class=\"meta\">No tasks were sent.</p>"}</div>
 <h2>Event log</h2><div class="scroll"><table><thead><tr><th>UTC</th><th>Mission</th><th>Source</th><th>Event</th></tr></thead><tbody>${evs}</tbody></table></div>
-<footer>Simulated data from the Bruce robot navigation simulator. Times are mission time; positions are metres east and north on the map grid.</footer></main></body></html>`;
+<footer>Simulated data from the brubus robot navigation simulator. Times are mission time; positions are metres east and north on the map grid.</footer></main></body></html>`;
   }
   let opsReportDoc = "";
   function opsReport() {
