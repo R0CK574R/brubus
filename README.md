@@ -447,14 +447,14 @@ per goal, each at least 20 s away) and counts the cells each search takes off it
 | Dijkstra (no estimate) | 3,792 | quickest |
 | A\* with the straight-line estimate (today's) | 1,329 | quickest |
 | A\* with the climb-aware estimate (adds the least time the climb to the goal takes) | 1,168 | quickest |
-| Weighted A\* (w = 2) | 214 | 6.6% slower |
+| Weighted A\* (w = 2) | 214 | 6.6% slower on average |
 | A\* with the true time left (a perfect estimate) | 47: the route itself | quickest |
 
 Today's estimate is on average 67% of the true time, so A\* searches 24 times as many cells as the route it
 finds. The best hand-made estimate that is never too high, the climb-aware one, only gets to 71% and saves
-12%. Weighted A\* searches far less by trusting its estimate more, but its routes come out 6.6% slower. A
-perfect estimate would search only the route. That gap is what a learned estimate aims at: searching close to
-the route's own cells, with routes kept within a stated bound of the quickest.
+12%. Weighted A\* searches far less by trusting its estimate more, but its routes come out 6.6% slower on
+average. A perfect estimate would search only the route. That gap is what a learned estimate aims at:
+searching close to the route's own cells, with routes kept within a stated bound of the quickest.
 
 ![One test map (grassland-1009): on the left, the label, the true drive time from every cell to the goal, shaped by the hills and the slow ground; in the middle, today's estimate, the straight-line distance, in rings that ignore them; on the right, the 5,734 cells A* searched for a 101-cell route, against the 101 a perfect estimate would search](docs/learn-labels.png)
 
