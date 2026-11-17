@@ -16,10 +16,14 @@
     python main.py route --map desert --preset 19 --engine cpp   # the same, computed by the C++ core
     python main.py export               # map files for the C++ tool (cpp/build/robotnav route maps/desert.map ...)
     python main.py parity               # the C++ core against the Python reference: identical results, and the speed-up
+    python main.py dataset build        # the learning data: 450 maps labelled with the true time to their goals
+    python main.py dataset check        # checksums, splits, and labels re-derived by the Python reference
+    python main.py dataset baseline     # how much A* searches with today's estimate, and with a perfect one
 """
 from __future__ import annotations
 
 import argparse
+import os
 import re
 from pathlib import Path
 
@@ -311,6 +315,44 @@ def _secs(ms: float) -> str:
     return f"{ms / 1e3:.2f} s" if ms >= 1e3 else f"{ms:.0f} ms" if ms >= 10 else f"{ms:.1f} ms"
 
 
+def dataset(args) -> None:
+    """The learning data set (robotnav/learn): build it, check it, or measure the baseline on it."""
+    import json
+    from robotnav.learn import baseline, dataset as ds
+
+    folder = Path(args.dir)
+    if args.action == "build":
+        command = (f"python main.py dataset build --per-theme {args.per_theme} --goals {args.goals} "
+                   f"--size {args.size}")
+        print(f"Building {args.per_theme} maps per theme, {args.goals} goals each, into {folder}")
+        m = ds.build(folder, per_theme=args.per_theme, goals=args.goals, size=args.size, jobs=args.jobs,
+                     engine=args.engine, command=command)
+        print(f"{len(m['maps'])} maps with {sum(m['labelled'].values()):,} labelled (cell, goal) pairs, "
+              f"labelled by {m['engine']} in {m['build_seconds']:.0f} s")
+        for sp in ds.SPLITS:
+            per = ", ".join(f"{th} {n}" for th, n in m["counts"][sp].items())
+            print(f"  {sp:<6} {per}  ({m['labelled'][sp]:,} pairs)")
+        print(f"manifest: {folder / 'manifest.json'}  (sha256 {m['sha256'][:16]}...)")
+    elif args.action == "check":
+        problems = ds.check(folder, audit=args.audit)
+        m = ds.load_manifest(folder)
+        same = sum(ds.rebuilt_from_seed(folder, e) for e in m["maps"][:: max(1, len(m["maps"]) // 6)])
+        print(f"rebuilt from their seeds on this machine: {same} of {len(m['maps'][:: max(1, len(m['maps']) // 6)])} "
+              "sampled maps bit-identical")
+        for p_ in problems:
+            print("  PROBLEM:", p_)
+        if problems:
+            raise SystemExit(1)
+        print("all good")
+    else:
+        rows = baseline.measure(folder, split=args.split, starts=args.starts, engine=args.engine)
+        summary = baseline.summarize(rows)
+        print(baseline.table(summary))
+        if args.out:
+            Path(args.out).write_text(json.dumps(dict(split=args.split, summary=summary, trips=rows), indent=1))
+            print(f"saved {args.out}")
+
+
 def parity(args) -> None:
     """The C++ core against the Python reference on the preset trips: identical results, and how much faster."""
     from robotnav import cpp
@@ -456,6 +498,20 @@ def main() -> None:
     pa.add_argument("--size", type=int, default=96)
     pa.add_argument("--seed", type=int, default=3)
     pa.set_defaults(func=parity)
+
+    da = sub.add_parser("dataset", help="the learning data: build, check, or measure the baseline A* has to beat")
+    da.add_argument("action", choices=["build", "check", "baseline"])
+    da.add_argument("--dir", default="data/terrain-v1", help="where the data set lives (default data/terrain-v1)")
+    da.add_argument("--per-theme", type=int, default=150, help="maps per theme (default 150)")
+    da.add_argument("--goals", type=int, default=8, help="goals per map (default 8)")
+    da.add_argument("--size", type=int, default=96)
+    da.add_argument("--jobs", type=int, default=os.cpu_count() or 1, help="maps built at once")
+    da.add_argument("--engine", choices=["auto", "cpp", "python"], default="auto")
+    da.add_argument("--audit", type=int, default=3, help="maps per split whose labels are re-derived (check)")
+    da.add_argument("--split", choices=["train", "val", "test"], default="test", help="maps to measure (baseline)")
+    da.add_argument("--starts", type=int, default=4, help="trips per goal (baseline)")
+    da.add_argument("--out", help="save the baseline's numbers as JSON")
+    da.set_defaults(func=dataset)
 
     eb = sub.add_parser("explore-bench", help="sensor drives on every preset: time lost, D* Lite vs A* from scratch")
     eb.add_argument("--ranges", type=float, nargs="+", default=[5.0, 10.0, 20.0], help="sensor ranges in metres")

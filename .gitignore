@@ -6,3 +6,5 @@ venv/
 .DS_Store
 cpp/build/
 build/
+# the learning data set: rebuilt from seeds (python main.py dataset build), not kept in git
+data/

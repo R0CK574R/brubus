@@ -55,6 +55,7 @@ From Python, every command that plans can use the C++ core instead (`--engine cp
 | `include/robotnav/replan.hpp`, `src/replan.cpp` | D\* Lite (the optimised version), the rover's belief, the sensor drive with roadblocks, the A\*-from-scratch baseline |
 | `include/robotnav/airspace.hpp`, `src/airspace.cpp` | Flight levels, watchtowers and their lines of sight, 3-D A\* for the stealth and direct flights |
 | `include/robotnav/mapio.hpp`, `src/mapio.cpp` | Map files (the format is described in the header) |
+| `include/robotnav/fields.hpp`, `src/fields.cpp` | For the learning work: the true drive time from every cell to a goal (Dijkstra backwards, the labels of the data set) and A\* guided by a table of estimates |
 | `src/cli.cpp` | The `robotnav` tool |
 | `bindings/module.cpp` | The pybind11 module `robotnav_cpp` (`robotnav/cpp.py` wraps it) |
 | `tests/test_core.cpp` | Unit tests |

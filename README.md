@@ -31,6 +31,10 @@ in Python (the reference), in C++ (a core 27 to 68 times faster, with a command-
 module) and in the browser's JavaScript. All three give the same routes, search the same cells and
 report the same times, to the last bit.
 
+The machine-learning work has started ([Learning from the planner](#learning-from-the-planner)): 450 new maps
+labelled with the exact drive time from every cell to their goals, split by map, and the numbers a learned
+estimate for A\* has to beat. There is no trained model yet; that is the next stage.
+
 ![Watch the search on the desert: Dijkstra (left) spreads out evenly while A* (right) heads for the finish; both find the same 2:25 route, but A* searches 2.5 times fewer cells](docs/search.gif)
 
 ## Show it to someone
@@ -134,7 +138,10 @@ Run these from the same terminal, with the virtual environment active.
 | `python main.py parity` | The C++ core against Python on all 60 preset trips: identical results, and how much faster (about 3 minutes) |
 | `python main.py explore-bench` | Every preset at 5, 10 and 20 m: time lost to not knowing, D\* Lite's work against A\* from scratch (about a minute) |
 | `python main.py terrain-bench` | Hills, slope limit and obstacle sweep (about 25 seconds) |
-| `python -m pytest -q` | Run the 252 tests (42 of them hold the C++ core against Python; skipped until it's built) |
+| `python main.py dataset build` | The [learning data](#learning-from-the-planner): 450 maps labelled with the true time to their goals (about 10 seconds with the C++ core) |
+| `python main.py dataset check` | Checksums, the split by map, and labels re-derived by the Python reference |
+| `python main.py dataset baseline` | How many cells A\* searches with today's estimate, a better hand-made one, and a perfect one |
+| `python -m pytest -q` | Run the 278 tests (46 of them hold the C++ core against Python; skipped until it's built) |
 | `python main.py demo`, `python main.py benchmark` | The original 2D grid version |
 
 `python main.py course` writes the viewer twice: `output/course_3d.html` to open yourself, and
@@ -408,6 +415,53 @@ towers think it is next to where it really is.
 
 The console's planning and tracking run in the browser; the Python module is the reference for the
 sensing arithmetic, not a second planner, and the C++ core doesn't have these yet.
+
+## Learning from the planner
+
+Stage 1 of 4 of the machine-learning work: the data, and the numbers a learned model has to beat.
+There is no model yet. The plan, in order: a small neural network that estimates the drive time left to the
+goal from any cell, used as A\*'s guide (stage 2); a learned risk model in place of the Monte Carlo trials
+(stage 3); and reinforcement learning, aimed at timing a crossing past the towers' looks (stage 4). The
+classical planners stay as they are, exact and checked bit for bit; anything learned sits beside them and is
+judged against them.
+
+**The data.** `python main.py dataset build` makes 450 new maps (150 per theme, seeds 1000 to 1149, from the
+same generator as the viewer's maps) and labels each with the exact drive time from every cell to 8 goals
+picked at random on it: Dijkstra run backwards from each goal, in the C++ core, about 10 seconds in all. That
+is 26.4 million labelled (cell, goal) pairs and 121 MB, kept out of git and rebuilt from the seeds.
+
+- **Split by map, never by cell.** A map's seed decides its split (80% train, 10% validation, 10% test), so a
+  model is always tested on terrain it has never seen; it can also be trained on two themes and tested on the
+  third. The viewer's three maps are never in the data, so they stay a fair showcase.
+- **Exact labels, checked.** The C++ fields equal the Python reference's bit for bit (in the tests), and
+  `python main.py dataset check` verifies every file's checksum and re-derives fields from the stored maps with
+  the Python reference, which must match the stored labels exactly. Building again gives byte-identical data on
+  the same machine. (On another machine, NumPy's math library may round the generated heights differently in
+  the last bit; the labels are still exact for whatever maps it builds.)
+
+**The baseline.** `python main.py dataset baseline` plans 1,440 trips on the 45 test maps (4 random starts
+per goal, each at least 20 s away) and counts the cells each search takes off its frontier:
+
+| Planner and estimate | Cells searched (mean) | Routes |
+|---|---:|---|
+| Dijkstra (no estimate) | 3,792 | quickest |
+| A\* with the straight-line estimate (today's) | 1,329 | quickest |
+| A\* with the climb-aware estimate (adds the least time the climb to the goal takes) | 1,168 | quickest |
+| Weighted A\* (w = 2) | 214 | 6.6% slower |
+| A\* with the true time left (a perfect estimate) | 47: the route itself | quickest |
+
+Today's estimate is on average 67% of the true time, so A\* searches 24 times as many cells as the route it
+finds. The best hand-made estimate that is never too high, the climb-aware one, only gets to 71% and saves
+12%. Weighted A\* searches far less by trusting its estimate more, but its routes come out 6.6% slower. A
+perfect estimate would search only the route. That gap is what a learned estimate aims at: searching close to
+the route's own cells, with routes kept within a stated bound of the quickest.
+
+![One test map (grassland-1009): on the left, the label, the true drive time from every cell to the goal, shaped by the hills and the slow ground; in the middle, today's estimate, the straight-line distance, in rings that ignore them; on the right, the 5,734 cells A* searched for a 101-cell route, against the 101 a perfect estimate would search](docs/learn-labels.png)
+
+One of the longer trips on a test map; across all the test trips A\* searched 24 times the route, on average.
+The code is in `robotnav/learn/` (the labels and A\* with a table of estimates in Python, the data set, the
+baseline) and `cpp/src/fields.cpp`; `tests/test_learn.py` holds it all to account; `tools/learn_figure.py`
+draws the picture.
 
 ## The rover
 
@@ -711,13 +765,15 @@ the C++ tests under AddressSanitizer and UndefinedBehaviorSanitizer.
 | `tools/shark_logo.py` | Prepares the badge (`robotnav/assets/logo.webp`) from the logo's artwork: clears its black ground so the backdrop shows around it, and saves a 900 px WebP |
 | `robotnav/viewer3d.html` | Three.js viewer: maps, sky, water, contour lines, palms and trees, planners, D\* Lite and the air route in the browser, watching the search, the sensor drive, the drone and its watchtowers, the operator console (entities, tasking, timeline, report, command bar), MIL-STD-2525 symbols and callsign tags, preset paths, picking, drawing, drone camera and its compass and altitude read-outs, the spiked tank, the tour, links to a view, the frame-rate benchmark |
 | `cpp/` | The C++ core: planners, D\* Lite, the air route, the detection field and Monte Carlo trials on a thread pool, map files, the `robotnav` tool, unit tests, the pybind11 module and the WebAssembly build (`cpp/wasm/`, `tools/build_wasm.sh`) ([cpp/README.md](cpp/README.md)) |
+| `robotnav/learn/` | The learning work: the labels (true time to the goal, A\* with a table of estimates, the climb-aware estimate), building and checking the data set, and the baseline |
+| `tools/learn_figure.py` | Draws the picture of the labels and the search in the learning section |
 | `robotnav/assign.py` | Who goes where: the Hungarian method for a survey's assignment, and the nearest-first rule it is compared with |
 | `robotnav/cpp.py`, `parity.py`, `mapfile.py` | Run the C++ core from Python, compare it with the reference, and write the map files it reads |
 | `maps/` | The live demo's three maps as map files, for the C++ tool |
 | `docs/` | The live demo served by GitHub Pages (`index.html`, built by `python main.py course`), its preview image, and the README's pictures |
 | `robotnav/terrain_bench.py` | Sweeps hill height, slope limit and obstacle density |
 | `robotnav/grid.py`, `visualize.py`, `benchmark.py` | Original 2D grid world, plots and benchmark |
-| `tests/` | 252 checks: optimality on every map, the shortest route, all 20 presets per map, the desert's oases, grade limit, water, route rules, D\* Lite (legal routes, optimal repairs, roadblocks), the air route (towers, lines of sight, hiding behind a ridge), the C++ core against Python, map rebuilds, the command line, the page head and link previews, the survey's assignment against every pairing, the console look (fonts, map symbols, tags, read-outs), the intro's flag and logo |
+| `tests/` | 278 checks: the learning data's exact labels and split by map, optimality on every map, the shortest route, all 20 presets per map, the desert's oases, grade limit, water, route rules, D\* Lite (legal routes, optimal repairs, roadblocks), the air route (towers, lines of sight, hiding behind a ridge), the C++ core against Python, map rebuilds, the command line, the page head and link previews, the survey's assignment against every pairing, the console look (fonts, map symbols, tags, read-outs), the intro's flag and logo |
 
 ## Findings
 
@@ -795,4 +851,4 @@ The air route, over each map's 20 preset trips (medians; `python main.py fly` fo
 
 - Wrap the C++ planners as a ROS 2 Nav2 planner plugin
 - Moving obstacles, and a rover sensor blocked by hills (the towers already use line of sight)
-- A smarter heuristic that counts the climb to the destination's elevation
+- The learned estimate for A\* (stage 2 of [Learning from the planner](#learning-from-the-planner)); a hand-made climb-aware one is already measured there and saves 12%

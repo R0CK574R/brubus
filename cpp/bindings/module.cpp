@@ -5,6 +5,7 @@
 #include <pybind11/stl.h>
 
 #include "robotnav/airspace.hpp"
+#include "robotnav/fields.hpp"
 #include "robotnav/mapio.hpp"
 #include "robotnav/planners.hpp"
 #include "robotnav/replan.hpp"
@@ -118,6 +119,26 @@ PYBIND11_MODULE(robotnav_cpp, mod) {
     mod.def("shortest_route", &shortest_route, py::arg("map"), py::arg("start"), py::arg("goal"), release);
     mod.def("plan_pair", &plan_pair, py::arg("map"), py::arg("start"), py::arg("goal"), release,
             "BFS, Dijkstra, A*, Weighted A* and Greedy from start to goal.");
+    mod.def("cost_to_go",
+            [](const Map& m, int goal) {
+                std::vector<double> d;
+                {
+                    py::gil_scoped_release unlocked;
+                    d = cost_to_go(m, goal);
+                }
+                return grid(d, {m.rows, m.cols});
+            },
+            py::arg("map"), py::arg("goal"), "Fewest seconds from every cell to the goal (inf where it can't be reached).");
+    mod.def("astar_table",
+            [](const Map& m, int start, int goal, const Grid2D& h, double w, const std::string& name) {
+                const std::vector<double> table = flat<double>(h, m.rows, m.cols, "h");
+                py::gil_scoped_release unlocked;
+                return astar_table(m, start, goal, table, w, name);
+            },
+            py::arg("map"), py::arg("start"), py::arg("goal"), py::arg("h"), py::arg("w") = 1.0, py::arg("name") = "A* (table)",
+            "A* with h[row, col] as the estimate of the time left (times w).");
+    mod.def("octile_table", [](const Map& m, int goal) { return grid(octile_table(m, goal), {m.rows, m.cols}); },
+            py::arg("map"), py::arg("goal"));
     mod.def("path_stats", [](const Map& m, const std::vector<int>& path) {
         const PathStats s = path_stats(m, path);
         py::dict d;

@@ -174,3 +174,16 @@ def monte_carlo(cmap, field, route, w: float, trials: int, seed: int = 20261111,
                 threads: int = 1) -> dict:
     """`trials` runs of a plan (a robotnav_cpp.RiskRoute) on `threads` worker threads (0: all the machine has)."""
     return core().monte_carlo(cmap, field, route, w, trials, seed, arrive_by, threads)
+
+
+def cost_to_go(t: Terrain, goal, cmap=None) -> np.ndarray:
+    """robotnav.learn.labels.cost_to_go, in C++: the same field, to the last bit."""
+    return core().cost_to_go(cmap if cmap is not None else to_cpp(t), _flat(t, goal))
+
+
+def astar_table(t: Terrain, start, goal, h, w: float = 1.0, name: str = "A* (table)", cmap=None) -> SearchResult:
+    """robotnav.learn.labels.astar_table, in C++: the same search, cell for cell."""
+    r = core().astar_table(cmap if cmap is not None else to_cpp(t), _flat(t, start), _flat(t, goal),
+                           np.asarray(h, dtype=float), float(w), name)
+    return _result(r, t.cols)
+

@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "robotnav/airspace.hpp"
+#include "robotnav/fields.hpp"
 #include "robotnav/mapio.hpp"
 #include "robotnav/planners.hpp"
 #include "robotnav/replan.hpp"
@@ -129,6 +130,51 @@ void test_hills_and_mud_shape_the_quickest_route() {
     CHECK(blind.cost == m.path_cost(blind.path));                   // its cost is the time it really takes
     const PathStats st = path_stats(m, blind.path);
     CHECK(st.distance_m == 8.0 && st.rough_m == 1.0 && st.climb_m == 0.0);
+}
+
+void test_cost_to_go_and_table_astar() {
+    // Hills, mud and a wall with a gap: the field from the goal must give, for every cell, the time of the quickest
+    // route from that cell (Dijkstra forward), and A* steered by a table must behave like A* with the same estimate.
+    Map m = flat_map(12, 12);
+    for (int r = 0; r < 12; ++r)
+        for (int c = 0; c < 12; ++c) m.height[m.at(r, c)] = 0.35 * std::sin(0.7 * r) * std::cos(0.5 * c) + 0.04 * r;
+    for (int c = 0; c < 12; ++c)
+        if (c != 9) m.obstacle[m.at(6, c)] = ROCK;
+    for (int r = 0; r < 4; ++r) m.surface[m.at(r, 5)] = 1;
+    m.obstacle[m.at(10, 10)] = ROCK;                                   // and a lone rock
+    const int goal = m.at(1, 2);
+    const std::vector<double> field = cost_to_go(m, goal);
+    CHECK(field[goal] == 0.0);
+    CHECK(field[m.at(6, 0)] == kInf);                                  // a rock: nothing to drive from
+    int compared = 0;
+    for (int s = 0; s < m.size(); ++s) {
+        if (m.blocked(s)) continue;
+        const SearchResult d = dijkstra(m, s, goal);
+        CHECK(d.found() == (field[s] < kInf));
+        if (d.found()) {
+            CHECK_NEAR(field[s], d.cost, 1e-12 * (1.0 + d.cost));      // the same sums, added the other way round
+            ++compared;
+        }
+    }
+    CHECK(compared > 100);
+    const int s = m.at(11, 0);
+    const SearchResult a = astar(m, s, goal), t = astar_table(m, s, goal, octile_table(m, goal));
+    CHECK(t.path == a.path && t.cost == a.cost && t.nodes_expanded == a.nodes_expanded && t.explored == a.explored);
+    const SearchResult best = astar_table(m, s, goal, field);
+    CHECK(best.found() && legal_route(m, best.path));
+    CHECK_NEAR(best.cost, a.cost, 1e-12 * a.cost);                     // the true field is a perfect estimate ...
+    CHECK(best.nodes_expanded < a.nodes_expanded);                     // ... and searches less
+    CHECK(best.nodes_expanded <= static_cast<long>(best.path.size()) + 2);
+    std::vector<double> zero(static_cast<std::size_t>(m.size()), 0.0);
+    const SearchResult dj = dijkstra(m, s, goal), z = astar_table(m, s, goal, zero);
+    CHECK(z.cost == dj.cost && z.nodes_expanded == dj.nodes_expanded);  // no estimate: Dijkstra
+    bool threw = false;
+    try {
+        cost_to_go(m, m.at(6, 0));
+    } catch (const std::exception&) {
+        threw = true;
+    }
+    CHECK(threw);
 }
 
 void test_python_rounding() {
@@ -327,6 +373,7 @@ int main() {
         {"no squeezing between obstacles", test_no_squeezing_between_obstacles},
         {"grade limit and uphill time", test_grade_limit_and_uphill_time},
         {"hills and mud shape the quickest route", test_hills_and_mud_shape_the_quickest_route},
+        {"cost to go and table A*", test_cost_to_go_and_table_astar},
         {"Python rounding", test_python_rounding},
         {"sensor disk", test_sensor_disk},
         {"D* Lite drives", test_dstar_lite_drives},
