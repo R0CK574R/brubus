@@ -6,6 +6,8 @@
 
 #include "robotnav/airspace.hpp"
 #include "robotnav/fields.hpp"
+#include "robotnav/landmarks.hpp"
+#include "robotnav/learned.hpp"
 #include "robotnav/mapio.hpp"
 #include "robotnav/planners.hpp"
 #include "robotnav/replan.hpp"
@@ -139,6 +141,79 @@ PYBIND11_MODULE(robotnav_cpp, mod) {
             "A* with h[row, col] as the estimate of the time left (times w).");
     mod.def("octile_table", [](const Map& m, int goal) { return grid(octile_table(m, goal), {m.rows, m.cols}); },
             py::arg("map"), py::arg("goal"));
+
+    py::class_<Heuristic>(mod, "Heuristic", "The learned estimate of the time left to the goal (robotnav/assets/heuristic.txt).")
+        .def(py::init([](const std::string& text) { return parse_heuristic(text); }), py::arg("text"))
+        .def_readonly("note", &Heuristic::note)
+        .def_property_readonly("sizes", [](const Heuristic& h) {
+            std::vector<int> s{kFeatures};
+            for (const Dense& L : h.layers) s.push_back(L.out);
+            return s;
+        })
+        .def("estimate", &Heuristic::estimate, py::arg("map"), py::arg("cell"), py::arg("goal"))
+        .def("output", [](const Heuristic& h, const std::vector<double>& x) {
+            if (x.size() != static_cast<std::size_t>(kFeatures)) throw std::invalid_argument("expected 16 inputs");
+            std::array<double, kFeatures> a{};
+            std::copy(x.begin(), x.end(), a.begin());
+            return h.output(a);
+        });
+    mod.attr("FEATURES") = kFeatures;
+    mod.def("features",
+            [](const Map& m, int goal, const std::vector<int>& cells) {
+                py::array_t<double> x({static_cast<py::ssize_t>(cells.size()), static_cast<py::ssize_t>(kFeatures)});
+                py::array_t<double> climb(static_cast<py::ssize_t>(cells.size()));
+                double* xd = x.mutable_data();
+                double* cd = climb.mutable_data();
+                {
+                    py::gil_scoped_release unlocked;
+                    for (std::size_t i = 0; i < cells.size(); ++i) {
+                        const Features f = features(m, cells[i], goal);
+                        cd[i] = f.climb;
+                        std::copy(f.x.begin(), f.x.end(), xd + i * kFeatures);
+                    }
+                }
+                return py::make_tuple(x, climb);
+            },
+            py::arg("map"), py::arg("goal"), py::arg("cells"), "The network's inputs (n x 16) and the climb-aware estimate (n).");
+    mod.def("learned_table",
+            [](const Heuristic& h, const Map& m, int goal, double w) {
+                std::vector<double> t;
+                {
+                    py::gil_scoped_release unlocked;
+                    t = learned_table(h, m, goal, w);
+                }
+                return grid(t, {m.rows, m.cols});
+            },
+            py::arg("model"), py::arg("map"), py::arg("goal"), py::arg("w") = kInf);
+    mod.def("astar_reopen",
+            [](const Map& m, int start, int goal, const Grid2D& h, const std::string& name) {
+                const std::vector<double> table = flat<double>(h, m.rows, m.cols, "h");
+                py::gil_scoped_release unlocked;
+                return astar_reopen(m, start, goal, table, name);
+            },
+            py::arg("map"), py::arg("start"), py::arg("goal"), py::arg("h"), py::arg("name") = "A* (re-expanding)");
+    py::class_<Landmarks>(mod, "Landmarks", "A* with landmarks: the landmarks of one map and their fields.")
+        .def_readonly("cells", &Landmarks::cells)
+        .def_readonly("setup_ms", &Landmarks::setup_ms)
+        .def_property_readonly("from_", [](const Landmarks& lm) {
+            std::vector<double> flat_;
+            for (const auto& f : lm.from) flat_.insert(flat_.end(), f.begin(), f.end());
+            return grid(flat_, {static_cast<py::ssize_t>(lm.from.size()), static_cast<py::ssize_t>(lm.from.empty() ? 0 : lm.from[0].size())});
+        })
+        .def_property_readonly("to", [](const Landmarks& lm) {
+            std::vector<double> flat_;
+            for (const auto& f : lm.to) flat_.insert(flat_.end(), f.begin(), f.end());
+            return grid(flat_, {static_cast<py::ssize_t>(lm.to.size()), static_cast<py::ssize_t>(lm.to.empty() ? 0 : lm.to[0].size())});
+        });
+    mod.def("cost_from", [](const Map& m, int source) { return grid(cost_from(m, source), {m.rows, m.cols}); },
+            py::arg("map"), py::arg("source"));
+    mod.def("largest_region", [](const Map& m) { return bool_grid(largest_region(m), {m.rows, m.cols}); }, py::arg("map"));
+    mod.def("pick_landmarks", &pick_landmarks, py::arg("map"), py::arg("k") = 8, release);
+    mod.def("landmark_table", [](const Map& m, const Landmarks& lm, int goal) { return grid(landmark_table(m, lm, goal), {m.rows, m.cols}); },
+            py::arg("map"), py::arg("landmarks"), py::arg("goal"));
+    mod.def("astar_landmarks", &astar_landmarks, py::arg("map"), py::arg("landmarks"), py::arg("start"), py::arg("goal"), release);
+    mod.def("astar_learned", &astar_learned, py::arg("map"), py::arg("start"), py::arg("goal"), py::arg("model"),
+            py::arg("w") = kInf, py::arg("name") = "A* (learned)", release);
     mod.def("path_stats", [](const Map& m, const std::vector<int>& path) {
         const PathStats s = path_stats(m, path);
         py::dict d;

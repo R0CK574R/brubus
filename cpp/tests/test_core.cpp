@@ -9,6 +9,8 @@
 
 #include "robotnav/airspace.hpp"
 #include "robotnav/fields.hpp"
+#include "robotnav/landmarks.hpp"
+#include "robotnav/learned.hpp"
 #include "robotnav/mapio.hpp"
 #include "robotnav/planners.hpp"
 #include "robotnav/replan.hpp"
@@ -171,6 +173,70 @@ void test_cost_to_go_and_table_astar() {
     bool threw = false;
     try {
         cost_to_go(m, m.at(6, 0));
+    } catch (const std::exception&) {
+        threw = true;
+    }
+    CHECK(threw);
+}
+
+Map hilly_map() {
+    Map m = flat_map(14, 14);
+    for (int r = 0; r < 14; ++r)
+        for (int c = 0; c < 14; ++c) m.height[m.at(r, c)] = 0.4 * std::sin(0.6 * r) * std::cos(0.45 * c) + 0.03 * c;
+    for (int c = 2; c < 14; ++c) m.obstacle[m.at(7, c)] = ROCK;      // a wall with a gap on the left
+    for (int r = 0; r < 5; ++r) m.surface[m.at(r, 6)] = 1;            // and a strip of mud
+    return m;
+}
+
+void test_landmarks() {
+    const Map m = hilly_map();
+    const Landmarks lm = pick_landmarks(m, 5);
+    CHECK(lm.cells.size() == 5 && lm.from.size() == 5 && lm.to.size() == 5);
+    const int goal = m.at(1, 12);
+    const std::vector<double> truth = cost_to_go(m, goal), h = landmark_table(m, lm, goal);
+    bool below = true, consistent = true;
+    for (int v = 0; v < m.size(); ++v) {
+        if (m.blocked(v)) continue;
+        if (truth[v] < kInf && h[v] > truth[v] * (1 + 1e-12)) below = false;
+        m.neighbours(v, [&](int n, double step) { consistent = consistent && h[v] <= step + h[n] + 1e-9; });
+    }
+    CHECK(below && consistent);                                         // never too high, and consistent
+    for (int s : {m.at(13, 13), m.at(12, 0), m.at(8, 9)}) {
+        const SearchResult a = astar(m, s, goal), b = astar_landmarks(m, lm, s, goal);
+        CHECK(b.found() && legal_route(m, b.path));
+        CHECK_NEAR(b.cost, a.cost, 1e-12 * a.cost);                    // still the quickest route ...
+        CHECK(b.nodes_expanded <= a.nodes_expanded);                    // ... searching no more cells
+    }
+    const std::vector<double> d = cost_from(m, lm.cells[0]);
+    CHECK(d[lm.cells[0]] == 0.0);
+    CHECK_NEAR(d[goal], dijkstra(m, lm.cells[0], goal).cost, 1e-12 * d[goal]);
+}
+
+void test_learned_estimate() {
+    // A network that outputs 0.25 everywhere (all weights 0, last bias 0.25): the estimate is 1.25 x climb-aware.
+    std::string text = "# a test network\nbrubus-heuristic 1\ninputs 16\nmean";
+    for (int i = 0; i < 16; ++i) text += " 0";
+    text += "\nscale";
+    for (int i = 0; i < 16; ++i) text += " 1";
+    text += "\nlayer 16 2\n";
+    for (int i = 0; i < 32; ++i) text += "0 ";
+    text += "0 0\nlayer 2 1\n0 0 0.25\nend\n";
+    const Heuristic h = parse_heuristic(text);
+    CHECK(h.layers.size() == 2 && h.note == "a test network\n");
+    const Map m = hilly_map();
+    const int goal = m.at(1, 12), s = m.at(12, 1);
+    const Features f = features(m, s, goal);
+    CHECK(f.climb > 0.0 && h.estimate(m, s, goal) == f.climb * 1.25);
+    CHECK(features(m, goal, goal).climb == 0.0 && h.estimate(m, goal, goal) == 0.0);
+    const std::vector<double> capped = learned_table(h, m, goal, 1.1);
+    CHECK(capped[s] == 1.1 * f.climb);                                  // the cap holds it to 1.1 x climb-aware
+    const SearchResult a = astar_reopen(m, s, goal, octile_table(m, goal)), b = astar(m, s, goal);
+    CHECK(a.path == b.path && a.nodes_expanded == b.nodes_expanded);    // consistent estimate: plain A*
+    const SearchResult l = astar_learned(m, s, goal, h, 1.1);
+    CHECK(l.found() && legal_route(m, l.path) && l.cost <= 1.1 * b.cost * (1 + 1e-12));
+    bool threw = false;
+    try {
+        parse_heuristic("brubus-heuristic 1\ninputs 3\n");
     } catch (const std::exception&) {
         threw = true;
     }
@@ -374,6 +440,8 @@ int main() {
         {"grade limit and uphill time", test_grade_limit_and_uphill_time},
         {"hills and mud shape the quickest route", test_hills_and_mud_shape_the_quickest_route},
         {"cost to go and table A*", test_cost_to_go_and_table_astar},
+        {"landmarks", test_landmarks},
+        {"learned estimate", test_learned_estimate},
         {"Python rounding", test_python_rounding},
         {"sensor disk", test_sensor_disk},
         {"D* Lite drives", test_dstar_lite_drives},

@@ -187,3 +187,50 @@ def astar_table(t: Terrain, start, goal, h, w: float = 1.0, name: str = "A* (tab
                            np.asarray(h, dtype=float), float(w), name)
     return _result(r, t.cols)
 
+
+def astar_reopen(t: Terrain, start, goal, h, name: str = "A* (re-expanding)", cmap=None) -> SearchResult:
+    """robotnav.learn.labels.astar_reopen, in C++."""
+    r = core().astar_reopen(cmap if cmap is not None else to_cpp(t), _flat(t, start), _flat(t, goal),
+                            np.asarray(h, dtype=float), name)
+    return _result(r, t.cols)
+
+
+def heuristic(model_text: str):
+    """The learned estimate in C++, from the text of its file (robotnav/assets/heuristic.txt)."""
+    return core().Heuristic(model_text)
+
+
+def features(t: Terrain, goal, cells=None, cmap=None):
+    """robotnav.learn.features.features, in C++: (x (n, 16), climb (n,))."""
+    cells = list(range(t.rows * t.cols)) if cells is None else [int(c) for c in cells]
+    return core().features(cmap if cmap is not None else to_cpp(t), _flat(t, goal), cells)
+
+
+def learned_table(t: Terrain, goal, model, w: float = float("inf"), cmap=None) -> np.ndarray:
+    """robotnav.learn.model.Model.table, in C++ (model from heuristic())."""
+    return core().learned_table(model, cmap if cmap is not None else to_cpp(t), _flat(t, goal), float(w))
+
+
+def astar_learned(t: Terrain, start, goal, model, w: float = float("inf"), name: str = "A* (learned)",
+                  cmap=None) -> SearchResult:
+    """robotnav.learn.model.plan, in C++: the estimate is worked out only for the cells the search reaches."""
+    r = core().astar_learned(cmap if cmap is not None else to_cpp(t), _flat(t, start), _flat(t, goal), model,
+                             float(w), name)
+    return _result(r, t.cols)
+
+
+def pick_landmarks(t: Terrain, k: int = 8, cmap=None):
+    """robotnav.landmarks.pick, in C++ (the C++ Landmarks object: cells, from_, to, setup_ms)."""
+    return core().pick_landmarks(cmap if cmap is not None else to_cpp(t), int(k))
+
+
+def landmark_table(t: Terrain, lm, goal, cmap=None) -> np.ndarray:
+    """robotnav.landmarks.table, in C++."""
+    return core().landmark_table(cmap if cmap is not None else to_cpp(t), lm, _flat(t, goal))
+
+
+def astar_landmarks(t: Terrain, lm, start, goal, cmap=None) -> SearchResult:
+    """robotnav.landmarks.astar, in C++: the same search, cell for cell."""
+    return _result(core().astar_landmarks(cmap if cmap is not None else to_cpp(t), lm, _flat(t, start), _flat(t, goal)),
+                   t.cols)
+

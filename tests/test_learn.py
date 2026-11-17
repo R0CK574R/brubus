@@ -203,3 +203,126 @@ def test_cli_builds_checks_and_measures(tmp_path, capsys):
     out = capsys.readouterr().out
     assert "3 maps with" in out and "all good" in out and "A*/route" in out
     assert json.loads((tmp_path / "b.json").read_text())["split"] == "train"
+
+
+# ---------------------------------------------------------------- stage 2: the network and A* guided by it
+from robotnav.learn import evaluate as ev  # noqa: E402
+from robotnav.learn import model as mdl  # noqa: E402
+from robotnav.learn.features import FEATURES, features  # noqa: E402
+from robotnav.learn.labels import astar_reopen  # noqa: E402
+
+
+@pytest.fixture(scope="module")
+def shipped():
+    return mdl.load()
+
+
+def test_shipped_network_file(shipped):
+    assert shipped.sizes == [FEATURES, 64, 64, 1]
+    assert any("PyTorch" in line for line in shipped.note)
+    assert (shipped.scale > 0).all()
+    again = mdl.parse(shipped.text())                                  # the file round-trips exactly
+    assert all(np.array_equal(a, b) and np.array_equal(c, d) for (a, c), (b, d) in zip(shipped.layers, again.layers))
+    card = json.loads(mdl.ASSET.with_suffix(".card.json").read_text())
+    assert card["network"]["sizes"] == shipped.sizes and card["data"]["train_maps"] == 360
+
+
+def test_shipped_network_still_estimates_the_time_well(shipped):
+    """On maps outside the data set, the network must stay far closer to the true time than the straight line
+    (the benchmark measured 9% off against 33%); this holds the committed weights to that without retraining."""
+    errs, octile_errs = [], []
+    for theme in THEMES:
+        t = make_map(theme, size=96, seed=5000)
+        region = ds.largest_region(t)
+        cells = np.argwhere(region)
+        goal = tuple(int(v) for v in cells[len(cells) // 2])
+        truth = cost_to_go(t, goal)
+        est = shipped.table(t, goal)
+        ok = np.isfinite(truth) & (truth >= 10.0)
+        errs.append(np.abs(est[ok] / truth[ok] - 1))
+        octile_errs.append(np.abs(octile_table(t, goal)[ok] / truth[ok] - 1))
+    err, oct_err = np.concatenate(errs).mean(), np.concatenate(octile_errs).mean()
+    assert err < 0.15 and err < oct_err / 2
+
+
+@pytest.fixture(scope="module", params=THEMES)
+def mid(request):
+    return make_map(request.param, size=48, seed=1003)
+
+
+@needs_cpp
+def test_cpp_features_and_network_equal_the_reference(mid, shipped):
+    start, goal, _ = far_pair(mid)
+    x, climb = features(mid, goal)
+    xc, cc = cpp.features(mid, goal)
+    assert np.array_equal(x, xc) and np.array_equal(climb, cc)        # bit for bit
+    h = cpp.heuristic(mdl.ASSET.read_text())
+    live = climb > 0
+    z = shipped.output(x[live][:300])
+    assert all(h.output(list(row)) == v for row, v in zip(x[live][:300], z))
+    for w in (np.inf, 1.1):
+        assert np.array_equal(cpp.learned_table(mid, goal, h, w), shipped.table(mid, goal, w))
+
+
+@needs_cpp
+def test_cpp_search_with_the_network_equals_the_reference(mid, shipped):
+    h = cpp.heuristic(mdl.ASSET.read_text())
+    start, goal, _ = far_pair(mid)
+    for w in (np.inf, 1.1):
+        p, c = mdl.plan(mid, start, goal, shipped, w), cpp.astar_learned(mid, start, goal, h, w)
+        assert (c.path, c.cost, c.nodes_expanded, c.explored_order) == (p.path, p.cost, p.nodes_expanded, p.explored_order)
+
+
+def test_reexpanding_astar_is_plain_astar_with_a_consistent_estimate(mid):
+    start, goal, _ = far_pair(mid)
+    for table in (octile_table(mid, goal), climb_table(mid, goal)):
+        a, r = astar_table(mid, start, goal, table), astar_reopen(mid, start, goal, table)
+        assert (r.path, r.cost, r.nodes_expanded, r.explored_order) == (a.path, a.cost, a.nodes_expanded, a.explored_order)
+
+
+def test_capped_network_keeps_its_promise(mid, shipped):
+    """Capped at 1.1 x the climb-aware estimate (never too high), the estimate is at most 1.1 x the truth, and the
+    re-expanding search then never returns a route more than 10% longer than the quickest."""
+    rng = np.random.default_rng(4)
+    region = np.argwhere(ds.largest_region(mid))
+    for i, j in rng.choice(len(region), size=(6, 2)):
+        start, goal = tuple(int(v) for v in region[i]), tuple(int(v) for v in region[j])
+        if start == goal:
+            continue
+        truth = cost_to_go(mid, goal)
+        h = shipped.table(mid, goal, 1.1)
+        ok = np.isfinite(truth)
+        assert (h[ok] <= 1.1 * truth[ok] * (1 + 1e-12) + 1e-12).all()
+        r = astar_reopen(mid, start, goal, h)
+        assert r.cost <= 1.1 * truth[start] * (1 + 1e-12)
+
+
+def test_model_file_errors_are_explained():
+    with pytest.raises(ValueError):
+        mdl.parse("brubus-heuristic 1\ninputs 3\n")
+    with pytest.raises(ValueError):
+        mdl.parse("brubus-heuristic 1\ninputs 16\nmean " + "0 " * 16)
+    with pytest.raises(FileNotFoundError):
+        mdl.load(ROOT / "no-such-model.txt")
+
+
+@needs_cpp
+def test_benchmark_runs_on_the_tiny_data_set(tiny, shipped):
+    out, _ = tiny
+    rows, setup = ev.evaluate(mdl.ASSET.read_text(), out, split="train", starts=1, landmarks=4, log=None,
+                              max_maps=6)
+    assert setup and rows
+    by = {}
+    for r in rows:
+        by.setdefault((r["map"], r["goal"], r["start"]), {})[r["planner"]] = r
+    for trip in by.values():
+        best = trip["A* perfect"]
+        for name in ("Dijkstra", "A* straight-line", "A* climb-aware", "A* + 4 landmarks"):
+            assert trip[name]["cost"] == pytest.approx(best["cost"], rel=1e-12)      # all of these are optimal
+        assert trip["A* + 4 landmarks"]["cells"] <= trip["A* straight-line"]["cells"]
+        assert trip["A* + network, capped"]["extra"] <= 0.1 + 1e-12
+    names = {s["planner"] for s in ev.summarize(rows)}
+    assert "A* + network" in names and "Weighted A* 1.5" in names
+    acc = ev.accuracy(mdl.ASSET.read_text(), out, split="train", landmarks=4)
+    lm = next(a for a in acc if a["estimate"] == "4 landmarks" and a["theme"] == "all")
+    assert lm["too_high"] == 0.0 and lm["ratio"] <= 1.0

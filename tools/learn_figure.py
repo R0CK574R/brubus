@@ -1,6 +1,7 @@
-"""Draw docs/learn-labels.png, the README's picture of the learning data: one test map, one goal, one trip.
+"""Draw the README's pictures of the learning work (both need the data set: python main.py dataset build).
 
-    python tools/learn_figure.py            # needs the data set: python main.py dataset build
+    python tools/learn_figure.py            # docs/learn-labels.png: one test map, one goal, one trip
+    python tools/learn_figure.py bench      # docs/learn-benchmark.png: cells searched against longer routes
 
 Left, the label: the true drive time from every cell to the goal. Middle, A*'s estimate of the same thing today,
 the octile distance, on the same colour scale: it ignores the hills and the slow ground. Right, what that costs: the
@@ -22,7 +23,7 @@ from robotnav.learn.labels import astar_table, cost_to_go, octile_table  # noqa:
 
 MAP, GOAL, START = "grassland-1009", (73, 3), (14, 86)       # a test map: no model will ever train on it
 OUT = ROOT / "docs" / "learn-labels.png"
-BG, PANEL, INK, DIM, BLUE = "#0b0e12", "#11151a", "#e7ecef", "#8f9aa4", "#5cc2ff"
+BG, PANEL, INK, DIM, BLUE, AMBER = "#0b0e12", "#11151a", "#e7ecef", "#8f9aa4", "#5cc2ff", "#e0a83a"
 
 
 def main() -> None:
@@ -104,5 +105,61 @@ def main() -> None:
     print(OUT, f"A* {a.nodes_expanded} cells, route {len(a.path)}, perfect {best.nodes_expanded}")
 
 
+def bench() -> None:
+    """Every planner of the stage-2 benchmark (python main.py learn eval) as a point: cells searched (log scale)
+    against how much longer its routes are than the quickest, on the 1,440 trips of the test maps."""
+    import math
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib import font_manager
+    from robotnav.learn import evaluate as ev
+    from robotnav.learn.model import ASSET
+
+    for f in font_manager.findSystemFonts():
+        if "Inter" in Path(f).name:
+            font_manager.fontManager.addfont(f)
+    plt.rcParams.update({"font.family": ["Inter", "DejaVu Sans"], "text.color": INK, "axes.labelcolor": DIM,
+                         "xtick.color": DIM, "ytick.color": DIM})
+    rows, setup = ev.evaluate(ASSET.read_text(), split="test", log=None)
+    summary = {s["planner"]: s for s in ev.summarize(rows) if s["theme"] == "all"}
+    style = {"Dijkstra": ("#8f9aa4", "o"), "A* straight-line": ("#8f9aa4", "o"), "A* climb-aware": ("#8f9aa4", "o"),
+             "Weighted A* 1.25": ("#8f9aa4", "s"), "Weighted A* 1.5": ("#8f9aa4", "s"),
+             "A* + network": (AMBER, "D"), "A* + network, capped": (AMBER, "D"),
+             "A* + 8 landmarks": (BLUE, "o"), "A* perfect": ("#ffffff", "*")}
+    nudge = {"Dijkstra": (0, 10, "left"), "A* straight-line": (10, -34, "left"), "A* climb-aware": (-10, -34, "right"),
+             "Weighted A* 1.25": (8, 6, "left"), "Weighted A* 1.5": (8, 6, "left"), "A* + network": (10, 4, "left"),
+             "A* + network, capped": (-12, 26, "right"), "A* + 8 landmarks": (8, 8, "left"),
+             "A* perfect": (10, 4, "left")}
+    fig, ax = plt.subplots(figsize=(11, 5.6), dpi=130, facecolor=BG)
+    ax.set_facecolor(PANEL)
+    for name, (colour, marker) in style.items():
+        s = summary[name]
+        x, y = s["cells"], 100 * s["extra_mean"]
+        ax.scatter([x], [y], s=150 if marker == "*" else 70, color=colour, marker=marker, zorder=3,
+                   edgecolor=BG, linewidth=1)
+        label = name.replace("A* + 8 landmarks", "A* + landmarks").replace("A* perfect", "perfect estimate")
+        ax.annotate(f"{label}\n{x:,.0f} cells, {y:.1f}% longer" if y > 0.005 else f"{label}\n{x:,.0f} cells, quickest",
+                    (x, y), xytext=nudge[name][:2], textcoords="offset points", fontsize=9.5, color=colour,
+                    ha=nudge[name][2])
+    ax.set_xscale("log")
+    ax.set_xlim(30, 9000)
+    ax.set_xticks([50, 100, 300, 1000, 3000])
+    ax.set_xticklabels(["50", "100", "300", "1,000", "3,000"])
+    ax.minorticks_off()
+    ax.set_ylim(-0.4, 4.0)
+    ax.set_xlabel("cells searched per trip (mean, log scale)")
+    ax.set_ylabel("routes longer than the quickest (mean %)")
+    for side in ax.spines.values():
+        side.set_color("#2a3038")
+    ax.grid(True, color="#1f252c", linewidth=0.8)
+    ax.set_title("A* on 45 maps no model has seen: fewer cells is better, lower is better", loc="left",
+                 fontsize=13.5, color=INK, fontweight="semibold", pad=12)
+    fig.tight_layout()
+    out = ROOT / "docs" / "learn-benchmark.png"
+    fig.savefig(out, facecolor=BG)
+    print(out, f"landmarks set-up {sum(setup) / len(setup):.0f} ms per map")
+
+
 if __name__ == "__main__":
-    main()
+    bench() if sys.argv[1:] == ["bench"] else main()

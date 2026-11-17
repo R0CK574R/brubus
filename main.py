@@ -19,6 +19,9 @@
     python main.py dataset build        # the learning data: 450 maps labelled with the true time to their goals
     python main.py dataset check        # checksums, splits, and labels re-derived by the Python reference
     python main.py dataset baseline     # how much A* searches with today's estimate, and with a perfect one
+    python main.py learn train          # train the network that estimates the time left (needs PyTorch)
+    python main.py learn eval           # the benchmark: the network and landmarks against the classical planners
+    python main.py route --map desert --preset 19 --landmarks   # add A* guided by 8 landmarks to the race
 """
 from __future__ import annotations
 
@@ -151,7 +154,14 @@ def route(args) -> None:
 
     t = solvable_map(args.map, seed=args.seed, size=args.size, max_grade=args.grade)
     start, goal = _trip(args, t)
-    results = _race(t, start, goal, _engine(args))
+    engine = _engine(args)
+    results = _race(t, start, goal, engine)
+    if getattr(args, "landmarks", False):                   # A* guided by 8 landmarks: the same route, fewer cells
+        if engine is not None:
+            results.append(engine.astar_landmarks(t, engine.pick_landmarks(t), start, goal))
+        else:
+            from robotnav import landmarks
+            results.append(landmarks.astar(t, landmarks.pick(t), start, goal))
     print(f"{t.meta['theme'].title()} (seed {t.meta['seed']}): start {start} -> destination {goal}")
     if not any(r.found for r in results):
         raise SystemExit("No drivable route between those cells: one is walled in by obstacles, water or steep slopes.")
@@ -353,6 +363,45 @@ def dataset(args) -> None:
             print(f"saved {args.out}")
 
 
+def learn(args) -> None:
+    """Stage 2 of the learning work: train the network, or run the benchmark on maps it has never seen."""
+    import json
+    from robotnav.learn import evaluate as ev
+    from robotnav.learn.model import ASSET
+
+    folder = Path(args.dir)
+    if args.action == "train":
+        from robotnav.learn import train as tr
+        try:
+            import torch  # noqa: F401
+        except ImportError:
+            raise SystemExit("Training needs PyTorch: python -m pip install torch (nothing else in Brubus does)")
+        tr.train(folder, out=Path(args.model or ASSET), themes=tuple(args.themes), alpha=args.alpha,
+                 epochs=args.epochs)
+        return
+    from robotnav import cpp
+    try:
+        cpp.core()
+    except ImportError as e:
+        raise SystemExit(str(e))
+    text = Path(args.model or ASSET).read_text()
+    print(f"The {args.split} maps: {args.starts} trips per goal, the C++ core")
+    rows, setup = ev.evaluate(text, folder, split=args.split, starts=args.starts, themes=tuple(args.themes))
+    summary = ev.summarize(rows)
+    print(ev.table(summary))
+    print(f"  (landmarks: {sum(setup) / len(setup):.0f} ms per map, once, to pick them and fill their fields)")
+    acc = ev.accuracy(text, folder, split=args.split, themes=tuple(args.themes))
+    print("How close each estimate is to the true time (every cell at least 10 s from its goal):")
+    for a in acc:
+        if a["theme"] == "all":
+            print(f"  {a['estimate']:<15} on average {100 * a['ratio']:.1f}% of it, off by {100 * a['error']:.1f}%, "
+                  f"too high on {100 * a['too_high']:.1f}% of cells")
+    if args.out:
+        Path(args.out).write_text(json.dumps(dict(split=args.split, summary=summary, landmark_setup_ms=setup,
+                                                  accuracy=acc), indent=1))
+        print(f"saved {args.out}")
+
+
 def parity(args) -> None:
     """The C++ core against the Python reference on the preset trips: identical results, and how much faster."""
     from robotnav import cpp
@@ -440,6 +489,7 @@ def main() -> None:
     rt.add_argument("--size", type=int, default=96)
     rt.add_argument("--grade", type=float, default=0.6)
     rt.add_argument("--seed", type=int, default=3)
+    rt.add_argument("--landmarks", action="store_true", help="add A* guided by 8 landmarks (worked out once per map)")
     rt.set_defaults(func=route)
 
     tb = sub.add_parser("terrain-bench", help="measure planners as terrain gets harder")
@@ -512,6 +562,19 @@ def main() -> None:
     da.add_argument("--starts", type=int, default=4, help="trips per goal (baseline)")
     da.add_argument("--out", help="save the baseline's numbers as JSON")
     da.set_defaults(func=dataset)
+
+    le = sub.add_parser("learn", help="the network that estimates the time left: train it, or benchmark it")
+    le.add_argument("action", choices=["train", "eval"])
+    le.add_argument("--dir", default="data/terrain-v1", help="the data set (python main.py dataset build)")
+    le.add_argument("--model", help="the network's file (default robotnav/assets/heuristic.txt)")
+    le.add_argument("--themes", nargs="+", default=["grassland", "desert", "island"],
+                    choices=["grassland", "desert", "island"], help="train on (or measure) these themes only")
+    le.add_argument("--alpha", type=float, default=4.0, help="how much more an overestimate costs in the loss")
+    le.add_argument("--epochs", type=int, default=40)
+    le.add_argument("--split", choices=["train", "val", "test"], default="test", help="maps to benchmark on")
+    le.add_argument("--starts", type=int, default=4, help="trips per goal (eval)")
+    le.add_argument("--out", help="save the benchmark's numbers as JSON")
+    le.set_defaults(func=learn)
 
     eb = sub.add_parser("explore-bench", help="sensor drives on every preset: time lost, D* Lite vs A* from scratch")
     eb.add_argument("--ranges", type=float, nargs="+", default=[5.0, 10.0, 20.0], help="sensor ranges in metres")

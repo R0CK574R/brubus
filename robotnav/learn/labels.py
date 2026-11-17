@@ -15,6 +15,7 @@ hold the two equal with ==.
 from __future__ import annotations
 
 import heapq
+import time
 from itertools import count
 
 import numpy as np
@@ -109,3 +110,46 @@ def astar_table(t: Terrain, start: Cell, goal: Cell, h: np.ndarray, w: float = 1
     if w == 1.0:
         return _best_first(grid, name, lambda g, est: g + est)
     return _best_first(grid, name, lambda g, est: g + w * est)
+
+
+def astar_reopen(t: Terrain, start: Cell, goal: Cell, h: np.ndarray, name: str = "A* (re-expanding)") -> SearchResult:
+    """A* with h[cell] as the estimate that searches a cell again when a quicker way to it turns up.
+
+    An estimate that isn't consistent (a learned one) can close a cell before its quickest way in is known; this
+    search reopens it, which is what guarantees a route at most w times the quickest when the estimate is never
+    more than w times the truth. With a consistent estimate it does exactly what astar_table does."""
+    t0 = time.perf_counter()
+    h = np.asarray(h, dtype=float)
+    if h.shape != (t.rows, t.cols):
+        raise ValueError("the table needs one estimate per cell")
+    start, goal = tuple(start), tuple(goal)
+    tie = count()
+    g = {start: 0.0}
+    came_from = {start: None}
+    frontier = [(float(h[start]), next(tie), start, 0.0)]
+    explored, peak, reached = [], 1, False
+    while frontier:
+        _, _, cur, gc = heapq.heappop(frontier)
+        if gc != g[cur]:
+            continue                                   # stale: a quicker way here was found since
+        explored.append(cur)
+        if cur == goal:
+            reached = True
+            break
+        for nxt, step in t.neighbors(cur):
+            ng = gc + step
+            if nxt not in g or ng < g[nxt]:
+                g[nxt] = ng
+                came_from[nxt] = cur
+                heapq.heappush(frontier, (ng + float(h[nxt]), next(tie), nxt, ng))
+        peak = max(peak, len(frontier))
+    path = []
+    if reached:
+        node = goal
+        while node is not None:
+            path.append(node)
+            node = came_from[node]
+        path.reverse()
+    return SearchResult(name, path, t.path_cost(path) if path else float("inf"), len(explored), peak,
+                        (time.perf_counter() - t0) * 1e3, explored)
+

@@ -31,9 +31,10 @@ in Python (the reference), in C++ (a core 27 to 68 times faster, with a command-
 module) and in the browser's JavaScript. All three give the same routes, search the same cells and
 report the same times, to the last bit.
 
-The machine-learning work has started ([Learning from the planner](#learning-from-the-planner)): 450 new maps
-labelled with the exact drive time from every cell to their goals, split by map, and the numbers a learned
-estimate for A\* has to beat. There is no trained model yet; that is the next stage.
+The machine-learning work ([Learning from the planner](#learning-from-the-planner)) trained a network with
+PyTorch on 450 generated maps to estimate the drive time left to a goal: it is 9% off where the straight-line
+distance is 33% off. Benchmarked inside A\* against the classical planners on maps it had never seen, it lost to
+a classical technique, landmarks, which now guide A\*: the same quickest routes, searching 4.8 times fewer cells.
 
 ![Watch the search on the desert: Dijkstra (left) spreads out evenly while A* (right) heads for the finish; both find the same 2:25 route, but A* searches 2.5 times fewer cells](docs/search.gif)
 
@@ -141,7 +142,10 @@ Run these from the same terminal, with the virtual environment active.
 | `python main.py dataset build` | The [learning data](#learning-from-the-planner): 450 maps labelled with the true time to their goals (about 10 seconds with the C++ core) |
 | `python main.py dataset check` | Checksums, the split by map, and labels re-derived by the Python reference |
 | `python main.py dataset baseline` | How many cells A\* searches with today's estimate, a better hand-made one, and a perfect one |
-| `python -m pytest -q` | Run the 278 tests (46 of them hold the C++ core against Python; skipped until it's built) |
+| `python main.py learn eval` | The stage-2 benchmark on the test maps: the network and landmarks against the classical planners (about 15 seconds) |
+| `python main.py learn train` | Train the network again (needs PyTorch: `python -m pip install torch`; about 2 minutes) |
+| `python main.py route --map desert --preset 19 --landmarks` | Add A\* guided by 8 landmarks to the race: the same route, fewer cells searched |
+| `python -m pytest -q` | Run the 314 tests (56 of them hold the C++ core against Python; skipped until it's built) |
 | `python main.py demo`, `python main.py benchmark` | The original 2D grid version |
 
 `python main.py course` writes the viewer twice: `output/course_3d.html` to open yourself, and
@@ -418,12 +422,13 @@ sensing arithmetic, not a second planner, and the C++ core doesn't have these ye
 
 ## Learning from the planner
 
-Stage 1 of 4 of the machine-learning work: the data, and the numbers a learned model has to beat.
-There is no model yet. The plan, in order: a small neural network that estimates the drive time left to the
-goal from any cell, used as A\*'s guide (stage 2); a learned risk model in place of the Monte Carlo trials
-(stage 3); and reinforcement learning, aimed at timing a crossing past the towers' looks (stage 4). The
-classical planners stay as they are, exact and checked bit for bit; anything learned sits beside them and is
+The machine-learning work, in stages. Stage 1 built the data. Stage 2 trained a network to guide A\* and
+measured it against the classical planners: it lost to a technique from 2005 (landmarks), which is now part of
+the planner. Stage 3 takes the learning where it can win: Bruce learning his own terrain speeds from his driving.
+The classical planners stay as they are, exact and checked bit for bit; anything learned sits beside them and is
 judged against them.
+
+### Stage 1: the data
 
 **The data.** `python main.py dataset build` makes 450 new maps (150 per theme, seeds 1000 to 1149, from the
 same generator as the viewer's maps) and labels each with the exact drive time from every cell to 8 goals
@@ -462,6 +467,69 @@ One of the longer trips on a test map; across all the test trips A\* searched 24
 The code is in `robotnav/learn/` (the labels and A\* with a table of estimates in Python, the data set, the
 baseline) and `cpp/src/fields.cpp`; `tests/test_learn.py` holds it all to account; `tools/learn_figure.py`
 draws the picture.
+
+### Stage 2: a learned estimate for A\*, against the classical ones
+
+**The network.** A small network (16 inputs, two layers of 64, ReLU) reads 16 numbers about a cell and its
+goal: the straight-line and climb-aware estimates, the drive time, obstacles, water and cliffs along the straight
+line between them, and how boxed-in the cell and the goal are. It predicts how much longer than the climb-aware
+estimate the drive really is. It was trained with PyTorch on 2.9 million examples from the 360 training maps (40
+epochs, about 2 minutes on two CPU cores), with an overestimate costing four times as much as an underestimate in
+the loss, because an estimate that is too high is what can cost A\* the quickest route. The weights are in
+`robotnav/assets/heuristic.txt`, with a model card (`heuristic.card.json`). The C++ core and NumPy run it with
+only +, -, x, / and max in a fixed order, so the two agree to the last bit and search the same cells; PyTorch is
+needed only to train it again (`python main.py learn train`).
+
+**As an estimate, it works.** Over every cell of the test maps at least 10 s from its goal (2.6 million cells):
+
+| Estimate of the time left | On average | Off by | Too high on |
+|---|---:|---:|---:|
+| Straight-line distance (A\*'s own) | 67% of the truth | 33% | no cell |
+| Climb-aware | 72% | 28% | no cell |
+| The network | 94% | 9.0% | 23% of cells |
+| 8 landmarks (below) | 94% | 5.8% | no cell |
+
+It also generalises to terrain it has never seen: trained without a single island map, it is 10.0% off on the
+island test maps, against 8.9% when islands are part of its training.
+
+**Inside A\*, it doesn't pay.** `python main.py learn eval` plans the same 1,440 test trips with every planner,
+in the C++ core:
+
+| Planner | Cells searched | Routes longer than the quickest (mean, worst) | Found the quickest | Search |
+|---|---:|---:|---:|---:|
+| Dijkstra | 3,792 | none | every trip | 0.90 ms |
+| A\* with the straight-line estimate | 1,329 | none | every trip | 0.38 ms |
+| A\* with the climb-aware estimate | 1,168 | none | every trip | 0.34 ms |
+| Weighted A\* (climb-aware x 1.25) | 681 | 1.1%, 10% | 15% | 0.21 ms |
+| Weighted A\* (climb-aware x 1.5) | 410 | 3.1%, 17% | 7% | 0.12 ms |
+| A\* with the network | 1,193 | 1.5%, 23% | 30% | 1.96 ms |
+| A\* with the network, capped at 1.1 x climb-aware | 1,172 | 0.1%, 3.7% | 69% | 3.17 ms |
+| **A\* with 8 landmarks** | **278** | none | every trip | 0.14 ms, + 26 ms once per map |
+| A\* with the true time (perfect) | 47 | none | every trip | 0.02 ms |
+
+![Every planner as a point: cells searched (log scale) against how much longer its routes are than the quickest. A* with landmarks sits at 278 cells with the quickest routes, well left of A* (1,329) and of the network (1,193 cells, 1.5% longer); Weighted A* trades longer routes for fewer cells](docs/learn-benchmark.png)
+
+The network searches about as many cells as the climb-aware estimate, and its routes come out 1.5% longer on
+average (23% in the worst case); simply inflating the climb-aware estimate (Weighted A\*) does better on both
+counts. The reason is what A\* needs from an estimate: never too high, or it can miss the quickest route, and
+consistent (changing between neighbouring cells by no more than the move between them), or it searches cells
+over again. A network trained cell by cell promises neither: it is too high on a quarter of the cells, and its
+errors jump from cell to cell. Capping it at 1.1 times the climb-aware estimate proves routes at most 10% longer
+(measured: 0.1%), but the climb-aware estimate is so low that the cap takes the gain away. Also tried, in
+experiments not kept in the code: a coarse-grid feature (about 6% off), a U-Net over the whole map (no better in
+a short run), and the network correcting the landmark bound (it made A\* search more cells, not fewer).
+
+**Landmarks win, and are now part of the planner.** A\* with landmarks (ALT, Goldberg and Harrelson, 2005)
+picks 8 cells spread over the map and works out, once per map, the quickest times to and from each of them (16
+Dijkstra searches, 26 ms in the C++ core). The triangle inequality then gives, for any cell and goal, a lower
+bound that is never too high and is consistent: 94% of the true time on average. A\* searches 278 cells instead
+of 1,329, 4.8 times fewer, and still finds the quickest route on every trip. It is in `robotnav/landmarks.py` and
+the C++ core; `python main.py route --map desert --preset 19 --landmarks` adds it to the race.
+
+**What this says.** On a map that is fully known and doesn't change, a little precomputation beats a learned
+guess, and a learned guess has to be both accurate and smooth before A\* can use it. Learning earns its place
+where the costs aren't known in advance. That is stage 3: Bruce learns how fast he can really drive on each kind
+of ground from his own driving logs, and plans with what he learned.
 
 ## The rover
 
@@ -765,15 +833,17 @@ the C++ tests under AddressSanitizer and UndefinedBehaviorSanitizer.
 | `tools/shark_logo.py` | Prepares the badge (`robotnav/assets/logo.webp`) from the logo's artwork: clears its black ground so the backdrop shows around it, and saves a 900 px WebP |
 | `robotnav/viewer3d.html` | Three.js viewer: maps, sky, water, contour lines, palms and trees, planners, D\* Lite and the air route in the browser, watching the search, the sensor drive, the drone and its watchtowers, the operator console (entities, tasking, timeline, report, command bar), MIL-STD-2525 symbols and callsign tags, preset paths, picking, drawing, drone camera and its compass and altitude read-outs, the spiked tank, the tour, links to a view, the frame-rate benchmark |
 | `cpp/` | The C++ core: planners, D\* Lite, the air route, the detection field and Monte Carlo trials on a thread pool, map files, the `robotnav` tool, unit tests, the pybind11 module and the WebAssembly build (`cpp/wasm/`, `tools/build_wasm.sh`) ([cpp/README.md](cpp/README.md)) |
-| `robotnav/learn/` | The learning work: the labels (true time to the goal, A\* with a table of estimates, the climb-aware estimate), building and checking the data set, and the baseline |
-| `tools/learn_figure.py` | Draws the picture of the labels and the search in the learning section |
+| `robotnav/learn/` | The learning work: the labels (true time to the goal, A\* with a table of estimates, re-expanding A\*), the data set, the baseline, the network's features and inference (`features.py`, `model.py`), training with PyTorch (`train.py`) and the benchmark (`evaluate.py`) |
+| `robotnav/landmarks.py` | A\* with landmarks (ALT): the landmarks, their fields, the lower bound and the search |
+| `robotnav/assets/heuristic.txt` | The trained network (plain text, exact doubles) and its model card (`heuristic.card.json`) |
+| `tools/learn_figure.py` | Draws the learning section's two pictures: the labels and the search, and the benchmark |
 | `robotnav/assign.py` | Who goes where: the Hungarian method for a survey's assignment, and the nearest-first rule it is compared with |
 | `robotnav/cpp.py`, `parity.py`, `mapfile.py` | Run the C++ core from Python, compare it with the reference, and write the map files it reads |
 | `maps/` | The live demo's three maps as map files, for the C++ tool |
 | `docs/` | The live demo served by GitHub Pages (`index.html`, built by `python main.py course`), its preview image, and the README's pictures |
 | `robotnav/terrain_bench.py` | Sweeps hill height, slope limit and obstacle density |
 | `robotnav/grid.py`, `visualize.py`, `benchmark.py` | Original 2D grid world, plots and benchmark |
-| `tests/` | 278 checks: the learning data's exact labels and split by map, optimality on every map, the shortest route, all 20 presets per map, the desert's oases, grade limit, water, route rules, D\* Lite (legal routes, optimal repairs, roadblocks), the air route (towers, lines of sight, hiding behind a ridge), the C++ core against Python, map rebuilds, the command line, the page head and link previews, the survey's assignment against every pairing, the console look (fonts, map symbols, tags, read-outs), the intro's flag and logo |
+| `tests/` | 314 checks: landmarks (never too high, consistent, the quickest route), the network (its file, its accuracy on fresh maps, the capped search's promise), the learning data's exact labels and split by map, optimality on every map, the shortest route, all 20 presets per map, the desert's oases, grade limit, water, route rules, D\* Lite (legal routes, optimal repairs, roadblocks), the air route (towers, lines of sight, hiding behind a ridge), the C++ core against Python, map rebuilds, the command line, the page head and link previews, the survey's assignment against every pairing, the console look (fonts, map symbols, tags, read-outs), the intro's flag and logo |
 
 ## Findings
 
@@ -851,4 +921,5 @@ The air route, over each map's 20 preset trips (medians; `python main.py fly` fo
 
 - Wrap the C++ planners as a ROS 2 Nav2 planner plugin
 - Moving obstacles, and a rover sensor blocked by hills (the towers already use line of sight)
-- The learned estimate for A\* (stage 2 of [Learning from the planner](#learning-from-the-planner)); a hand-made climb-aware one is already measured there and saves 12%
+- Stage 3 of [Learning from the planner](#learning-from-the-planner): Bruce learns his own terrain speeds from driving logs
+- Landmarks in the browser, so the viewer's race and the console plan with them too

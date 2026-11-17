@@ -13,7 +13,7 @@ endif()
 # The core: the five planners, the hill-blind shortest route, D* Lite with a limited sensor, the air route.
 add_library(robotnav_core STATIC
   src/map.cpp src/planners.cpp src/replan.cpp src/airspace.cpp src/mapio.cpp src/sensing.cpp src/digest.cpp
-  src/fields.cpp)
+  src/fields.cpp src/learned.cpp src/landmarks.cpp)
 target_include_directories(robotnav_core PUBLIC include)
 find_package(Threads REQUIRED)                    # the Monte Carlo trials run on a thread pool
 target_link_libraries(robotnav_core PUBLIC Threads::Threads)
