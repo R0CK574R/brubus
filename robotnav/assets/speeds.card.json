@@ -1,14 +1,16 @@
 {
  "model": "speeds.txt",
+ "stage3_model": "speeds-stage3.txt",
  "framework": "PyTorch 2.15.0+cu132",
  "seed": 0,
  "network": {
   "sizes": [
    14,
-   32,
-   32,
+   64,
+   64,
    1
   ],
+  "steps": 6000,
   "activation": "ReLU",
   "output": "seconds per metre = 1 + max(z, 0)",
   "features": [
@@ -55,22 +57,527 @@
   "rough": 1.0,
   "noise": 0.08
  },
- "curve": [
+ "explore": {
+  "budget": 0.1,
+  "pull": 1.0,
+  "tries": 3,
+  "scout_every": 10,
+  "scout_near": 1.0,
+  "sorts": 672,
+  "grade_edges": [
+   -0.4,
+   -0.25,
+   -0.1,
+   0.1,
+   0.25,
+   0.4
+  ],
+  "side_edges": [
+   0.25,
+   0.5,
+   0.8
+  ],
+  "rough_edges": [
+   0.07,
+   0.15
+  ]
+ },
+ "careers": [
   {
-   "trips": 10,
-   "moves": 418
+   "name": "plain, small network",
+   "exploring": false,
+   "network": [
+    14,
+    32,
+    32,
+    1
+   ],
+   "steps": 3000,
+   "curve": [
+    {
+     "trips": 10,
+     "moves": 418
+    },
+    {
+     "trips": 30,
+     "moves": 1529
+    },
+    {
+     "trips": 100,
+     "moves": 5047
+    },
+    {
+     "trips": 300,
+     "moves": 16130
+    }
+   ],
+   "sorts_driven": 393,
+   "hopeful_routes": 0,
+   "scouting_trips": 0,
+   "detours": 0.0,
+   "scouting_share": 0.0,
+   "learned": [
+    {
+     "ground": "Grass",
+     "built_in": 1.0,
+     "true": 1.0,
+     "learned": 1.0,
+     "built_in_uphill": 3.0,
+     "true_uphill": 2.5,
+     "learned_uphill": 2.494645040924568,
+     "logged": 8617,
+     "logged_climbs": 2688
+    },
+    {
+     "ground": "Tall grass",
+     "built_in": 1.8,
+     "true": 1.4,
+     "learned": 1.4255198846192902,
+     "built_in_uphill": 3.0,
+     "true_uphill": 3.0,
+     "learned_uphill": 2.691014632806079,
+     "logged": 892,
+     "logged_climbs": 229
+    },
+    {
+     "ground": "Firm sand",
+     "built_in": 1.0,
+     "true": 1.15,
+     "learned": 1.1537347243526117,
+     "built_in_uphill": 3.0,
+     "true_uphill": 4.0,
+     "learned_uphill": 3.760609715438602,
+     "logged": 4348,
+     "logged_climbs": 657
+    },
+    {
+     "ground": "Soft sand",
+     "built_in": 2.4,
+     "true": 2.9,
+     "learned": 2.931838207540199,
+     "built_in_uphill": 3.0,
+     "true_uphill": 6.0,
+     "learned_uphill": 6.030470361997195,
+     "logged": 386,
+     "logged_climbs": 110
+    },
+    {
+     "ground": "Rocky ground",
+     "built_in": 1.3,
+     "true": 1.7,
+     "learned": 1.6610824084789564,
+     "built_in_uphill": 3.0,
+     "true_uphill": 3.0,
+     "learned_uphill": 3.0274600306322674,
+     "logged": 945,
+     "logged_climbs": 219
+    },
+    {
+     "ground": "Oasis grass",
+     "built_in": 1.0,
+     "true": 1.05,
+     "learned": 1.060635189489934,
+     "built_in_uphill": 3.0,
+     "true_uphill": 2.5,
+     "learned_uphill": 2.270306593157948,
+     "logged": 390,
+     "logged_climbs": 75
+    },
+    {
+     "ground": "Sand",
+     "built_in": 1.6,
+     "true": 1.9,
+     "learned": 1.9556162882214239,
+     "built_in_uphill": 3.0,
+     "true_uphill": 5.0,
+     "learned_uphill": 2.7520660827801025,
+     "logged": 20,
+     "logged_climbs": 3
+    },
+    {
+     "ground": "Jungle",
+     "built_in": 2.0,
+     "true": 2.6,
+     "learned": 2.54781041077106,
+     "built_in_uphill": 3.0,
+     "true_uphill": 3.5,
+     "learned_uphill": 3.2156560310478532,
+     "logged": 532,
+     "logged_climbs": 150
+    }
+   ]
   },
   {
-   "trips": 30,
-   "moves": 1529
+   "name": "plain, bigger network",
+   "exploring": false,
+   "network": [
+    14,
+    64,
+    64,
+    1
+   ],
+   "steps": 6000,
+   "curve": [
+    {
+     "trips": 10,
+     "moves": 418
+    },
+    {
+     "trips": 30,
+     "moves": 1540
+    },
+    {
+     "trips": 100,
+     "moves": 5061
+    },
+    {
+     "trips": 300,
+     "moves": 16107
+    }
+   ],
+   "sorts_driven": 397,
+   "hopeful_routes": 0,
+   "scouting_trips": 0,
+   "detours": 0.0,
+   "scouting_share": 0.0,
+   "learned": [
+    {
+     "ground": "Grass",
+     "built_in": 1.0,
+     "true": 1.0,
+     "learned": 1.0078387603750572,
+     "built_in_uphill": 3.0,
+     "true_uphill": 2.5,
+     "learned_uphill": 2.4530323776694996,
+     "logged": 8656,
+     "logged_climbs": 2706
+    },
+    {
+     "ground": "Tall grass",
+     "built_in": 1.8,
+     "true": 1.4,
+     "learned": 1.4579280061607638,
+     "built_in_uphill": 3.0,
+     "true_uphill": 3.0,
+     "learned_uphill": 2.7199131245402697,
+     "logged": 852,
+     "logged_climbs": 219
+    },
+    {
+     "ground": "Firm sand",
+     "built_in": 1.0,
+     "true": 1.15,
+     "learned": 1.1480277624356874,
+     "built_in_uphill": 3.0,
+     "true_uphill": 4.0,
+     "learned_uphill": 3.9754015672620944,
+     "logged": 4222,
+     "logged_climbs": 678
+    },
+    {
+     "ground": "Soft sand",
+     "built_in": 2.4,
+     "true": 2.9,
+     "learned": 3.0043105177712155,
+     "built_in_uphill": 3.0,
+     "true_uphill": 6.0,
+     "learned_uphill": 5.62368014966518,
+     "logged": 370,
+     "logged_climbs": 101
+    },
+    {
+     "ground": "Rocky ground",
+     "built_in": 1.3,
+     "true": 1.7,
+     "learned": 1.6839049904073087,
+     "built_in_uphill": 3.0,
+     "true_uphill": 3.0,
+     "learned_uphill": 3.0340506702392367,
+     "logged": 1080,
+     "logged_climbs": 272
+    },
+    {
+     "ground": "Oasis grass",
+     "built_in": 1.0,
+     "true": 1.05,
+     "learned": 1.080928793805565,
+     "built_in_uphill": 3.0,
+     "true_uphill": 2.5,
+     "learned_uphill": 1.9726657217614996,
+     "logged": 367,
+     "logged_climbs": 67
+    },
+    {
+     "ground": "Sand",
+     "built_in": 1.6,
+     "true": 1.9,
+     "learned": 2.2367341336946627,
+     "built_in_uphill": 3.0,
+     "true_uphill": 5.0,
+     "learned_uphill": 3.528533499211266,
+     "logged": 17,
+     "logged_climbs": 2
+    },
+    {
+     "ground": "Jungle",
+     "built_in": 2.0,
+     "true": 2.6,
+     "learned": 2.6035556103521555,
+     "built_in_uphill": 3.0,
+     "true_uphill": 3.5,
+     "learned_uphill": 3.3857445668218666,
+     "logged": 543,
+     "logged_climbs": 149
+    }
+   ]
   },
   {
-   "trips": 100,
-   "moves": 5047
+   "name": "exploring, small network",
+   "exploring": true,
+   "network": [
+    14,
+    32,
+    32,
+    1
+   ],
+   "steps": 3000,
+   "curve": [
+    {
+     "trips": 10,
+     "moves": 399
+    },
+    {
+     "trips": 30,
+     "moves": 1463
+    },
+    {
+     "trips": 100,
+     "moves": 4934
+    },
+    {
+     "trips": 300,
+     "moves": 15490
+    }
+   ],
+   "sorts_driven": 541,
+   "hopeful_routes": 219,
+   "scouting_trips": 30,
+   "detours": 0.018197851262389264,
+   "scouting_share": 0.14530794856839488,
+   "learned": [
+    {
+     "ground": "Grass",
+     "built_in": 1.0,
+     "true": 1.0,
+     "learned": 1.0,
+     "built_in_uphill": 3.0,
+     "true_uphill": 2.5,
+     "learned_uphill": 2.6395460852723915,
+     "logged": 8221,
+     "logged_climbs": 2549
+    },
+    {
+     "ground": "Tall grass",
+     "built_in": 1.8,
+     "true": 1.4,
+     "learned": 1.392824184417594,
+     "built_in_uphill": 3.0,
+     "true_uphill": 3.0,
+     "learned_uphill": 2.821790553697181,
+     "logged": 986,
+     "logged_climbs": 290
+    },
+    {
+     "ground": "Firm sand",
+     "built_in": 1.0,
+     "true": 1.15,
+     "learned": 1.1452529220217464,
+     "built_in_uphill": 3.0,
+     "true_uphill": 4.0,
+     "learned_uphill": 4.223323203525272,
+     "logged": 3751,
+     "logged_climbs": 588
+    },
+    {
+     "ground": "Soft sand",
+     "built_in": 2.4,
+     "true": 2.9,
+     "learned": 2.904943096715474,
+     "built_in_uphill": 3.0,
+     "true_uphill": 6.0,
+     "learned_uphill": 4.340937883946625,
+     "logged": 449,
+     "logged_climbs": 163
+    },
+    {
+     "ground": "Rocky ground",
+     "built_in": 1.3,
+     "true": 1.7,
+     "learned": 1.6929183264306178,
+     "built_in_uphill": 3.0,
+     "true_uphill": 3.0,
+     "learned_uphill": 2.8843401655128162,
+     "logged": 1008,
+     "logged_climbs": 286
+    },
+    {
+     "ground": "Oasis grass",
+     "built_in": 1.0,
+     "true": 1.05,
+     "learned": 1.0311724413991914,
+     "built_in_uphill": 3.0,
+     "true_uphill": 2.5,
+     "learned_uphill": 2.2408496909334197,
+     "logged": 387,
+     "logged_climbs": 85
+    },
+    {
+     "ground": "Sand",
+     "built_in": 1.6,
+     "true": 1.9,
+     "learned": 1.7546003059705466,
+     "built_in_uphill": 3.0,
+     "true_uphill": 5.0,
+     "learned_uphill": 4.153191176864375,
+     "logged": 56,
+     "logged_climbs": 12
+    },
+    {
+     "ground": "Jungle",
+     "built_in": 2.0,
+     "true": 2.6,
+     "learned": 2.466126987384354,
+     "built_in_uphill": 3.0,
+     "true_uphill": 3.5,
+     "learned_uphill": 3.3646518481700793,
+     "logged": 632,
+     "logged_climbs": 197
+    }
+   ]
   },
   {
-   "trips": 300,
-   "moves": 16130
+   "name": "exploring, bigger network",
+   "exploring": true,
+   "network": [
+    14,
+    64,
+    64,
+    1
+   ],
+   "steps": 6000,
+   "curve": [
+    {
+     "trips": 10,
+     "moves": 399
+    },
+    {
+     "trips": 30,
+     "moves": 1487
+    },
+    {
+     "trips": 100,
+     "moves": 4838
+    },
+    {
+     "trips": 300,
+     "moves": 15418
+    }
+   ],
+   "sorts_driven": 534,
+   "hopeful_routes": 217,
+   "scouting_trips": 30,
+   "detours": 0.018291747422657156,
+   "scouting_share": 0.1324281367154131,
+   "learned": [
+    {
+     "ground": "Grass",
+     "built_in": 1.0,
+     "true": 1.0,
+     "learned": 1.0107086554719242,
+     "built_in_uphill": 3.0,
+     "true_uphill": 2.5,
+     "learned_uphill": 2.3498005826161403,
+     "logged": 8211,
+     "logged_climbs": 2581
+    },
+    {
+     "ground": "Tall grass",
+     "built_in": 1.8,
+     "true": 1.4,
+     "learned": 1.4367390621616452,
+     "built_in_uphill": 3.0,
+     "true_uphill": 3.0,
+     "learned_uphill": 2.6256431991355433,
+     "logged": 979,
+     "logged_climbs": 293
+    },
+    {
+     "ground": "Firm sand",
+     "built_in": 1.0,
+     "true": 1.15,
+     "learned": 1.1560791768259604,
+     "built_in_uphill": 3.0,
+     "true_uphill": 4.0,
+     "learned_uphill": 4.159264538288891,
+     "logged": 3819,
+     "logged_climbs": 604
+    },
+    {
+     "ground": "Soft sand",
+     "built_in": 2.4,
+     "true": 2.9,
+     "learned": 2.8641008103925323,
+     "built_in_uphill": 3.0,
+     "true_uphill": 6.0,
+     "learned_uphill": 5.956419858938153,
+     "logged": 448,
+     "logged_climbs": 167
+    },
+    {
+     "ground": "Rocky ground",
+     "built_in": 1.3,
+     "true": 1.7,
+     "learned": 1.689771878646608,
+     "built_in_uphill": 3.0,
+     "true_uphill": 3.0,
+     "learned_uphill": 2.7830033846887114,
+     "logged": 973,
+     "logged_climbs": 296
+    },
+    {
+     "ground": "Oasis grass",
+     "built_in": 1.0,
+     "true": 1.05,
+     "learned": 1.02365200101047,
+     "built_in_uphill": 3.0,
+     "true_uphill": 2.5,
+     "learned_uphill": 2.7299306524168285,
+     "logged": 354,
+     "logged_climbs": 91
+    },
+    {
+     "ground": "Sand",
+     "built_in": 1.6,
+     "true": 1.9,
+     "learned": 1.8875757727567297,
+     "built_in_uphill": 3.0,
+     "true_uphill": 5.0,
+     "learned_uphill": 3.9615497818902488,
+     "logged": 46,
+     "logged_climbs": 11
+    },
+    {
+     "ground": "Jungle",
+     "built_in": 2.0,
+     "true": 2.6,
+     "learned": 2.6004459026326314,
+     "built_in_uphill": 3.0,
+     "true_uphill": 3.5,
+     "learned_uphill": 3.405474778981148,
+     "logged": 588,
+     "logged_climbs": 174
+    }
+   ]
   }
  ],
  "summary": [
@@ -85,7 +592,7 @@
   },
   {
    "theme": "grassland",
-   "model": "after 10 trips",
+   "model": "plain, small network, 10 trips",
    "trips": 240,
    "regret": 0.018330352500012474,
    "median": 0.013591889534256718,
@@ -94,7 +601,7 @@
   },
   {
    "theme": "grassland",
-   "model": "after 30 trips",
+   "model": "plain, small network, 30 trips",
    "trips": 240,
    "regret": 0.0036350213102449135,
    "median": 0.0017370734200948812,
@@ -103,7 +610,7 @@
   },
   {
    "theme": "grassland",
-   "model": "after 100 trips",
+   "model": "plain, small network, 100 trips",
    "trips": 240,
    "regret": 0.0008491478865647716,
    "median": 0.0003411182903972909,
@@ -112,12 +619,120 @@
   },
   {
    "theme": "grassland",
-   "model": "after 300 trips",
+   "model": "plain, small network, 300 trips",
    "trips": 240,
    "regret": 0.00041324918488286344,
    "median": 5.04939652801184e-05,
    "worst": 0.01125533062598838,
    "within_1": 0.9958333333333333
+  },
+  {
+   "theme": "grassland",
+   "model": "plain, bigger network, 10 trips",
+   "trips": 240,
+   "regret": 0.028751735843570398,
+   "median": 0.023379010251248555,
+   "worst": 0.19913325983860997,
+   "within_1": 0.1125
+  },
+  {
+   "theme": "grassland",
+   "model": "plain, bigger network, 30 trips",
+   "trips": 240,
+   "regret": 0.010198857928320064,
+   "median": 0.008383510148515683,
+   "worst": 0.06161738017820295,
+   "within_1": 0.5833333333333334
+  },
+  {
+   "theme": "grassland",
+   "model": "plain, bigger network, 100 trips",
+   "trips": 240,
+   "regret": 0.002554756264177672,
+   "median": 0.0017413523460149127,
+   "worst": 0.01686418316255045,
+   "within_1": 0.975
+  },
+  {
+   "theme": "grassland",
+   "model": "plain, bigger network, 300 trips",
+   "trips": 240,
+   "regret": 0.0005888021888016969,
+   "median": 9.055258311740921e-05,
+   "worst": 0.010761035507127037,
+   "within_1": 0.9958333333333333
+  },
+  {
+   "theme": "grassland",
+   "model": "exploring, small network, 10 trips",
+   "trips": 240,
+   "regret": 0.013055271951497168,
+   "median": 0.00988579177549942,
+   "worst": 0.09556990021064027,
+   "within_1": 0.5041666666666667
+  },
+  {
+   "theme": "grassland",
+   "model": "exploring, small network, 30 trips",
+   "trips": 240,
+   "regret": 0.002668248678731186,
+   "median": 0.001699823358614072,
+   "worst": 0.020454882364046023,
+   "within_1": 0.9666666666666667
+  },
+  {
+   "theme": "grassland",
+   "model": "exploring, small network, 100 trips",
+   "trips": 240,
+   "regret": 0.0009228174815935686,
+   "median": 0.00023621653477146065,
+   "worst": 0.014075928719201158,
+   "within_1": 0.9875
+  },
+  {
+   "theme": "grassland",
+   "model": "exploring, small network, 300 trips",
+   "trips": 240,
+   "regret": 0.0003867221244867593,
+   "median": 0.00010884770399477439,
+   "worst": 0.004953153104582553,
+   "within_1": 1.0
+  },
+  {
+   "theme": "grassland",
+   "model": "exploring, bigger network, 10 trips",
+   "trips": 240,
+   "regret": 0.03317836978632612,
+   "median": 0.025498202504498524,
+   "worst": 0.24640855265497863,
+   "within_1": 0.125
+  },
+  {
+   "theme": "grassland",
+   "model": "exploring, bigger network, 30 trips",
+   "trips": 240,
+   "regret": 0.00866141005546258,
+   "median": 0.00667290638570428,
+   "worst": 0.09556990021064027,
+   "within_1": 0.6875
+  },
+  {
+   "theme": "grassland",
+   "model": "exploring, bigger network, 100 trips",
+   "trips": 240,
+   "regret": 0.001706066267563868,
+   "median": 0.0010038342544091972,
+   "worst": 0.016210757202742565,
+   "within_1": 0.9833333333333333
+  },
+  {
+   "theme": "grassland",
+   "model": "exploring, bigger network, 300 trips",
+   "trips": 240,
+   "regret": 0.0005513554114803781,
+   "median": 0.000136276476199515,
+   "worst": 0.00575602844541101,
+   "within_1": 1.0
   },
   {
    "theme": "grassland",
@@ -139,7 +754,7 @@
   },
   {
    "theme": "desert",
-   "model": "after 10 trips",
+   "model": "plain, small network, 10 trips",
    "trips": 240,
    "regret": 0.032566761210371574,
    "median": 0.015346158199500026,
@@ -148,7 +763,7 @@
   },
   {
    "theme": "desert",
-   "model": "after 30 trips",
+   "model": "plain, small network, 30 trips",
    "trips": 240,
    "regret": 0.008296860114542882,
    "median": 0.004260380547133624,
@@ -157,7 +772,7 @@
   },
   {
    "theme": "desert",
-   "model": "after 100 trips",
+   "model": "plain, small network, 100 trips",
    "trips": 240,
    "regret": 0.0030747052153009455,
    "median": 0.001331749766431134,
@@ -166,12 +781,120 @@
   },
   {
    "theme": "desert",
-   "model": "after 300 trips",
+   "model": "plain, small network, 300 trips",
    "trips": 240,
    "regret": 0.0017227765965247286,
    "median": 0.00024200427157017312,
    "worst": 0.1372020378385166,
    "within_1": 0.9708333333333333
+  },
+  {
+   "theme": "desert",
+   "model": "plain, bigger network, 10 trips",
+   "trips": 240,
+   "regret": 0.05412688974402368,
+   "median": 0.04445852644572812,
+   "worst": 0.21751870881367696,
+   "within_1": 0.0875
+  },
+  {
+   "theme": "desert",
+   "model": "plain, bigger network, 30 trips",
+   "trips": 240,
+   "regret": 0.01954481386091062,
+   "median": 0.01116711927924774,
+   "worst": 0.15702412685990708,
+   "within_1": 0.4708333333333333
+  },
+  {
+   "theme": "desert",
+   "model": "plain, bigger network, 100 trips",
+   "trips": 240,
+   "regret": 0.003882820264049618,
+   "median": 0.002405501876605931,
+   "worst": 0.028195994358849452,
+   "within_1": 0.9083333333333333
+  },
+  {
+   "theme": "desert",
+   "model": "plain, bigger network, 300 trips",
+   "trips": 240,
+   "regret": 0.0009088520555848588,
+   "median": 0.0003947901904081119,
+   "worst": 0.019515888940479398,
+   "within_1": 0.9916666666666667
+  },
+  {
+   "theme": "desert",
+   "model": "exploring, small network, 10 trips",
+   "trips": 240,
+   "regret": 0.03292898573885667,
+   "median": 0.02105377404470743,
+   "worst": 0.2833511940723896,
+   "within_1": 0.275
+  },
+  {
+   "theme": "desert",
+   "model": "exploring, small network, 30 trips",
+   "trips": 240,
+   "regret": 0.008177078541636124,
+   "median": 0.002824326094310048,
+   "worst": 0.18908638475499862,
+   "within_1": 0.7625
+  },
+  {
+   "theme": "desert",
+   "model": "exploring, small network, 100 trips",
+   "trips": 240,
+   "regret": 0.001288198843183171,
+   "median": 0.0005992551980296135,
+   "worst": 0.021390560688158144,
+   "within_1": 0.9833333333333333
+  },
+  {
+   "theme": "desert",
+   "model": "exploring, small network, 300 trips",
+   "trips": 240,
+   "regret": 0.0009372313992214017,
+   "median": 0.00022724796093764876,
+   "worst": 0.019515888940479398,
+   "within_1": 0.9833333333333333
+  },
+  {
+   "theme": "desert",
+   "model": "exploring, bigger network, 10 trips",
+   "trips": 240,
+   "regret": 0.061061809999559506,
+   "median": 0.041956927022512414,
+   "worst": 0.4153193176235841,
+   "within_1": 0.09583333333333334
+  },
+  {
+   "theme": "desert",
+   "model": "exploring, bigger network, 30 trips",
+   "trips": 240,
+   "regret": 0.018958190629306215,
+   "median": 0.013735935157690227,
+   "worst": 0.1312451851598817,
+   "within_1": 0.39166666666666666
+  },
+  {
+   "theme": "desert",
+   "model": "exploring, bigger network, 100 trips",
+   "trips": 240,
+   "regret": 0.002600615283107422,
+   "median": 0.001495195270923566,
+   "worst": 0.022040860330496903,
+   "within_1": 0.9458333333333333
+  },
+  {
+   "theme": "desert",
+   "model": "exploring, bigger network, 300 trips",
+   "trips": 240,
+   "regret": 0.0008161812054320011,
+   "median": 0.0003967056939924163,
+   "worst": 0.012396857541275175,
+   "within_1": 0.9875
   },
   {
    "theme": "desert",
@@ -193,7 +916,7 @@
   },
   {
    "theme": "island",
-   "model": "after 10 trips",
+   "model": "plain, small network, 10 trips",
    "trips": 240,
    "regret": 0.015745658644319517,
    "median": 0.00986457400684837,
@@ -202,7 +925,7 @@
   },
   {
    "theme": "island",
-   "model": "after 30 trips",
+   "model": "plain, small network, 30 trips",
    "trips": 240,
    "regret": 0.0033549552228511453,
    "median": 0.0012761765530867608,
@@ -211,7 +934,7 @@
   },
   {
    "theme": "island",
-   "model": "after 100 trips",
+   "model": "plain, small network, 100 trips",
    "trips": 240,
    "regret": 0.0012519799932287782,
    "median": 0.00015585151400776542,
@@ -220,12 +943,120 @@
   },
   {
    "theme": "island",
-   "model": "after 300 trips",
+   "model": "plain, small network, 300 trips",
    "trips": 240,
    "regret": 0.0007058136517978255,
    "median": 0.0,
    "worst": 0.012172186359673542,
    "within_1": 0.9958333333333333
+  },
+  {
+   "theme": "island",
+   "model": "plain, bigger network, 10 trips",
+   "trips": 240,
+   "regret": 0.019288193310899003,
+   "median": 0.014848149219769957,
+   "worst": 0.18531028059268095,
+   "within_1": 0.32916666666666666
+  },
+  {
+   "theme": "island",
+   "model": "plain, bigger network, 30 trips",
+   "trips": 240,
+   "regret": 0.007934497273369468,
+   "median": 0.005003130306327153,
+   "worst": 0.053230237391780566,
+   "within_1": 0.7125
+  },
+  {
+   "theme": "island",
+   "model": "plain, bigger network, 100 trips",
+   "trips": 240,
+   "regret": 0.0022271286795759395,
+   "median": 0.0009807931695589023,
+   "worst": 0.029726036108394416,
+   "within_1": 0.9541666666666667
+  },
+  {
+   "theme": "island",
+   "model": "plain, bigger network, 300 trips",
+   "trips": 240,
+   "regret": 0.00043569286421417754,
+   "median": 0.0,
+   "worst": 0.008018850226775953,
+   "within_1": 1.0
+  },
+  {
+   "theme": "island",
+   "model": "exploring, small network, 10 trips",
+   "trips": 240,
+   "regret": 0.008896924737452093,
+   "median": 0.005123114278927421,
+   "worst": 0.2033228668543512,
+   "within_1": 0.7541666666666667
+  },
+  {
+   "theme": "island",
+   "model": "exploring, small network, 30 trips",
+   "trips": 240,
+   "regret": 0.0021943319960783273,
+   "median": 0.0008586361752120908,
+   "worst": 0.04586882743236975,
+   "within_1": 0.9791666666666666
+  },
+  {
+   "theme": "island",
+   "model": "exploring, small network, 100 trips",
+   "trips": 240,
+   "regret": 0.0008426588679473278,
+   "median": 0.00011107309880287186,
+   "worst": 0.014706485730246577,
+   "within_1": 0.9916666666666667
+  },
+  {
+   "theme": "island",
+   "model": "exploring, small network, 300 trips",
+   "trips": 240,
+   "regret": 0.0010464225331007317,
+   "median": 8.020433171718189e-06,
+   "worst": 0.021814583482363537,
+   "within_1": 0.9875
+  },
+  {
+   "theme": "island",
+   "model": "exploring, bigger network, 10 trips",
+   "trips": 240,
+   "regret": 0.016022873619385498,
+   "median": 0.0132347985759389,
+   "worst": 0.08796314996038368,
+   "within_1": 0.38333333333333336
+  },
+  {
+   "theme": "island",
+   "model": "exploring, bigger network, 30 trips",
+   "trips": 240,
+   "regret": 0.006465106233687038,
+   "median": 0.0048345101191512585,
+   "worst": 0.02982230393969787,
+   "within_1": 0.7916666666666666
+  },
+  {
+   "theme": "island",
+   "model": "exploring, bigger network, 100 trips",
+   "trips": 240,
+   "regret": 0.0017693139371633554,
+   "median": 0.0009008069117922846,
+   "worst": 0.025403831450739434,
+   "within_1": 0.9875
+  },
+  {
+   "theme": "island",
+   "model": "exploring, bigger network, 300 trips",
+   "trips": 240,
+   "regret": 0.00043881689620707727,
+   "median": 1.4063362542171554e-05,
+   "worst": 0.006113069237684954,
+   "within_1": 1.0
   },
   {
    "theme": "island",
@@ -247,7 +1078,7 @@
   },
   {
    "theme": "all",
-   "model": "after 10 trips",
+   "model": "plain, small network, 10 trips",
    "trips": 720,
    "regret": 0.02221425745156785,
    "median": 0.012120327238248518,
@@ -256,7 +1087,7 @@
   },
   {
    "theme": "all",
-   "model": "after 30 trips",
+   "model": "plain, small network, 30 trips",
    "trips": 720,
    "regret": 0.005095612215879646,
    "median": 0.002124677890122273,
@@ -265,7 +1096,7 @@
   },
   {
    "theme": "all",
-   "model": "after 100 trips",
+   "model": "plain, small network, 100 trips",
    "trips": 720,
    "regret": 0.0017252776983648318,
    "median": 0.0004584680584839296,
@@ -274,12 +1105,120 @@
   },
   {
    "theme": "all",
-   "model": "after 300 trips",
+   "model": "plain, small network, 300 trips",
    "trips": 720,
    "regret": 0.0009472798110684726,
    "median": 0.00011014415639787334,
    "worst": 0.1372020378385166,
    "within_1": 0.9875
+  },
+  {
+   "theme": "all",
+   "model": "plain, bigger network, 10 trips",
+   "trips": 720,
+   "regret": 0.03405560629949769,
+   "median": 0.024154472538106875,
+   "worst": 0.21751870881367696,
+   "within_1": 0.1763888888888889
+  },
+  {
+   "theme": "all",
+   "model": "plain, bigger network, 30 trips",
+   "trips": 720,
+   "regret": 0.012559389687533385,
+   "median": 0.007807691336751854,
+   "worst": 0.15702412685990708,
+   "within_1": 0.5888888888888889
+  },
+  {
+   "theme": "all",
+   "model": "plain, bigger network, 100 trips",
+   "trips": 720,
+   "regret": 0.002888235069267743,
+   "median": 0.001635674458969727,
+   "worst": 0.029726036108394416,
+   "within_1": 0.9458333333333333
+  },
+  {
+   "theme": "all",
+   "model": "plain, bigger network, 300 trips",
+   "trips": 720,
+   "regret": 0.0006444490362002444,
+   "median": 0.0001151801755118198,
+   "worst": 0.019515888940479398,
+   "within_1": 0.9958333333333333
+  },
+  {
+   "theme": "all",
+   "model": "exploring, small network, 10 trips",
+   "trips": 720,
+   "regret": 0.018293727475935308,
+   "median": 0.009637630057404145,
+   "worst": 0.2833511940723896,
+   "within_1": 0.5111111111111111
+  },
+  {
+   "theme": "all",
+   "model": "exploring, small network, 30 trips",
+   "trips": 720,
+   "regret": 0.004346553072148545,
+   "median": 0.0016881162135273797,
+   "worst": 0.18908638475499862,
+   "within_1": 0.9027777777777778
+  },
+  {
+   "theme": "all",
+   "model": "exploring, small network, 100 trips",
+   "trips": 720,
+   "regret": 0.0010178917309080224,
+   "median": 0.000337208915378695,
+   "worst": 0.021390560688158144,
+   "within_1": 0.9875
+  },
+  {
+   "theme": "all",
+   "model": "exploring, small network, 300 trips",
+   "trips": 720,
+   "regret": 0.0007901253522696309,
+   "median": 0.00011965778338796085,
+   "worst": 0.021814583482363537,
+   "within_1": 0.9902777777777778
+  },
+  {
+   "theme": "all",
+   "model": "exploring, bigger network, 10 trips",
+   "trips": 720,
+   "regret": 0.036754351135090374,
+   "median": 0.022106958946753963,
+   "worst": 0.4153193176235841,
+   "within_1": 0.2013888888888889
+  },
+  {
+   "theme": "all",
+   "model": "exploring, bigger network, 30 trips",
+   "trips": 720,
+   "regret": 0.011361568972818611,
+   "median": 0.007574159422391369,
+   "worst": 0.1312451851598817,
+   "within_1": 0.6236111111111111
+  },
+  {
+   "theme": "all",
+   "model": "exploring, bigger network, 100 trips",
+   "trips": 720,
+   "regret": 0.002025331829278215,
+   "median": 0.0010816069001433615,
+   "worst": 0.025403831450739434,
+   "within_1": 0.9722222222222222
+  },
+  {
+   "theme": "all",
+   "model": "exploring, bigger network, 300 trips",
+   "trips": 720,
+   "regret": 0.0006021178377064856,
+   "median": 0.00017727019671587296,
+   "worst": 0.012396857541275175,
+   "within_1": 0.9958333333333333
   },
   {
    "theme": "all",
@@ -291,95 +1230,5 @@
    "within_1": 1.0
   }
  ],
- "learned": [
-  {
-   "ground": "Grass",
-   "built_in": 1.0,
-   "true": 1.0,
-   "learned": 1.0,
-   "built_in_uphill": 3.0,
-   "true_uphill": 2.5,
-   "learned_uphill": 2.494645040924568,
-   "logged": 8617,
-   "logged_climbs": 2688
-  },
-  {
-   "ground": "Tall grass",
-   "built_in": 1.8,
-   "true": 1.4,
-   "learned": 1.4255198846192902,
-   "built_in_uphill": 3.0,
-   "true_uphill": 3.0,
-   "learned_uphill": 2.691014632806079,
-   "logged": 892,
-   "logged_climbs": 229
-  },
-  {
-   "ground": "Firm sand",
-   "built_in": 1.0,
-   "true": 1.15,
-   "learned": 1.1537347243526117,
-   "built_in_uphill": 3.0,
-   "true_uphill": 4.0,
-   "learned_uphill": 3.760609715438602,
-   "logged": 4348,
-   "logged_climbs": 657
-  },
-  {
-   "ground": "Soft sand",
-   "built_in": 2.4,
-   "true": 2.9,
-   "learned": 2.931838207540199,
-   "built_in_uphill": 3.0,
-   "true_uphill": 6.0,
-   "learned_uphill": 6.030470361997195,
-   "logged": 386,
-   "logged_climbs": 110
-  },
-  {
-   "ground": "Rocky ground",
-   "built_in": 1.3,
-   "true": 1.7,
-   "learned": 1.6610824084789564,
-   "built_in_uphill": 3.0,
-   "true_uphill": 3.0,
-   "learned_uphill": 3.0274600306322674,
-   "logged": 945,
-   "logged_climbs": 219
-  },
-  {
-   "ground": "Oasis grass",
-   "built_in": 1.0,
-   "true": 1.05,
-   "learned": 1.060635189489934,
-   "built_in_uphill": 3.0,
-   "true_uphill": 2.5,
-   "learned_uphill": 2.270306593157948,
-   "logged": 390,
-   "logged_climbs": 75
-  },
-  {
-   "ground": "Sand",
-   "built_in": 1.6,
-   "true": 1.9,
-   "learned": 1.9556162882214239,
-   "built_in_uphill": 3.0,
-   "true_uphill": 5.0,
-   "learned_uphill": 2.7520660827801025,
-   "logged": 20,
-   "logged_climbs": 3
-  },
-  {
-   "ground": "Jungle",
-   "built_in": 2.0,
-   "true": 2.6,
-   "learned": 2.54781041077106,
-   "built_in_uphill": 3.0,
-   "true_uphill": 3.5,
-   "learned_uphill": 3.2156560310478532,
-   "logged": 532,
-   "logged_climbs": 150
-  }
- ],
- "seconds": 199
+ "seconds": 901
 }

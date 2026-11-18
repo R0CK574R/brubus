@@ -36,7 +36,10 @@ trained with PyTorch on 450 generated maps estimates the drive time left to a go
 distance is 33% off; benchmarked inside A\* on maps it had never seen, it still lost to a classical technique,
 landmarks, which now guide A\*: the same quickest routes, searching 4.8 times fewer cells. Then Bruce learned his
 own terrain speeds from 300 trips of noisy driving logs, in a simulated world whose true speeds he can't see: on
-maps he had never driven, his routes went from 6.9% slower than the quickest to 0.09%.
+maps he had never driven, his routes went from 6.9% slower than the quickest to 0.09%. Exploring (detours and
+scouting trips onto ground he was unsure of) and a bigger network then went after that stage's two weak spots: the
+worst of 720 trips is now 1.2% slow instead of 13.7%, and beach sand, which he had hardly driven, is much better
+learned.
 
 ![Watch the search on the desert: Dijkstra (left) spreads out evenly while A* (right) heads for the finish; both find the same 2:25 route, but A* searches 2.5 times fewer cells](docs/search.gif)
 
@@ -147,9 +150,9 @@ Run these from the same terminal, with the virtual environment active.
 | `python main.py learn eval` | The stage-2 benchmark on the test maps: the network and landmarks against the classical planners (about 15 seconds) |
 | `python main.py learn train` | Train the network again (needs PyTorch: `python -m pip install torch`; about 2 minutes) |
 | `python main.py route --map desert --preset 19 --landmarks` | Add A\* guided by 8 landmarks to the race: the same route, fewer cells searched |
-| `python main.py speeds eval` | Stage 3: routes planned with Bruce's learned speeds, his built-in model and the true speeds, driven in the true world on the test maps (about 20 seconds with the C++ core) |
-| `python main.py speeds learn` | Bruce drives 300 trips and learns his speeds, scored after 10, 30, 100 and 300 (needs PyTorch; about 3.5 minutes) |
-| `python -m pytest -q` | Run the 344 tests (59 of them hold the C++ core against Python; skipped until it's built) |
+| `python main.py speeds eval` | Stage 3: routes planned with Bruce's built-in model, stage 3's and stage 3b's learned speeds, and the true speeds, driven in the true world on the test maps (about 45 seconds with the C++ core) |
+| `python main.py speeds learn` | Four careers of Bruce's on the same 300 missions (planning with what he believes or exploring, small network or bigger), scored after 10, 30, 100 and 300 trips (needs PyTorch; about 15 minutes on two cores) |
+| `python -m pytest -q` | Run the 358 tests (59 of them hold the C++ core against Python; skipped until it's built) |
 | `python main.py demo`, `python main.py benchmark` | The original 2D grid version |
 
 `python main.py course` writes the viewer twice: `output/course_3d.html` to open yourself, and
@@ -429,7 +432,8 @@ sensing arithmetic, not a second planner, and the C++ core doesn't have these ye
 The machine-learning work, in stages. Stage 1 built the data. Stage 2 trained a network to guide A\* and
 measured it against the classical planners: it lost to a technique from 2005 (landmarks), which is now part of
 the planner. Stage 3 takes the learning where it wins: Bruce learns his own terrain speeds from his driving, and
-his routes on ground he has never seen come out 0.09% slower than the quickest instead of 6.9%.
+his routes on ground he has never seen come out 0.09% slower than the quickest instead of 6.9%. Stage 3b goes after
+its two weak spots: ground he never drove, and rare steep moves the network didn't fit.
 The classical planners stay as they are, exact and checked bit for bit; anything learned sits beside them and is
 judged against them.
 
@@ -577,8 +581,6 @@ the true world allows (`python main.py speeds eval`):
 | **... in 300 trips** (about 19 km) | 16,130 | **0.09%** | 0.01% | 13.7% | **99%** |
 | The true speeds (not knowable) | | 0 | 0 | 0 | 100% |
 
-![Two panels, by trips driven (0, 10, 30, 100, 300). Left: routes slower than the quickest, mean of 720 test trips, on a log scale, falling from 6.9% with the built-in model to 0.09% after 300 trips. Right: trips within 1% of the quickest route, rising from 17% to 99%, against 100% for knowing the true speeds](docs/learn-speeds.png)
-
 It holds on every theme: after 300 trips, grassland 8.0% to 0.04%, desert 7.2% to 0.17% and island 5.4% to 0.07%.
 
 **What he learned**, read off the network: the time per metre on flat, smooth ground, and what a climb adds, as a
@@ -602,20 +604,81 @@ rarely meets it, but nothing tells him he is wrong: the limit of learning from y
 **The worst trip, and what didn't fix it.** After 300 trips the worst test trip is 13.7% slow, worse than after
 100 (5.0%). It turns on a single move: a 56% climb up soft sand across a steep side slope, 36 seconds in the true
 world for 1.6 metres. Bruce had driven only 16 soft-sand climbs steeper than 45%; the network puts this one at
-17.5 s per metre against a true 21.9, and takes it. Whether a network guesses so rare a move high or low is close to chance
-(after 30 trips it guessed 23.2). An ensemble of five networks, planning with their mean plus their spread to keep
-off moves Bruce is unsure of, didn't help (0.07% on average, the same 13.7% worst): all five learned from the same
-few climbs and agree on the same wrong time. The fix is in what he drives: trying moves he is unsure of when it is
-cheap to, which is the next step for this stage.
+17.5 s per metre against a true 21.9, and takes it. An ensemble of five networks, planning with their mean plus
+their spread to keep off moves Bruce is unsure of, didn't help (0.07% on average, the same 13.7% worst): all five
+learned from the same few climbs and agree on the same wrong time. Stage 3b found out why, and fixed it.
 
 **What this says.** Where the costs are known, search beats learning (stage 2). Where they aren't, learning from
 experience is what makes the search right: 300 trips of logs cut the time lost to a wrong model from 6.9% to
 0.09% on ground Bruce had never seen, and the planner is the same exact A\*. Learning changes what it believes
 about the ground, not how it searches. The code is in `robotnav/learn/speeds.py` (the true world, the logs, the
-network and the study) and `cpp/src/fields.cpp` (planning on a table of move times); the network is
-`robotnav/assets/speeds.txt`, with its card. `tests/test_speeds.py` holds the committed network to these results
-without PyTorch; `python main.py speeds learn` repeats the whole study (about 3.5 minutes, and on the same machine
-the same network, bit for bit).
+network and the study) and `cpp/src/fields.cpp` (planning on a table of move times); stage 3's network is
+`robotnav/assets/speeds-stage3.txt`. `tests/test_speeds.py` holds the committed networks to these results without
+PyTorch; `python main.py speeds learn` repeats the whole study, stage 3b's with it (about 15 minutes on two CPU
+cores, and on the same machine the same networks, bit for bit).
+
+### Stage 3b: exploring, and a better fit
+
+Stage 3 left two weak spots. Bruce drove the island's beach sand 20 times in 300 trips, so he couldn't know how
+hard it is to climb. And his worst trips turned on rare, steep soft-sand climbs across steeper side slopes, which
+he guessed 20 to 40% too quick. Looked at closely, they are different problems: one is missing data, the other a
+poor fit.
+
+**Exploring.** Bruce keeps a tally of the moves he has logged, by sort: the kind of ground, 7 bands of grade, 4 of
+side slope and 3 of roughness, 672 sorts in all. A sort he has driven n times has a novelty of 1/√(1 + n), the
+count-based bonus of UCB-style exploration. He explores in two ways:
+
+- **Cheap detours.** On each mission he also plans a hopeful route, on which each move's time above its bare
+  length is cut in proportion to its novelty: a sort he has never driven looks as quick as the best ground
+  (optimism in the face of uncertainty). He drives it only if he believes it costs at most 10% more than the
+  quickest route; otherwise he halves the pull and plans again, three times at most.
+- **Scouting trips.** One trip in ten, instead of the mission, he drives to the patch of ground he is least sure
+  of (the 7 x 7 cells holding the most novelty), on the hopeful route.
+
+**A better fit.** Stage 3's network guessed even the steepest climbs across steep slopes *in its own log* about
+10% too quick: it was too small, or trained too briefly, to fit moves that rare. A bigger one (two layers of 64 and
+6,000 training steps, instead of 32 and 3,000; still seconds on a CPU) fits them.
+
+**Both fixes, measured apart.** Four careers drive the same 300 missions (the same maps, starts and goals in the
+same order). Every choice here (the detour budget, how to scout, the network's size) was made on the 45
+validation maps, and the test maps were scored once, on the 720 trips of stage 3:
+
+| After 300 trips | Sorts of move driven | Beach sand driven (climbs) | Beach sand learned: flat, climbing (true 1.90, 5.0) | Slower than the quickest: mean | Worst trip | Within 1% |
+|---|---:|---:|---:|---:|---:|---:|
+| Stage 3: drives his missions, small network | 393 | 20 (3) | 1.96, 2.8 | 0.09% | 13.7% | 99% |
+| Drives his missions, bigger network | 397 | 17 (2) | 2.24, 3.5 | 0.06% | 2.0% | 100% |
+| Explores, small network | 541 | 56 (12) | 1.75, 4.2 | 0.08% | 2.2% | 99% |
+| **Stage 3b: explores, bigger network** | 534 | 46 (11) | **1.89, 4.0** | **0.06%** | **1.2%** | **100%** |
+
+![Three panels, by trips driven (0, 10, 30, 100, 300), for stage 3 (dashed grey) and stage 3b (blue). Mean slower than the quickest, log scale: both fall from 6.9% with the built-in model; stage 3b is behind until 100 trips and ends at 0.06% against 0.09%. Worst trip, log scale: stage 3 ends at 13.7%, stage 3b at 1.2%. Trips within 1% of the quickest: both reach 99 to 100% by 300 trips](docs/learn-speeds.png)
+
+- **Exploring is what teaches him the beach.** He drove more than twice the beach sand, and nearly four times the
+  sand climbs, and his sand estimates moved toward the truth: flat ground now right, climbing 4.0 against a true 5.0
+  (stage 3: 2.8). Eleven climbs still aren't many, so it is better, not solved.
+- **The bigger network is what fixes the worst trip.** On the validation maps it cut the worst trip from 8.6% to
+  2.9% without exploring, while exploring with the small network left it at 8.5%. On the test maps
+  exploring alone cut it too (2.2%): the worst trip is one trip in 720 and moves around. Together they were best on
+  both.
+- **A bigger network needs more data.** Stage 3b is behind stage 3 until about 100 trips and ahead by 300 (the
+  chart), and with as little beach sand as stage 3 drove, the bigger network got even flat sand 18% wrong.
+  Exploring gives it the data it needs.
+- **What exploring costs.** The 30 scouting trips took 13% of his driving time, and detours made his missions 1.8%
+  longer in the true world. That is paid once, while he learns: on his missions afterwards he plans with what he
+  learned, without exploring.
+
+After 300 trips, per theme: grassland 0.06% (worst 0.6%), desert 0.08% (worst 1.2%), island 0.04% (worst 0.6%).
+
+**Tried, and not kept** (on the validation maps): cheap detours alone, which reached more sorts of move (470 of 672)
+but no more beach sand (the beach lies away from his missions) and gave a worse worst trip (18%); scouting the
+nearest patch nearly as unfamiliar as the least familiar one, which cost half as much (6% of his driving) and
+taught less; and planning with caution, a surcharge on moves of sorts he has rarely driven, which made the average
+trip 2.5 to 17 times worse for little or no gain on the worst.
+
+**What this says.** Two failures that looked alike needed different fixes: ground he never drives can only be
+learned by going there, and rare moves he has driven still need a model able to fit them. Telling them apart took
+looking at the failures (the network was wrong even on its own log), not more tuning. Bruce's network is now stage
+3b's (`robotnav/assets/speeds.txt`, with a card holding all four careers); `python main.py speeds eval` scores it
+against stage 3's.
 
 ## The rover
 
@@ -921,7 +984,7 @@ the C++ tests under AddressSanitizer and UndefinedBehaviorSanitizer.
 | `cpp/` | The C++ core: planners, D\* Lite, the air route, the detection field and Monte Carlo trials on a thread pool, map files, the `robotnav` tool, unit tests, the pybind11 module and the WebAssembly build (`cpp/wasm/`, `tools/build_wasm.sh`) ([cpp/README.md](cpp/README.md)) |
 | `robotnav/learn/` | The learning work: the labels (true time to the goal, A\* with a table of estimates, re-expanding A\*), the data set, the baseline, the network's features and inference (`features.py`, `model.py`), training with PyTorch (`train.py`), the benchmark (`evaluate.py`), and stage 3's learned terrain speeds (`speeds.py`: the hidden true world, the driving logs, the network and the study) |
 | `robotnav/landmarks.py` | A\* with landmarks (ALT): the landmarks, their fields, the lower bound and the search |
-| `robotnav/assets/heuristic.txt`, `speeds.txt` | The trained networks (plain text, exact doubles), each with its model card: the A\* estimate and Bruce's learned speeds |
+| `robotnav/assets/heuristic.txt`, `speeds.txt`, `speeds-stage3.txt` | The trained networks (plain text, exact doubles), with model cards: the A\* estimate, and Bruce's learned speeds (stage 3b's, and stage 3's for comparison) |
 | `tools/learn_figure.py` | Draws the learning section's three pictures: the labels and the search, the benchmark, and the learning curve |
 | `robotnav/assign.py` | Who goes where: the Hungarian method for a survey's assignment, and the nearest-first rule it is compared with |
 | `robotnav/cpp.py`, `parity.py`, `mapfile.py` | Run the C++ core from Python, compare it with the reference, and write the map files it reads |
@@ -929,7 +992,7 @@ the C++ tests under AddressSanitizer and UndefinedBehaviorSanitizer.
 | `docs/` | The live demo served by GitHub Pages (`index.html`, built by `python main.py course`), its preview image, and the README's pictures |
 | `robotnav/terrain_bench.py` | Sweeps hill height, slope limit and obstacle density |
 | `robotnav/grid.py`, `visualize.py`, `benchmark.py` | Original 2D grid world, plots and benchmark |
-| `tests/` | 344 checks: Bruce's learned speeds (the move tables against the planners, the true world, the committed network's accuracy and routes), landmarks (never too high, consistent, the quickest route), the network (its file, its accuracy on fresh maps, the capped search's promise), the learning data's exact labels and split by map, optimality on every map, the shortest route, all 20 presets per map, the desert's oases, grade limit, water, route rules, D\* Lite (legal routes, optimal repairs, roadblocks), the air route (towers, lines of sight, hiding behind a ridge), the C++ core against Python, map rebuilds, the command line, the page head and link previews, the survey's assignment against every pairing, the console look (fonts, map symbols, tags, read-outs), the intro's flag and logo |
+| `tests/` | 358 checks: Bruce's learned speeds (the move tables against the planners, the true world, exploring, the committed networks' accuracy and routes), landmarks (never too high, consistent, the quickest route), the network (its file, its accuracy on fresh maps, the capped search's promise), the learning data's exact labels and split by map, optimality on every map, the shortest route, all 20 presets per map, the desert's oases, grade limit, water, route rules, D\* Lite (legal routes, optimal repairs, roadblocks), the air route (towers, lines of sight, hiding behind a ridge), the C++ core against Python, map rebuilds, the command line, the page head and link previews, the survey's assignment against every pairing, the console look (fonts, map symbols, tags, read-outs), the intro's flag and logo |
 
 ## Findings
 
@@ -1007,7 +1070,8 @@ The air route, over each map's 20 preset trips (medians; `python main.py fly` fo
 
 - Wrap the C++ planners as a ROS 2 Nav2 planner plugin
 - Moving obstacles, and a rover sensor blocked by hills (the towers already use line of sight)
-- Bruce driving to learn: trying moves he is unsure of when it is cheap to, so rare ground (beach sand, steep
-  soft-sand climbs) gets learned too ([stage 3](#stage-3-bruce-learns-his-own-terrain-speeds))
+- Choosing the network's size from Bruce's own held-out log as it grows: the bigger network wins only after about
+  100 trips ([stage 3b](#stage-3b-exploring-and-a-better-fit))
+- Exploring by what a sort of move could change in his plans, not only by how rarely he has driven it
 - Bruce's learned speeds in the viewer: the route he believes in against the one the true world rewards
 - Landmarks in the browser, so the viewer's race and the console plan with them too

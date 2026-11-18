@@ -162,13 +162,16 @@ def bench() -> None:
 
 
 def speeds() -> None:
-    """Stage 3's learning curve, read from the card `python main.py speeds learn` writes: how much slower than the
-    quickest Bruce's routes are, and how many are within 1% of it, after each number of trips he has driven."""
+    """Stage 3's learning curves, read from the card `python main.py speeds learn` writes: how much slower than the
+    quickest Bruce's routes are on average and at worst, and how many are within 1% of it, after each number of
+    trips he has driven, for stage 3 (planning with what he believes, the small network) and stage 3b (exploring,
+    the bigger network)."""
     import json
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     from matplotlib import font_manager
+    from matplotlib.lines import Line2D
     from robotnav.learn.speeds import ASSET
 
     for f in font_manager.findSystemFonts():
@@ -178,52 +181,72 @@ def speeds() -> None:
                          "xtick.color": DIM, "ytick.color": DIM})
     card = json.loads(ASSET.with_suffix(".card.json").read_text())
     summary = {s["model"]: s for s in card["summary"] if s["theme"] == "all"}
-    steps = [("built-in", "0\n(built-in)")] + [(f"after {c['trips']} trips", f"{c['trips']}") for c in card["curve"]]
-    trips = summary["built-in"]["trips"]
-    x = np.arange(len(steps))
-    mean = [100 * summary[k]["regret"] for k, _ in steps]
-    close = [100 * summary[k]["within_1"] for k, _ in steps]
+    first, last = card["careers"][0], card["careers"][-1]
+    trips = [p["trips"] for p in last["curve"]]
+    labels = ["0\n(built-in)"] + [str(n) for n in trips]
+    x = np.arange(len(labels))
+    series = [(first, "Stage 3: drives his missions, small network", DIM, (0, (4, 3)), "white"),
+              (last, "Stage 3b: explores, bigger network", BLUE, "-", BLUE)]
 
-    fig, axes = plt.subplots(1, 2, figsize=(11.5, 4.9), dpi=130, facecolor=BG)
-    fig.subplots_adjust(left=0.07, right=0.98, top=0.76, bottom=0.17, wspace=0.22)
-    for ax, values, title, sub in (
-            (axes[0], mean, "Slower than the quickest route", f"mean of {trips} trips on maps he never drove (log scale)"),
-            (axes[1], close, "Trips within 1% of the quickest route", f"share of the same {trips} trips")):
+    def values(career, key):
+        return [100 * summary["built-in"][key]] + [100 * summary[f"{career['name']}, {n} trips"][key] for n in trips]
+
+    count = summary["built-in"]["trips"]
+    fig, axes = plt.subplots(1, 3, figsize=(14.5, 5.3), dpi=130, facecolor=BG)
+    fig.subplots_adjust(left=0.055, right=0.985, top=0.71, bottom=0.16, wspace=0.24)
+    panels = ((axes[0], "regret", "Slower than the quickest route", f"mean of {count} trips (log scale)"),
+              (axes[1], "worst", "The worst of those trips", "how much slower (log scale)"),
+              (axes[2], "within_1", "Trips within 1% of the quickest", "share of the trips"))
+    for ax, key, title, sub in panels:
         ax.set_facecolor(PANEL)
         for side in ax.spines.values():
             side.set_color("#2a3038")
         ax.grid(True, axis="y", color="#1f252c", linewidth=0.8)
-        ax.plot(x, values, color=BLUE, lw=2.2, zorder=3)
-        ax.scatter(x, values, s=64, color=BLUE, edgecolor=PANEL, linewidth=1.6, zorder=4)
+        for career, _, color, dash, face in series:
+            v = values(career, key)
+            ax.plot(x, v, color=color, lw=2.2 if color == BLUE else 1.8, ls=dash, zorder=3 if color == BLUE else 2)
+            ax.scatter(x, v, s=60, color=color if face != "white" else PANEL, edgecolor=color, linewidth=1.6,
+                       zorder=4 if color == BLUE else 3)
         ax.set_xticks(x)
-        ax.set_xticklabels([label for _, label in steps])
+        ax.set_xticklabels(labels)
         ax.set_xlabel("trips Bruce has driven and learned from")
-        ax.set_title(title, loc="left", fontsize=13.5, color=INK, fontweight="semibold", pad=24)
-        ax.text(0, 1.03, sub, transform=ax.transAxes, fontsize=10.5, color=DIM, va="bottom")
-    ax = axes[0]
-    ax.set_yscale("log")
-    ax.set_ylim(0.05, 12)
-    ax.set_yticks([0.1, 0.3, 1, 3, 10])
-    ax.set_yticklabels(["0.1%", "0.3%", "1%", "3%", "10%"])
-    ax.minorticks_off()
-    ax.annotate(f"{mean[0]:.1f}%: his built-in model", (x[0], mean[0]), xytext=(10, 4), textcoords="offset points",
-                fontsize=10, color=INK)
-    ax.annotate(f"{mean[-1]:.2f}%", (x[-1], mean[-1]), xytext=(0, 10), textcoords="offset points", fontsize=10,
-                color=INK, ha="center")
-    ax = axes[1]
-    ax.set_ylim(0, 108)
-    ax.set_yticks([0, 25, 50, 75, 100])
-    ax.set_yticklabels(["0%", "25%", "50%", "75%", "100%"])
-    ax.axhline(100, color=DIM, lw=1, ls=(0, (4, 3)), zorder=2)
-    ax.text(x[0], 101.5, "knowing the true speeds", fontsize=9.5, color=DIM, va="bottom")
-    ax.annotate(f"{close[0]:.0f}%", (x[0], close[0]), xytext=(10, -4), textcoords="offset points", fontsize=10,
-                color=INK, va="top")
-    ax.annotate(f"{close[-1]:.0f}%", (x[-1], close[-1]), xytext=(-8, -14), textcoords="offset points", fontsize=10,
-                color=INK, ha="right", va="top")
-    fig.text(0.07, 0.94, "Bruce learns his terrain speeds from his own driving", fontsize=15, color=INK,
+        ax.set_title(title, loc="left", fontsize=13, color=INK, fontweight="semibold", pad=22)
+        ax.text(0, 1.03, sub, transform=ax.transAxes, fontsize=10, color=DIM, va="bottom")
+        if key == "within_1":
+            ax.set_ylim(0, 108)
+            ax.set_yticks([0, 25, 50, 75, 100])
+            ax.set_yticklabels(["0%", "25%", "50%", "75%", "100%"])
+            ax.axhline(100, color=DIM, lw=1, ls=(0, (1, 3)), zorder=1)
+            ax.text(x[0] - 0.2, 101.5, "knowing the true speeds", fontsize=9.5, color=DIM, va="bottom")
+        else:
+            ax.set_yscale("log")
+            ax.minorticks_off()
+        ax.set_xlim(-0.35, len(x) - 0.25)
+        for career, _, color, _, _ in series:                    # the last values, labelled where they end
+            v = values(career, key)[-1]
+            text = f"{v:.0f}%" if key == "within_1" else f"{v:.2f}%" if v < 1 else f"{v:.1f}%"
+            if key == "within_1":                                # nearly equal: one above the line, one below
+                up = color == BLUE
+                ax.annotate(text, (x[-1], v), xytext=(-9, 7 if up else -9), textcoords="offset points", fontsize=10,
+                            color=INK, ha="right", va="bottom" if up else "top")
+            else:
+                ax.annotate(text, (x[-1], v), xytext=(10, 0), textcoords="offset points", fontsize=10, color=INK,
+                            ha="left", va="center")
+    axes[0].set_ylim(0.02, 12)
+    axes[0].set_yticks([0.03, 0.1, 0.3, 1, 3, 10])
+    axes[0].set_yticklabels(["0.03%", "0.1%", "0.3%", "1%", "3%", "10%"])
+    axes[1].set_ylim(0.3, 120)
+    axes[1].set_yticks([0.3, 1, 3, 10, 30, 100])
+    axes[1].set_yticklabels(["0.3%", "1%", "3%", "10%", "30%", "100%"])
+    fig.text(0.055, 0.945, "Bruce learns his terrain speeds from his own driving", fontsize=15, color=INK,
              fontweight="semibold")
-    fig.text(0.07, 0.895, "routes planned with what he believes, driven in the simulator's hidden true world", fontsize=11,
-             color=DIM)
+    fig.text(0.055, 0.9, f"routes planned with what he believes, driven in the simulator's hidden true world, on "
+             f"{count} trips across maps he never drove", fontsize=11, color=DIM)
+    handles = [Line2D([], [], color=color, lw=2, ls=dash, marker="o", markersize=7, markeredgewidth=1.6,
+                      markerfacecolor=color if face != "white" else PANEL, markeredgecolor=color)
+               for _, _, color, dash, face in series]
+    fig.legend(handles, [name for _, name, _, _, _ in series], loc="upper right", bbox_to_anchor=(0.985, 0.975),
+               frameon=False, fontsize=10.5, labelcolor=INK, handlelength=2.6)
     out = ROOT / "docs" / "learn-speeds.png"
     fig.savefig(out, facecolor=BG)
     print(out)

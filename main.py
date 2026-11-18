@@ -22,7 +22,7 @@
     python main.py learn train          # train the network that estimates the time left (needs PyTorch)
     python main.py learn eval           # the benchmark: the network and landmarks against the classical planners
     python main.py route --map desert --preset 19 --landmarks   # add A* guided by 8 landmarks to the race
-    python main.py speeds learn         # Bruce learns his terrain speeds from his driving (needs PyTorch)
+    python main.py speeds learn         # Bruce learns his terrain speeds from his driving, plain and exploring (PyTorch)
     python main.py speeds eval          # plan with what he learned on maps he never drove, scored in the true world
 """
 from __future__ import annotations
@@ -406,27 +406,41 @@ def learn(args) -> None:
 
 
 def speeds(args) -> None:
-    """Stage 3: Bruce learns his own terrain speeds from his driving logs."""
+    """Stage 3: Bruce learns his own terrain speeds from his driving logs (and, 3b, explores to learn them)."""
     from robotnav.learn import speeds as sp
 
     folder = Path(args.dir)
+    path = Path(args.model or sp.ASSET)
     if args.action == "learn":
         try:
             import torch  # noqa: F401
         except ImportError:
             raise SystemExit("Learning needs PyTorch: python -m pip install torch (nothing else in Brubus does)")
-        print(f"Bruce drives the train maps; a network is trained after {', '.join(map(str, args.checkpoints))} trips")
-        card = sp.run(folder, tuple(args.checkpoints), out=Path(args.model or sp.ASSET))
-        summary, learned = card["summary"], card["learned"]
+        print(f"Four careers of Bruce's on the same missions; a network is trained after "
+              f"{', '.join(map(str, args.checkpoints))} trips")
+        card = sp.run(folder, tuple(args.checkpoints), out=path)
+        last = args.checkpoints[-1]
+        shown = ["built-in", *(f"{c['name']}, {last} trips" for c in card["careers"]), "true"]
+        summary = card["summary"]
+        for c in card["careers"]:
+            print(f"  {c['name']:<27} {c['sorts_driven']} of {card['explore']['sorts']} sorts of move driven; "
+                  f"{c['scouting_trips']} scouting trips ({100 * c['scouting_share']:.1f}% of his driving), detours "
+                  f"{100 * c['detours']:+.2f}% on his missions")
+        learned = card["careers"][-1]["learned"]
     else:
-        path = Path(args.model or sp.ASSET)
-        model = sp.load(path)
-        rows = sp.evaluate({"built-in": "built-in", "learned": model, "true": "true"}, folder, split=args.split)
-        summary = sp.summarize(rows)
+        stage3 = path.with_name(sp.STAGE3_ASSET.name)
+        models = {"built-in": "built-in"}
+        if stage3.exists():
+            models["stage 3 network"] = sp.load(stage3)
+        models["stage 3b network"] = model = sp.load(path)
+        models["true"] = "true"
+        summary = sp.summarize(sp.evaluate(models, folder, split=args.split))
+        shown = None
         card = path.with_suffix(".card.json")
-        learned = json.loads(card.read_text())["learned"] if card.exists() else sp.what_it_learned(model)
+        learned = (json.loads(card.read_text())["careers"][-1]["learned"] if card.exists()
+                   else sp.what_it_learned(model))
     print("Routes planned with each model, driven in the true world:")
-    print(sp.table(summary))
+    print(sp.table(summary, models=shown))
     print("What Bruce learned (seconds per metre on flat, smooth ground; what climbing adds, as a multiple of the flat "
           "time per unit of grade):")
     for w in learned:
@@ -613,7 +627,8 @@ def main() -> None:
     spd = sub.add_parser("speeds", help="Bruce learns his terrain speeds from his driving, and plans with them")
     spd.add_argument("action", choices=["learn", "eval"])
     spd.add_argument("--dir", default="data/terrain-v1", help="the data set (python main.py dataset build)")
-    spd.add_argument("--model", help="the learned speeds file (default robotnav/assets/speeds.txt)")
+    spd.add_argument("--model", help="the learned speeds file (default robotnav/assets/speeds.txt; stage 3's network "
+                                     "is read from speeds-stage3.txt beside it)")
     spd.add_argument("--checkpoints", type=int, nargs="+", default=[10, 30, 100, 300],
                      help="train a network after this many trips (learn)")
     spd.add_argument("--split", choices=["train", "val", "test"], default="test", help="maps to score on (eval)")

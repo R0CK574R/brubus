@@ -19,6 +19,12 @@ The score is what matters to a robot: the route Bruce picks, driven in the true 
 the true world allows (its "regret"), on test maps he has never driven. The hidden model is a simulation, made up
 for this study; what is real is that Bruce has to learn it from noisy logs of his own driving.
 
+Stage 3b fixes stage 3's two weak spots. Ground Bruce never drives (the island's beach sand) he can't learn: so he
+explores (Tally, Explore): cheap detours through sorts of move he is unsure of, and a scouting trip in every ten to
+the ground he is least sure of. And the network under-fitted its rarest, steepest moves even on its own log: a
+bigger one (64 x 64, 6,000 steps instead of 32 x 32, 3,000) fits them. `run` measures both fixes apart: four
+careers on the same missions, plain or exploring, with the small network or the bigger one.
+
 Moves are tables: costs[cell, k] is the time of move k (the planners' order: up, down, left, right, then the
 diagonals) out of the cell, inf where it can't be made. Every time is at least the move's flat length, so the
 straight-line estimate stays a lower bound and A* stays optimal on any of them. The C++ core plans on such tables
@@ -256,6 +262,103 @@ def cost_to_go_costs(t: Terrain, costs: np.ndarray, goal) -> np.ndarray:
     return dist
 
 
+# ---------------------------------------------------------------- what Bruce has driven, and exploring
+GRADE_EDGES = (-0.4, -0.25, -0.1, 0.1, 0.25, 0.4)      # 7 bands of grade, downhill to uphill
+SIDE_EDGES = (0.25, 0.5, 0.8)                           # 4 bands of side slope
+ROUGH_EDGES = (0.07, 0.15)                              # 3 bands of roughness (m)
+BINS = len(KINDS) * (len(GRADE_EDGES) + 1) * (len(SIDE_EDGES) + 1) * (len(ROUGH_EDGES) + 1)
+
+
+class Tally:
+    """How many moves Bruce has logged of each sort: kind of ground x grade x side slope x roughness (672 bins).
+    A move of a sort he has rarely driven is one he is unsure of: its novelty is 1 / sqrt(1 + moves logged in its
+    bin), 1 for a sort he has never driven (the count-based bonus of UCB-style exploration)."""
+
+    def __init__(self):
+        self.counts = np.zeros(BINS, dtype=np.int64)
+
+    @staticmethod
+    def bin_of(x: np.ndarray) -> np.ndarray:
+        kind = np.argmax(x[..., 6:], axis=-1)
+        g = np.searchsorted(GRADE_EDGES, x[..., 1], side="right")
+        s = np.searchsorted(SIDE_EDGES, x[..., 4], side="right")
+        r = np.searchsorted(ROUGH_EDGES, x[..., 5], side="right")
+        return ((kind * (len(GRADE_EDGES) + 1) + g) * (len(SIDE_EDGES) + 1) + s) * (len(ROUGH_EDGES) + 1) + r
+
+    def add(self, x: np.ndarray) -> None:
+        np.add.at(self.counts, self.bin_of(x), 1)
+
+    def novelty(self, x: np.ndarray) -> np.ndarray:
+        return 1.0 / np.sqrt(1.0 + self.counts[self.bin_of(x)])
+
+
+@dataclass
+class Explore:
+    """Exploring. On a mission Bruce plans twice: the quickest route by what he believes, and a hopeful route on
+    which every move's believed time above its bare length is cut by pull x its novelty (a sort of move he has
+    never driven looks as quick as the best ground: optimism in the face of uncertainty). He drives the hopeful
+    route only if he believes it costs at most `budget` more than the quickest; otherwise he halves the pull and
+    plans again, and after `tries` plans he drives the quickest route. And every `scout_every`-th trip (0: never)
+    he goes scouting instead of driving the mission: from its start to the nearest patch of the ground he is least
+    sure of (scout_target), on the hopeful route."""
+    budget: float = 0.10
+    pull: float = 1.0
+    tries: int = 3
+    scout_every: int = 10
+    scout_near: float = 1.0          # scout the nearest patch at least this share as unfamiliar as the most unfamiliar
+                                     # (1: the most unfamiliar; 0.8 cost half as much and taught less, on validation)
+
+
+def novelty(mv: Moves, x: np.ndarray, tally: Tally) -> np.ndarray:
+    """Every legal move's novelty, as a table (0 where a move can't be made)."""
+    u = np.zeros(mv.legal.shape)
+    u[mv.legal] = tally.novelty(x[mv.legal])
+    return u
+
+
+def hopeful_costs(mv: Moves, believed: np.ndarray, u: np.ndarray, pull: float) -> np.ndarray:
+    """The believed times, with the part above each move's bare 3-D length cut by pull x its novelty: never less
+    than that length, so A* stays exact on them too."""
+    return np.where(mv.legal, mv.d3 + (believed - mv.d3) * (1.0 - pull * u), np.inf)
+
+
+def explore_route(t: Terrain, mv: Moves, x: np.ndarray, believed: np.ndarray, quickest: list, tally: Tally,
+                  ex: Explore, start, goal, plan=None, cmap=None) -> list:
+    plan, cmap = _ready(t, plan, cmap)
+    limit = (1.0 + ex.budget) * route_time(t, believed, quickest)
+    u = novelty(mv, x, tally)
+    pull = ex.pull
+    for _ in range(ex.tries):
+        route = plan(t, cmap, hopeful_costs(mv, believed, u, pull), start, goal)
+        if route_time(t, believed, route) <= limit:
+            return route
+        pull /= 2.0
+    return quickest
+
+
+SCOUT_WINDOW = 3                                        # a patch: the cells within 3 of a cell (7 x 7)
+SCOUT_FROM = 10.0                                       # metres from the start, at least
+
+
+def scout_target(t: Terrain, mv: Moves, x: np.ndarray, tally: Tally, region: np.ndarray, start,
+                 near: float = 1.0) -> tuple:
+    """Where to scout: of the region's cells at least SCOUT_FROM metres from the start, those whose patch holds at
+    least `near` x the most novelty there is (each cell counts its most novel move), and of those the nearest
+    (then the first)."""
+    u = novelty(mv, x, tally).max(axis=1).reshape(t.rows, t.cols)
+    w, pad = SCOUT_WINDOW, np.pad(u, SCOUT_WINDOW)
+    patch = sum(pad[w + dr:w + dr + t.rows, w + dc:w + dc + t.cols] for dr in range(-w, w + 1) for dc in range(-w, w + 1))
+    rr, cc = np.mgrid[0:t.rows, 0:t.cols]
+    dist = np.hypot(rr - start[0], cc - start[1]) * t.cell_size
+    ok = np.asarray(region, dtype=bool) & (dist >= SCOUT_FROM)
+    if not ok.any():
+        ok = np.asarray(region, dtype=bool)
+    score = np.where(ok, patch, -np.inf)
+    top = np.flatnonzero(score.ravel() >= near * score.max() - 1e-9)
+    best = top[np.argmin(dist.ravel()[top])]
+    return int(best // t.cols), int(best % t.cols)
+
+
 # ---------------------------------------------------------------- driving, learning and scoring
 def _planner():
     """C++ for the many searches when it's built, else this module's reference (same routes, slower)."""
@@ -274,29 +377,42 @@ def _planner():
             lambda t, cmap, costs, g: cost_to_go_costs(t, costs, g), lambda t: None)
 
 
+def _ready(t: Terrain, plan, cmap):
+    """A planner and its map: the ones given, or the fastest there is (with the C++ core, the map in its form)."""
+    if plan is None:
+        plan, _, to_cmap = _planner()
+        cmap = to_cmap(t)
+    return plan, cmap
+
+
 def drive(t: Terrain, mv: Moves, believed: np.ndarray, true: np.ndarray, start, goal, rng, plan=None, cmap=None):
     """Plan with what Bruce believes, drive it in the true world: (features of every move driven, seconds per metre
     each took, with sensor noise), and the route."""
-    plan = plan or _planner()[0]
+    plan, cmap = _ready(t, plan, cmap)
     route = plan(t, cmap, believed, start, goal)
-    x = features(mv)
+    return (*log_route(t, mv, features(mv), true, route, rng), route)
+
+
+def log_route(t: Terrain, mv: Moves, x: np.ndarray, true: np.ndarray, route: list, rng):
+    """Drive a route in the true world: the features of every move and the seconds per metre each took (noisy)."""
     rows, ys = [], []
     for a, b in zip(route, route[1:]):
         i, k = a[0] * t.cols + a[1], EIGHT.index((b[0] - a[0], b[1] - a[1]))
         rows.append(x[i, k])
         ys.append(true[i, k] / mv.d3[i, k] * float(np.exp(NOISE * rng.normal())))
-    return np.array(rows).reshape(-1, FEATURES), np.array(ys), route
+    return np.array(rows).reshape(-1, FEATURES), np.array(ys)
 
 
 def _trip(t, region, goals, rng, min_m: float = 20.0):
     """A random goal of the map and a random start at least min_m metres (straight line) from it."""
     goal = tuple(int(v) for v in goals[rng.integers(len(goals))])
     cells = np.argwhere(region)
-    far = cells[np.hypot(cells[:, 0] - goal[0], cells[:, 1] - goal[1]) >= min_m]
+    d = np.hypot(cells[:, 0] - goal[0], cells[:, 1] - goal[1])
+    far = cells[d >= min(min_m, d.max())]                       # (on a small map: the farthest cells there are)
     return tuple(int(v) for v in far[rng.integers(len(far))]), goal
 
 
-def fit(x, y, hidden=(32, 32), steps: int = 3000, batch: int = 512, lr: float = 3e-3, seed: int = 0) -> SpeedModel:
+def fit(x, y, hidden=(64, 64), steps: int = 6000, batch: int = 512, lr: float = 3e-3, seed: int = 0) -> SpeedModel:
     """Learn seconds per metre from logged moves (PyTorch): relative squared error, predict 1 + z (clamped at 1)."""
     import torch
     torch.manual_seed(seed)
@@ -326,40 +442,83 @@ def fit(x, y, hidden=(32, 32), steps: int = 3000, batch: int = 512, lr: float = 
                        for L in linears])
 
 
-def learn(directory=None, checkpoints=(10, 30, 100, 300), seed: int = 0, log=print):
+@dataclass
+class Career:
+    curve: list              # [(trips, moves logged, model)] at each checkpoint
+    x: np.ndarray            # the log: features of every move driven (m, FEATURES)
+    y: np.ndarray            # and the seconds per metre each took (m,)
+    missions: list           # [(map id, start, goal)] in the order driven
+    tally: Tally
+    driven: float = 0.0      # true seconds of the missions he drove
+    quickest: float = 0.0    # true seconds of the routes he believed quickest (the same unless exploring)
+    explored: int = 0        # missions on which he drove a hopeful route
+    scouted: int = 0         # scouting trips
+    scouting: float = 0.0    # and their true seconds
+
+
+def learn(directory=None, checkpoints=(10, 30, 100, 300), seed: int = 0, log=print, explore: Explore | None = None,
+          missions: list | None = None, hidden=(64, 64), steps: int = 6000) -> Career:
     """Bruce's driving career on the train maps. Trips up to the first checkpoint are planned with his built-in
     model; after each checkpoint a network is trained on every move logged so far, and the next trips are planned
-    with it. Returns ([(trips, moves logged, model)], the log: features (m, FEATURES), seconds per metre (m,))."""
+    with it. With `explore`, he takes an exploring route when it is cheap (Explore); with `missions` (another
+    career's), he drives those same trips (the same maps, starts and goals) in the same order."""
     from .dataset import DEFAULT_DIR, load, load_manifest, terrain_of
     directory = directory or DEFAULT_DIR
     m = load_manifest(directory)
     maps = [e for e in m["maps"] if e["split"] == "train"]
-    rng = np.random.default_rng(seed)
+    by_id = {e["id"]: e for e in maps}
+    rng = np.random.default_rng(seed)              # the trips (unless given) and the sensor noise
     plan, _, to_cmap = _planner()
-    xs, ys, out, model, done, t0 = [], [], [], None, 0, time.perf_counter()
+    c = Career([], np.zeros((0, FEATURES)), np.zeros(0), [], Tally())
+    xs, ys, model, done, t0 = [], [], None, 0, time.perf_counter()
     for n in checkpoints:
         while done < n:
-            e = maps[rng.integers(len(maps))]
+            if missions is None:
+                e = maps[rng.integers(len(maps))]
+            else:
+                e = by_id[missions[done][0]]
             arrays = load(directory, e)
             t = terrain_of(arrays)
             mv = moves(t)
             believed = nominal_costs(t, mv) if model is None else model.costs(t, mv)
-            start, goal = _trip(t, arrays["region"], arrays["goals"], rng)
-            x, y, _ = drive(t, mv, believed, true_costs(t, mv), start, goal, rng, plan, to_cmap(t))
-            xs.append(x); ys.append(y)
+            if missions is None:
+                start, goal = _trip(t, arrays["region"], arrays["goals"], rng)
+            else:
+                start, goal = (tuple(int(v) for v in p) for p in missions[done][1:])
+            c.missions.append((e["id"], start, goal))
+            cmap, x, true = to_cmap(t), features(mv), true_costs(t, mv)
+            if explore is not None and explore.scout_every and (done + 1) % explore.scout_every == 0:
+                target = scout_target(t, mv, x, c.tally, arrays["region"], start, explore.scout_near)
+                route = plan(t, cmap, hopeful_costs(mv, believed, novelty(mv, x, c.tally), explore.pull), start, target)
+                c.scouted += 1
+                c.scouting += route_time(t, true, route)
+            else:
+                route = quickest = plan(t, cmap, believed, start, goal)
+                if explore is not None:
+                    route = explore_route(t, mv, x, believed, quickest, c.tally, explore, start, goal, plan, cmap)
+                    c.explored += route != quickest
+                c.driven += route_time(t, true, route)
+                c.quickest += route_time(t, true, quickest)
+            xr, yr = log_route(t, mv, x, true, route, rng)
+            c.tally.add(xr)
+            xs.append(xr); ys.append(yr)
             done += 1
         X, Y = np.concatenate(xs), np.concatenate(ys)
-        model = fit(X, Y, seed=seed)
-        model.note = [f"Brubus stage 3: Bruce's learned seconds per metre after {n} trips ({len(Y):,} logged moves) on "
-                      f"the data set's train maps; network {[FEATURES, 32, 32, 1]}, ReLU; PyTorch."]
-        out.append((n, len(Y), model))
+        model = fit(X, Y, hidden=hidden, steps=steps, seed=seed)
+        how = "exploring" if explore is not None else "planning with what he believed"
+        model.note = [f"Brubus stage 3: Bruce's learned seconds per metre after {n} trips ({len(Y):,} logged moves, "
+                      f"{how}) on the data set's train maps; network {[FEATURES, *hidden, 1]}, ReLU, {steps:,} "
+                      f"steps; PyTorch."]
+        c.curve.append((n, len(Y), model))
         if log:
             log(f"  {n:>4} trips, {len(Y):>6,} moves logged: trained ({time.perf_counter() - t0:.0f} s)")
-    return out, np.concatenate(xs), np.concatenate(ys)
+    c.x, c.y = np.concatenate(xs), np.concatenate(ys)
+    return c
 
 
 def evaluate(models: dict, directory=None, split: str = "test", starts: int = 2, seed: int = 7, log=print) -> list:
-    """Plan the same trips with each model (name -> SpeedModel, or "built-in" / "true") on the split's maps, drive
+    """Plan the same trips with each model (name -> SpeedModel, "built-in", "true", or any function (terrain, moves)
+    -> table of move times) on the split's maps, drive
     them in the true world: one record per trip and model with the route's true time and the quickest true time."""
     from .baseline import _trips
     from .dataset import DEFAULT_DIR, load, load_manifest, terrain_of
@@ -374,8 +533,8 @@ def evaluate(models: dict, directory=None, split: str = "test", starts: int = 2,
         mv = moves(t)
         cmap = to_cmap(t)
         true = true_costs(t, mv)
-        tables = {name: (nominal_costs(t, mv) if mdl == "built-in" else true if mdl == "true" else mdl.costs(t, mv))
-                  for name, mdl in models.items()}
+        tables = {name: (nominal_costs(t, mv) if mdl == "built-in" else true if mdl == "true"
+                         else mdl(t, mv) if callable(mdl) else mdl.costs(t, mv)) for name, mdl in models.items()}
         for g in arrays["goals"]:
             goal = (int(g[0]), int(g[1]))
             best = field_of(t, cmap, true, goal)
@@ -421,34 +580,64 @@ def what_it_learned(model: SpeedModel, logged: np.ndarray | None = None) -> list
     return out
 
 
+STAGE3_ASSET = ASSET.with_name("speeds-stage3.txt")
+SMALL, BIGGER = ((32, 32), 3000), ((64, 64), 6000)            # (hidden layers, training steps)
+CAREERS = (("plain, small network", False, SMALL), ("plain, bigger network", False, BIGGER),
+           ("exploring, small network", True, SMALL), ("exploring, bigger network", True, BIGGER))
+
+
 def run(directory=None, checkpoints=(10, 30, 100, 300), seed: int = 0, out: Path = ASSET, log=print) -> dict:
-    """The whole study: Bruce's driving career, each checkpoint's network scored on the test maps against his
-    built-in model and the true speeds, and the last network saved (with a card holding the numbers)."""
+    """The whole study: four driving careers on the same missions (CAREERS: planning with what he believes or
+    exploring, with stage 3's small network or the bigger one), every checkpoint's network scored on the test maps
+    against his built-in model and the true speeds. Saves the last network of the exploring, bigger-network career
+    (`out`) and of stage 3's career (speeds-stage3.txt beside it), and a card holding the numbers."""
     import torch
     t0 = time.perf_counter()
-    curve, X, _ = learn(directory, checkpoints, seed, log)
-    models = {"built-in": "built-in", **{f"after {n} trips": m for n, _, m in curve}, "true": "true"}
+    careers, missions = {}, None
+    for name, exploring, (hidden, steps) in CAREERS:
+        if log:
+            log(f"{name}:")
+        c = learn(directory, checkpoints, seed, log, Explore() if exploring else None, missions, hidden, steps)
+        missions = missions or c.missions
+        careers[name] = c
+    models = {"built-in": "built-in"}
+    for name, c in careers.items():
+        models.update({f"{name}, {n} trips": m for n, _, m in c.curve})
+    models["true"] = "true"
     rows = evaluate(models, directory, log=log)
-    summary = summarize(rows)
-    final = curve[-1][2]
+    final, stage3 = careers[CAREERS[-1][0]].curve[-1][2], careers[CAREERS[0][0]].curve[-1][2]
     final.save(out)
-    card = dict(model=Path(out).name, framework=f"PyTorch {torch.__version__}", seed=seed,
-                network=dict(sizes=[FEATURES, 32, 32, 1], activation="ReLU", output="seconds per metre = 1 + max(z, 0)",
-                             features=list(NAMES)),
+    stage3.save(Path(out).with_name(STAGE3_ASSET.name))
+
+    def describe(name, exploring, hidden, steps, c):
+        return dict(name=name, exploring=exploring, network=[FEATURES, *hidden, 1], steps=steps,
+                    curve=[dict(trips=n, moves=k) for n, k, _ in c.curve],
+                    sorts_driven=int(np.count_nonzero(c.tally.counts)), hopeful_routes=c.explored,
+                    scouting_trips=c.scouted, detours=c.driven / c.quickest - 1.0,
+                    scouting_share=c.scouting / (c.driven + c.scouting), learned=what_it_learned(c.curve[-1][2], c.x))
+    ex = Explore()
+    card = dict(model=Path(out).name, stage3_model=STAGE3_ASSET.name, framework=f"PyTorch {torch.__version__}",
+                seed=seed, network=dict(sizes=[FEATURES, *BIGGER[0], 1], steps=BIGGER[1], activation="ReLU",
+                                        output="seconds per metre = 1 + max(z, 0)", features=list(NAMES)),
                 hidden_world=dict(slowdown=TRUE_SLOW, uphill=TRUE_UPHILL, brake_from=BRAKE_FROM, brake=BRAKE,
                                   side=SIDE, rough=ROUGH, noise=NOISE),
-                curve=[dict(trips=n, moves=moves_) for n, moves_, _ in curve], summary=summary,
-                learned=what_it_learned(final, X), seconds=round(time.perf_counter() - t0))
+                explore=dict(budget=ex.budget, pull=ex.pull, tries=ex.tries, scout_every=ex.scout_every,
+                             scout_near=ex.scout_near, sorts=BINS, grade_edges=list(GRADE_EDGES),
+                             side_edges=list(SIDE_EDGES), rough_edges=list(ROUGH_EDGES)),
+                careers=[describe(name, e, h, st, careers[name]) for name, e, (h, st) in CAREERS],
+                summary=summarize(rows), seconds=round(time.perf_counter() - t0))
     Path(out).with_suffix(".card.json").write_text(json.dumps(card, indent=1) + "\n")
     return card
 
 
-def table(summary: list, theme: str = "all") -> str:
-    lines = [f"  {'planned with':<18}{'trips':>6}{'slower than the quickest: mean':>32}{'median':>9}{'worst':>9}"
+def table(summary: list, theme: str = "all", models=None) -> str:
+    """The summary as text, for one theme (or all), and only the named models if given."""
+    rows = [s for s in summary if s["theme"] == theme and (models is None or s["model"] in models)]
+    wide = max([len(s["model"]) for s in rows] + [12])
+    lines = [f"  {'planned with':<{wide}}{'trips':>7}{'slower than the quickest: mean':>32}{'median':>9}{'worst':>9}"
              f"{'within 1%':>11}"]
-    for s in summary:
-        if s["theme"] == theme:
-            lines.append(f"  {s['model']:<18}{s['trips']:>6}{100 * s['regret']:>31.2f}%{100 * s['median']:>8.2f}%"
-                         f"{100 * s['worst']:>8.1f}%{100 * s['within_1']:>10.0f}%")
+    for s in rows:
+        lines.append(f"  {s['model']:<{wide}}{s['trips']:>7}{100 * s['regret']:>31.2f}%{100 * s['median']:>8.2f}%"
+                     f"{100 * s['worst']:>8.1f}%{100 * s['within_1']:>10.0f}%")
     return "\n".join(lines)
 
