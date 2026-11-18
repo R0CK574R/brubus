@@ -412,6 +412,9 @@ def _trip(t, region, goals, rng, min_m: float = 20.0):
     return tuple(int(v) for v in far[rng.integers(len(far))]), goal
 
 
+SMALL, BIGGER = ((32, 32), 3000), ((64, 64), 6000)            # network sizes: (hidden layers, training steps)
+
+
 def fit(x, y, hidden=(64, 64), steps: int = 6000, batch: int = 512, lr: float = 3e-3, seed: int = 0) -> SpeedModel:
     """Learn seconds per metre from logged moves (PyTorch): relative squared error, predict 1 + z (clamped at 1)."""
     import torch
@@ -454,14 +457,28 @@ class Career:
     explored: int = 0        # missions on which he drove a hopeful route
     scouted: int = 0         # scouting trips
     scouting: float = 0.0    # and their true seconds
+    held: list = field(default_factory=list)      # per trip: held out for choosing the network's size (Choose)
+    chosen: list = field(default_factory=list)    # per checkpoint: the sizes tried, their held-out errors, the pick
+
+
+@dataclass
+class Choose:
+    """Bruce picks his network's size himself, from his own log. In every block of `block` trips one, at random,
+    is held out. At each checkpoint every candidate size is trained on the rest of the log; the one whose guesses
+    of the held-out moves' seconds per metre are nearest (mean squared relative error, the training loss) is kept,
+    and trained again on the whole log. Nothing but his own driving decides: no true speeds, no test maps."""
+    sizes: tuple = (SMALL, BIGGER)
+    block: int = 5
 
 
 def learn(directory=None, checkpoints=(10, 30, 100, 300), seed: int = 0, log=print, explore: Explore | None = None,
-          missions: list | None = None, hidden=(64, 64), steps: int = 6000) -> Career:
+          missions: list | None = None, hidden=(64, 64), steps: int = 6000, choose: Choose | None = None) -> Career:
     """Bruce's driving career on the train maps. Trips up to the first checkpoint are planned with his built-in
     model; after each checkpoint a network is trained on every move logged so far, and the next trips are planned
     with it. With `explore`, he takes an exploring route when it is cheap (Explore); with `missions` (another
-    career's), he drives those same trips (the same maps, starts and goals) in the same order."""
+    career's), he drives those same trips (the same maps, starts and goals) in the same order; with `choose`, he
+    picks the network's size at each checkpoint from a held-out slice of his log (Choose) instead of using
+    `hidden` and `steps`."""
     from .dataset import DEFAULT_DIR, load, load_manifest, terrain_of
     directory = directory or DEFAULT_DIR
     m = load_manifest(directory)
@@ -470,7 +487,8 @@ def learn(directory=None, checkpoints=(10, 30, 100, 300), seed: int = 0, log=pri
     rng = np.random.default_rng(seed)              # the trips (unless given) and the sensor noise
     plan, _, to_cmap = _planner()
     c = Career([], np.zeros((0, FEATURES)), np.zeros(0), [], Tally())
-    xs, ys, model, done, t0 = [], [], None, 0, time.perf_counter()
+    blocks = np.random.default_rng([seed, 17])     # which trip of each block is held out: a stream of its own
+    xs, ys, model, done, pick, t0 = [], [], None, 0, -1, time.perf_counter()
     for n in checkpoints:
         while done < n:
             if missions is None:
@@ -502,16 +520,34 @@ def learn(directory=None, checkpoints=(10, 30, 100, 300), seed: int = 0, log=pri
             xr, yr = log_route(t, mv, x, true, route, rng)
             c.tally.add(xr)
             xs.append(xr); ys.append(yr)
+            if choose is not None:
+                if done % choose.block == 0:
+                    pick = int(blocks.integers(choose.block))
+                c.held.append(done % choose.block == pick)
             done += 1
         X, Y = np.concatenate(xs), np.concatenate(ys)
-        model = fit(X, Y, hidden=hidden, steps=steps, seed=seed)
+        size, chosen = (tuple(hidden), steps), ""
+        if choose is not None:
+            out = np.concatenate([np.full(len(y), h) for y, h in zip(ys, c.held)])
+            errors = []
+            if out.any():
+                for h, st in choose.sizes:
+                    trial = fit(X[~out], Y[~out], hidden=h, steps=st, seed=seed)
+                    errors.append(float(np.mean(((trial.per_metre(X[out]) - Y[out]) / Y[out]) ** 2)))
+            size = choose.sizes[int(np.argmin(errors))] if errors else choose.sizes[0]
+            c.chosen.append(dict(trips=n, held_out_trips=int(sum(c.held)), held_out_moves=int(out.sum()),
+                                 errors=errors, network=[FEATURES, *size[0], 1], steps=size[1]))
+            chosen = ", the size chosen from a held-out fifth of his trips"
+        model = fit(X, Y, hidden=size[0], steps=size[1], seed=seed)
         how = "exploring" if explore is not None else "planning with what he believed"
         model.note = [f"Brubus stage 3: Bruce's learned seconds per metre after {n} trips ({len(Y):,} logged moves, "
-                      f"{how}) on the data set's train maps; network {[FEATURES, *hidden, 1]}, ReLU, {steps:,} "
-                      f"steps; PyTorch."]
+                      f"{how}) on the data set's train maps; network {[FEATURES, *size[0], 1]}, ReLU, {size[1]:,} "
+                      f"steps{chosen}; PyTorch."]
         c.curve.append((n, len(Y), model))
         if log:
-            log(f"  {n:>4} trips, {len(Y):>6,} moves logged: trained ({time.perf_counter() - t0:.0f} s)")
+            picked = f"; picked {[FEATURES, *size[0], 1]} (held-out errors " + ", ".join(
+                f"{e:.4f}" for e in c.chosen[-1]["errors"]) + ")" if choose is not None else ""
+            log(f"  {n:>4} trips, {len(Y):>6,} moves logged: trained ({time.perf_counter() - t0:.0f} s){picked}")
     c.x, c.y = np.concatenate(xs), np.concatenate(ys)
     return c
 
@@ -581,23 +617,25 @@ def what_it_learned(model: SpeedModel, logged: np.ndarray | None = None) -> list
 
 
 STAGE3_ASSET = ASSET.with_name("speeds-stage3.txt")
-SMALL, BIGGER = ((32, 32), 3000), ((64, 64), 6000)            # (hidden layers, training steps)
 CAREERS = (("plain, small network", False, SMALL), ("plain, bigger network", False, BIGGER),
-           ("exploring, small network", True, SMALL), ("exploring, bigger network", True, BIGGER))
+           ("exploring, small network", True, SMALL), ("exploring, bigger network", True, BIGGER),
+           ("exploring, size chosen from his log", True, Choose()))
 
 
 def run(directory=None, checkpoints=(10, 30, 100, 300), seed: int = 0, out: Path = ASSET, log=print) -> dict:
-    """The whole study: four driving careers on the same missions (CAREERS: planning with what he believes or
-    exploring, with stage 3's small network or the bigger one), every checkpoint's network scored on the test maps
-    against his built-in model and the true speeds. Saves the last network of the exploring, bigger-network career
-    (`out`) and of stage 3's career (speeds-stage3.txt beside it), and a card holding the numbers."""
+    """The whole study: five driving careers on the same missions (CAREERS: planning with what he believes or
+    exploring; stage 3's small network, the bigger one, or the size he chooses from his own log), every checkpoint's
+    network scored on the test maps against his built-in model and the true speeds. Saves the last network of the
+    last career (`out`: the one Bruce uses) and of stage 3's career (speeds-stage3.txt beside it), and a card
+    holding the numbers."""
     import torch
     t0 = time.perf_counter()
     careers, missions = {}, None
-    for name, exploring, (hidden, steps) in CAREERS:
+    for name, exploring, network in CAREERS:
         if log:
             log(f"{name}:")
-        c = learn(directory, checkpoints, seed, log, Explore() if exploring else None, missions, hidden, steps)
+        size = dict(choose=network) if isinstance(network, Choose) else dict(hidden=network[0], steps=network[1])
+        c = learn(directory, checkpoints, seed, log, Explore() if exploring else None, missions, **size)
         missions = missions or c.missions
         careers[name] = c
     models = {"built-in": "built-in"}
@@ -609,22 +647,26 @@ def run(directory=None, checkpoints=(10, 30, 100, 300), seed: int = 0, out: Path
     final.save(out)
     stage3.save(Path(out).with_name(STAGE3_ASSET.name))
 
-    def describe(name, exploring, hidden, steps, c):
-        return dict(name=name, exploring=exploring, network=[FEATURES, *hidden, 1], steps=steps,
-                    curve=[dict(trips=n, moves=k) for n, k, _ in c.curve],
+    def describe(name, exploring, network, c):
+        last = c.chosen[-1] if c.chosen else dict(network=[FEATURES, *network[0], 1], steps=network[1])
+        return dict(name=name, exploring=exploring, network=last["network"], steps=last["steps"],
+                    chosen=c.chosen, curve=[dict(trips=n, moves=k) for n, k, _ in c.curve],
                     sorts_driven=int(np.count_nonzero(c.tally.counts)), hopeful_routes=c.explored,
                     scouting_trips=c.scouted, detours=c.driven / c.quickest - 1.0,
                     scouting_share=c.scouting / (c.driven + c.scouting), learned=what_it_learned(c.curve[-1][2], c.x))
-    ex = Explore()
+    ex, ch = Explore(), Choose()
+    shipped = describe(*CAREERS[-1], careers[CAREERS[-1][0]])
     card = dict(model=Path(out).name, stage3_model=STAGE3_ASSET.name, framework=f"PyTorch {torch.__version__}",
-                seed=seed, network=dict(sizes=[FEATURES, *BIGGER[0], 1], steps=BIGGER[1], activation="ReLU",
+                seed=seed, network=dict(sizes=shipped["network"], steps=shipped["steps"], activation="ReLU",
                                         output="seconds per metre = 1 + max(z, 0)", features=list(NAMES)),
+                choose=dict(sizes=[dict(network=[FEATURES, *h, 1], steps=st) for h, st in ch.sizes],
+                            held_out="one trip in every %d, at random" % ch.block),
                 hidden_world=dict(slowdown=TRUE_SLOW, uphill=TRUE_UPHILL, brake_from=BRAKE_FROM, brake=BRAKE,
                                   side=SIDE, rough=ROUGH, noise=NOISE),
                 explore=dict(budget=ex.budget, pull=ex.pull, tries=ex.tries, scout_every=ex.scout_every,
                              scout_near=ex.scout_near, sorts=BINS, grade_edges=list(GRADE_EDGES),
                              side_edges=list(SIDE_EDGES), rough_edges=list(ROUGH_EDGES)),
-                careers=[describe(name, e, h, st, careers[name]) for name, e, (h, st) in CAREERS],
+                careers=[describe(name, e, network, careers[name]) for name, e, network in CAREERS],
                 summary=summarize(rows), seconds=round(time.perf_counter() - t0))
     Path(out).with_suffix(".card.json").write_text(json.dumps(card, indent=1) + "\n")
     return card

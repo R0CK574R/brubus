@@ -164,8 +164,8 @@ def bench() -> None:
 def speeds() -> None:
     """Stage 3's learning curves, read from the card `python main.py speeds learn` writes: how much slower than the
     quickest Bruce's routes are on average and at worst, and how many are within 1% of it, after each number of
-    trips he has driven, for stage 3 (planning with what he believes, the small network) and stage 3b (exploring,
-    the bigger network)."""
+    trips he has driven, for stage 3 (planning with what he believes, the small network), stage 3b (exploring, the
+    bigger network) and stage 3c (exploring, the size he chooses from his own log)."""
     import json
     import matplotlib
     matplotlib.use("Agg")
@@ -181,12 +181,15 @@ def speeds() -> None:
                          "xtick.color": DIM, "ytick.color": DIM})
     card = json.loads(ASSET.with_suffix(".card.json").read_text())
     summary = {s["model"]: s for s in card["summary"] if s["theme"] == "all"}
+    careers = {c["name"]: c for c in card["careers"]}
     first, last = card["careers"][0], card["careers"][-1]
     trips = [p["trips"] for p in last["curve"]]
     labels = ["0\n(built-in)"] + [str(n) for n in trips]
     x = np.arange(len(labels))
     series = [(first, "Stage 3: drives his missions, small network", DIM, (0, (4, 3)), "white"),
-              (last, "Stage 3b: explores, bigger network", BLUE, "-", BLUE)]
+              (careers["exploring, bigger network"], "Stage 3b: explores, bigger network", AMBER, (0, (1, 2)), AMBER),
+              (last, "Stage 3c: explores, chooses his network's size", BLUE, "-", BLUE)]
+    labelled = (first, last)                                     # values written at the ends of these two
 
     def values(career, key):
         return [100 * summary["built-in"][key]] + [100 * summary[f"{career['name']}, {n} trips"][key] for n in trips]
@@ -205,8 +208,8 @@ def speeds() -> None:
         for career, _, color, dash, face in series:
             v = values(career, key)
             ax.plot(x, v, color=color, lw=2.2 if color == BLUE else 1.8, ls=dash, zorder=3 if color == BLUE else 2)
-            ax.scatter(x, v, s=60, color=color if face != "white" else PANEL, edgecolor=color, linewidth=1.6,
-                       zorder=4 if color == BLUE else 3)
+            ax.scatter(x, v, s=60 if color == BLUE else 44, color=color if face != "white" else PANEL, edgecolor=color,
+                       linewidth=1.6, zorder=4 if color == BLUE else 3)
         ax.set_xticks(x)
         ax.set_xticklabels(labels)
         ax.set_xlabel("trips Bruce has driven and learned from")
@@ -223,6 +226,8 @@ def speeds() -> None:
             ax.minorticks_off()
         ax.set_xlim(-0.35, len(x) - 0.25)
         for career, _, color, _, _ in series:                    # the last values, labelled where they end
+            if career not in labelled:
+                continue
             v = values(career, key)[-1]
             text = f"{v:.0f}%" if key == "within_1" else f"{v:.2f}%" if v < 1 else f"{v:.1f}%"
             if key == "within_1":                                # nearly equal: one above the line, one below
@@ -245,8 +250,8 @@ def speeds() -> None:
     handles = [Line2D([], [], color=color, lw=2, ls=dash, marker="o", markersize=7, markeredgewidth=1.6,
                       markerfacecolor=color if face != "white" else PANEL, markeredgecolor=color)
                for _, _, color, dash, face in series]
-    fig.legend(handles, [name for _, name, _, _, _ in series], loc="upper right", bbox_to_anchor=(0.985, 0.975),
-               frameon=False, fontsize=10.5, labelcolor=INK, handlelength=2.6)
+    fig.legend(handles, [name for _, name, _, _, _ in series], loc="upper right", bbox_to_anchor=(0.985, 0.99),
+               frameon=False, fontsize=10.5, labelcolor=INK, handlelength=2.6, labelspacing=0.35)
     out = ROOT / "docs" / "learn-speeds.png"
     fig.savefig(out, facecolor=BG)
     print(out)

@@ -30,6 +30,29 @@
    "ground: Jungle"
   ]
  },
+ "choose": {
+  "sizes": [
+   {
+    "network": [
+     14,
+     32,
+     32,
+     1
+    ],
+    "steps": 3000
+   },
+   {
+    "network": [
+     14,
+     64,
+     64,
+     1
+    ],
+    "steps": 6000
+   }
+  ],
+  "held_out": "one trip in every 5, at random"
+ },
  "hidden_world": {
   "slowdown": {
    "Grass": 1.0,
@@ -93,6 +116,7 @@
     1
    ],
    "steps": 3000,
+   "chosen": [],
    "curve": [
     {
      "trips": 10,
@@ -217,6 +241,7 @@
     1
    ],
    "steps": 6000,
+   "chosen": [],
    "curve": [
     {
      "trips": 10,
@@ -341,6 +366,7 @@
     1
    ],
    "steps": 3000,
+   "chosen": [],
    "curve": [
     {
      "trips": 10,
@@ -465,6 +491,7 @@
     1
    ],
    "steps": 6000,
+   "chosen": [],
    "curve": [
     {
      "trips": 10,
@@ -576,6 +603,196 @@
      "learned_uphill": 3.405474778981148,
      "logged": 588,
      "logged_climbs": 174
+    }
+   ]
+  },
+  {
+   "name": "exploring, size chosen from his log",
+   "exploring": true,
+   "network": [
+    14,
+    64,
+    64,
+    1
+   ],
+   "steps": 6000,
+   "chosen": [
+    {
+     "trips": 10,
+     "held_out_trips": 2,
+     "held_out_moves": 74,
+     "errors": [
+      0.015478377245186036,
+      0.020507883409173013
+     ],
+     "network": [
+      14,
+      32,
+      32,
+      1
+     ],
+     "steps": 3000
+    },
+    {
+     "trips": 30,
+     "held_out_trips": 6,
+     "held_out_moves": 239,
+     "errors": [
+      0.008073977046318546,
+      0.012634740448967554
+     ],
+     "network": [
+      14,
+      32,
+      32,
+      1
+     ],
+     "steps": 3000
+    },
+    {
+     "trips": 100,
+     "held_out_trips": 20,
+     "held_out_moves": 980,
+     "errors": [
+      0.0076920990187772,
+      0.007824979242993095
+     ],
+     "network": [
+      14,
+      32,
+      32,
+      1
+     ],
+     "steps": 3000
+    },
+    {
+     "trips": 300,
+     "held_out_trips": 60,
+     "held_out_moves": 2803,
+     "errors": [
+      0.007078310923951364,
+      0.006893092283963599
+     ],
+     "network": [
+      14,
+      64,
+      64,
+      1
+     ],
+     "steps": 6000
+    }
+   ],
+   "curve": [
+    {
+     "trips": 10,
+     "moves": 399
+    },
+    {
+     "trips": 30,
+     "moves": 1463
+    },
+    {
+     "trips": 100,
+     "moves": 4934
+    },
+    {
+     "trips": 300,
+     "moves": 15490
+    }
+   ],
+   "sorts_driven": 541,
+   "hopeful_routes": 219,
+   "scouting_trips": 30,
+   "detours": 0.018197851262389264,
+   "scouting_share": 0.14530794856839488,
+   "learned": [
+    {
+     "ground": "Grass",
+     "built_in": 1.0,
+     "true": 1.0,
+     "learned": 1.0,
+     "built_in_uphill": 3.0,
+     "true_uphill": 2.5,
+     "learned_uphill": 2.4567661807610617,
+     "logged": 8221,
+     "logged_climbs": 2549
+    },
+    {
+     "ground": "Tall grass",
+     "built_in": 1.8,
+     "true": 1.4,
+     "learned": 1.3944335275151554,
+     "built_in_uphill": 3.0,
+     "true_uphill": 3.0,
+     "learned_uphill": 2.8157813454173652,
+     "logged": 986,
+     "logged_climbs": 290
+    },
+    {
+     "ground": "Firm sand",
+     "built_in": 1.0,
+     "true": 1.15,
+     "learned": 1.1570933304069484,
+     "built_in_uphill": 3.0,
+     "true_uphill": 4.0,
+     "learned_uphill": 4.159670694048258,
+     "logged": 3751,
+     "logged_climbs": 588
+    },
+    {
+     "ground": "Soft sand",
+     "built_in": 2.4,
+     "true": 2.9,
+     "learned": 2.8989203931999743,
+     "built_in_uphill": 3.0,
+     "true_uphill": 6.0,
+     "learned_uphill": 5.749069364829837,
+     "logged": 449,
+     "logged_climbs": 163
+    },
+    {
+     "ground": "Rocky ground",
+     "built_in": 1.3,
+     "true": 1.7,
+     "learned": 1.692539397069141,
+     "built_in_uphill": 3.0,
+     "true_uphill": 3.0,
+     "learned_uphill": 2.69367312705596,
+     "logged": 1008,
+     "logged_climbs": 286
+    },
+    {
+     "ground": "Oasis grass",
+     "built_in": 1.0,
+     "true": 1.05,
+     "learned": 1.0142676996906883,
+     "built_in_uphill": 3.0,
+     "true_uphill": 2.5,
+     "learned_uphill": 2.57508199300996,
+     "logged": 387,
+     "logged_climbs": 85
+    },
+    {
+     "ground": "Sand",
+     "built_in": 1.6,
+     "true": 1.9,
+     "learned": 2.0135195450259276,
+     "built_in_uphill": 3.0,
+     "true_uphill": 5.0,
+     "learned_uphill": 3.5305039405850813,
+     "logged": 56,
+     "logged_climbs": 12
+    },
+    {
+     "ground": "Jungle",
+     "built_in": 2.0,
+     "true": 2.6,
+     "learned": 2.566690659407612,
+     "built_in_uphill": 3.0,
+     "true_uphill": 3.5,
+     "learned_uphill": 3.107180705158845,
+     "logged": 632,
+     "logged_climbs": 197
     }
    ]
   }
@@ -732,6 +949,42 @@
    "regret": 0.0005513554114803781,
    "median": 0.000136276476199515,
    "worst": 0.00575602844541101,
+   "within_1": 1.0
+  },
+  {
+   "theme": "grassland",
+   "model": "exploring, size chosen from his log, 10 trips",
+   "trips": 240,
+   "regret": 0.013055271951497168,
+   "median": 0.00988579177549942,
+   "worst": 0.09556990021064027,
+   "within_1": 0.5041666666666667
+  },
+  {
+   "theme": "grassland",
+   "model": "exploring, size chosen from his log, 30 trips",
+   "trips": 240,
+   "regret": 0.002668248678731186,
+   "median": 0.001699823358614072,
+   "worst": 0.020454882364046023,
+   "within_1": 0.9666666666666667
+  },
+  {
+   "theme": "grassland",
+   "model": "exploring, size chosen from his log, 100 trips",
+   "trips": 240,
+   "regret": 0.0009228174815935686,
+   "median": 0.00023621653477146065,
+   "worst": 0.014075928719201158,
+   "within_1": 0.9875
+  },
+  {
+   "theme": "grassland",
+   "model": "exploring, size chosen from his log, 300 trips",
+   "trips": 240,
+   "regret": 0.00044265103002511706,
+   "median": 6.791037493802943e-05,
+   "worst": 0.00457874693790461,
    "within_1": 1.0
   },
   {
@@ -898,6 +1151,42 @@
   },
   {
    "theme": "desert",
+   "model": "exploring, size chosen from his log, 10 trips",
+   "trips": 240,
+   "regret": 0.03292898573885667,
+   "median": 0.02105377404470743,
+   "worst": 0.2833511940723896,
+   "within_1": 0.275
+  },
+  {
+   "theme": "desert",
+   "model": "exploring, size chosen from his log, 30 trips",
+   "trips": 240,
+   "regret": 0.008177078541636124,
+   "median": 0.002824326094310048,
+   "worst": 0.18908638475499862,
+   "within_1": 0.7625
+  },
+  {
+   "theme": "desert",
+   "model": "exploring, size chosen from his log, 100 trips",
+   "trips": 240,
+   "regret": 0.001288198843183171,
+   "median": 0.0005992551980296135,
+   "worst": 0.021390560688158144,
+   "within_1": 0.9833333333333333
+  },
+  {
+   "theme": "desert",
+   "model": "exploring, size chosen from his log, 300 trips",
+   "trips": 240,
+   "regret": 0.0007479470424032954,
+   "median": 0.0002211891718703063,
+   "worst": 0.019515888940479398,
+   "within_1": 0.9875
+  },
+  {
+   "theme": "desert",
    "model": "true",
    "trips": 240,
    "regret": 0.0,
@@ -1057,6 +1346,42 @@
    "median": 1.4063362542171554e-05,
    "worst": 0.006113069237684954,
    "within_1": 1.0
+  },
+  {
+   "theme": "island",
+   "model": "exploring, size chosen from his log, 10 trips",
+   "trips": 240,
+   "regret": 0.008896924737452093,
+   "median": 0.005123114278927421,
+   "worst": 0.2033228668543512,
+   "within_1": 0.7541666666666667
+  },
+  {
+   "theme": "island",
+   "model": "exploring, size chosen from his log, 30 trips",
+   "trips": 240,
+   "regret": 0.0021943319960783273,
+   "median": 0.0008586361752120908,
+   "worst": 0.04586882743236975,
+   "within_1": 0.9791666666666666
+  },
+  {
+   "theme": "island",
+   "model": "exploring, size chosen from his log, 100 trips",
+   "trips": 240,
+   "regret": 0.0008426588679473278,
+   "median": 0.00011107309880287186,
+   "worst": 0.014706485730246577,
+   "within_1": 0.9916666666666667
+  },
+  {
+   "theme": "island",
+   "model": "exploring, size chosen from his log, 300 trips",
+   "trips": 240,
+   "regret": 0.0005856908159076311,
+   "median": 3.263292863797673e-05,
+   "worst": 0.016672494368782598,
+   "within_1": 0.9958333333333333
   },
   {
    "theme": "island",
@@ -1222,6 +1547,42 @@
   },
   {
    "theme": "all",
+   "model": "exploring, size chosen from his log, 10 trips",
+   "trips": 720,
+   "regret": 0.018293727475935308,
+   "median": 0.009637630057404145,
+   "worst": 0.2833511940723896,
+   "within_1": 0.5111111111111111
+  },
+  {
+   "theme": "all",
+   "model": "exploring, size chosen from his log, 30 trips",
+   "trips": 720,
+   "regret": 0.004346553072148545,
+   "median": 0.0016881162135273797,
+   "worst": 0.18908638475499862,
+   "within_1": 0.9027777777777778
+  },
+  {
+   "theme": "all",
+   "model": "exploring, size chosen from his log, 100 trips",
+   "trips": 720,
+   "regret": 0.0010178917309080224,
+   "median": 0.000337208915378695,
+   "worst": 0.021390560688158144,
+   "within_1": 0.9875
+  },
+  {
+   "theme": "all",
+   "model": "exploring, size chosen from his log, 300 trips",
+   "trips": 720,
+   "regret": 0.0005920962961120145,
+   "median": 0.00010519818726084651,
+   "worst": 0.019515888940479398,
+   "within_1": 0.9944444444444445
+  },
+  {
+   "theme": "all",
    "model": "true",
    "trips": 720,
    "regret": 0.0,
@@ -1230,5 +1591,5 @@
    "within_1": 1.0
   }
  ],
- "seconds": 901
+ "seconds": 1435
 }

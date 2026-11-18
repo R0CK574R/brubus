@@ -416,23 +416,26 @@ def speeds(args) -> None:
             import torch  # noqa: F401
         except ImportError:
             raise SystemExit("Learning needs PyTorch: python -m pip install torch (nothing else in Brubus does)")
-        print(f"Four careers of Bruce's on the same missions; a network is trained after "
+        print(f"Five careers of Bruce's on the same missions; a network is trained after "
               f"{', '.join(map(str, args.checkpoints))} trips")
         card = sp.run(folder, tuple(args.checkpoints), out=path)
         last = args.checkpoints[-1]
         shown = ["built-in", *(f"{c['name']}, {last} trips" for c in card["careers"]), "true"]
         summary = card["summary"]
         for c in card["careers"]:
-            print(f"  {c['name']:<27} {c['sorts_driven']} of {card['explore']['sorts']} sorts of move driven; "
+            print(f"  {c['name']:<36} {c['sorts_driven']} of {card['explore']['sorts']} sorts of move driven; "
                   f"{c['scouting_trips']} scouting trips ({100 * c['scouting_share']:.1f}% of his driving), detours "
                   f"{100 * c['detours']:+.2f}% on his missions")
+            for pick in c["chosen"]:
+                print(f"      after {pick['trips']:>3} trips he chose {pick['network']} (held-out errors: "
+                      + ", ".join(f"{e:.4f}" for e in pick["errors"]) + ")")
         learned = card["careers"][-1]["learned"]
     else:
         stage3 = path.with_name(sp.STAGE3_ASSET.name)
         models = {"built-in": "built-in"}
         if stage3.exists():
             models["stage 3 network"] = sp.load(stage3)
-        models["stage 3b network"] = model = sp.load(path)
+        models["stage 3c network"] = model = sp.load(path)
         models["true"] = "true"
         summary = sp.summarize(sp.evaluate(models, folder, split=args.split))
         shown = None
