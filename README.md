@@ -3,7 +3,7 @@
 [![CI](https://github.com/R0CK574R/brubus/actions/workflows/ci.yml/badge.svg)](https://github.com/R0CK574R/brubus/actions/workflows/ci.yml)
 
 **[▶ Open the live demo](https://r0ck574r.github.io/brubus/)**: it runs in your browser, on a laptop or a phone,
-with nothing to install. Press **▶ Tour** for a guided run through all three maps (under two minutes).
+with nothing to install. Press **▶ Tour** for a guided run through all three maps (about two minutes).
 
 [![Watch the 69-second demo: the operator console tasks a tank and three drones, a roadblock forces a re-plan, and a watchtower detects and tracks a drone](docs/demo-poster.jpg)](https://r0ck574r.github.io/brubus/brubus-demo.mp4)
 
@@ -53,7 +53,9 @@ to watch him plan with what he learned, against his built-in model and the true 
 - **▶ Tour** (top left, or add `#tour` to the address) plays a guided loop: each map flies in and
   five planners race its showcase path; then the desert watches Dijkstra and A* search side by side,
   the island drives with a 5 m sensor and meets a roadblock, and the grassland rides along with the
-  drone camera, then takes to the air: our drone flies its stealth route past the
+  drone camera, shows Bruce planning the same trip with the terrain speeds he learned (the **◆ AI** mode
+  below: what his built-in model expected, what each route really takes, and what learning did over the
+  whole study), then takes to the air: our drone flies its stealth route past the
   watchtowers. The overview lays every route side by side. A caption says what's happening at each
   step. Touch anything to take over; the tour doesn't change the paths your browser remembers.
 - **◆ AI** (top left, beside ✈ Air) shows the [learning work](#stage-3-bruce-learns-his-own-terrain-speeds)

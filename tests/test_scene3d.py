@@ -109,3 +109,10 @@ def test_viewer_has_the_ai_mode(tmp_path):
     for fn in ("function aiPerMetre(", "function aiSense(", "function aiTrue(", "function aiRoutes(", "function setAi("):
         assert fn in page                                                         # his network, his senses, the truth
     assert 'w === "ai"' in page and "/^t(\\d{1,3})$/" in page                    # the #ai link, and /t30 for fewer trips
+
+
+def test_the_tour_stops_at_the_ai_mode(tmp_path):
+    page = _page(tmp_path)
+    assert '[14, "ai"], [23, "aiTrue"], [34, "air"]' in page                   # on the grassland, before the air route
+    assert "ai() {" in page and "aiTrue() {" in page and "setAi(true, true);" in page
+    assert "setAir(false, true); setAi(false, true);" in page                  # each map's act starts on the ground

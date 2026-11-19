@@ -3304,7 +3304,7 @@ void groundOverlay(inout vec3 col) {
     const cx0 = (Math.min(...pts.map(p => p[0])) + Math.max(...pts.map(p => p[0]))) / 2;
     const cy0 = (Math.min(...pts.map(p => p[1])) + Math.max(...pts.map(p => p[1]))) / 2;
     const blocks = [[-1e4, -1e4, m, 1e4], [W - m, -1e4, 1e4, 1e4], [-1e4, -1e4, 1e4, m], [-1e4, H - m, 1e4, 1e4]];   // screen edges
-    for (const id of ["title-board", "board", "drone", "paths", "tele", "planbar", "tour-cap", "sense", "ops-top", "ops-left", "ops-right", "ops-bottom"]) {   // every panel on show
+    for (const id of ["title-board", "board", "drone", "paths", "tele", "planbar", "tour-cap", "sense", "ai", "ops-top", "ops-left", "ops-right", "ops-bottom"]) {   // every panel on show
       const el = $(id), r = el.getBoundingClientRect();                                     // (a phone's path list is a
       if (!el.hidden && r.width && !(id === "paths" && narrow())) blocks.push([r.left - m, r.top - m, r.right + m, r.bottom + m]);   // brief overlay)
     }
@@ -4101,9 +4101,8 @@ void main() {
     } else { renderBoard(); refreshLayers(); }
     aiPanel();
   }
-  function setAi(on, keepView) {
+  function setAi(on, keepView) {                   // (a press on the button has already handed the tour back; the tour uses it too)
     if (!AIS || on === ai.on) return;
-    if (tour) stopTour();
     stopReplay(); if (plan.mode) exitPlan();
     if (on && air.on) setAir(false, true);
     ai.on = on;
@@ -4112,7 +4111,7 @@ void main() {
     $("pb-draw").hidden = on;
     document.querySelector("#board .note").textContent = on ? NOTE_AI : NOTE_GROUND;
     document.querySelector("#board-table thead th:nth-child(4)").textContent = on ? "Thought" : "Climb m";
-    $("ai").hidden = !on;
+    $("ai").hidden = !on || !!tour;                 // (on the tour its caption tells the story; the panel shows when you take over)
     aiReplan();
     if (!keepView && on && mode === "replay") setMode("course");
   }
@@ -4847,9 +4846,10 @@ void main() {
   // ---------------------------------------------------------------- the tour: the viewer shows itself off
   // One press (or #tour in the address) plays a guided loop for showing the project to someone: each map flies in and
   // five planners race that map's showcase path; then the desert watches Dijkstra and A* search side by side, the
-  // island drives with a 5 m sensor and meets a roadblock, and on the grassland the drone flies the air route out of
-  // the watchtowers' sight; the overview lays every route side by side, with a caption saying what's going on. It runs on the frame
-  // clock, so it pauses with the page. Touching anything hands control back; the tour leaves no saved paths behind.
+  // island drives with a 5 m sensor and meets a roadblock, and on the grassland Bruce plans the trip again with the
+  // terrain speeds he learned (AI mode) before the drone flies the air route out of the watchtowers' sight; the
+  // overview lays every route side by side, with a caption saying what's going on. It runs on the frame clock, so it
+  // pauses with the page. Touching anything hands control back; the tour leaves no saved paths behind.
   const TOUR_MAPS = ["desert", "island", "grassland"].filter(k => SCENE.maps.some(m => m.key === k));
   let tour = null;                                  // { k: which map of TOUR_MAPS, t: seconds into its act, step }
   const tourCap = $("tour-cap");
@@ -4861,11 +4861,11 @@ void main() {
   }
   const pct = (a, b) => `${Math.round((a / b - 1) * 100)}%`;
   // Each map's act shows something different: the desert watches Dijkstra and A* search side by side, the island
-  // drives with a 5 m sensor (D* Lite) and meets a roadblock, the grassland follows the race with the drone and the
-  // chase camera. [seconds into the act, what happens]
+  // drives with a 5 m sensor (D* Lite) and meets a roadblock, the grassland rides along with the drone, shows what
+  // Bruce learned (AI) and takes to the air. [seconds into the act, what happens]
   const TOUR_DO = {
     intro() {
-      setAir(false, true);
+      setAir(false, true); setAi(false, true);
       const key = TOUR_MAPS[tour.k], i = SCENE.maps.findIndex(m => m.key === key), name = SCENE.maps[i].name;
       tourSay(`Tour · ${name} · ${tour.k + 1} of ${TOUR_MAPS.length}`, `<b>${name}.</b> ${THEMES[key].tour.intro}`);
       if (showAll) $("t-routes").click();           // one route at a time to start with
@@ -4927,6 +4927,22 @@ void main() {
       if (n.wastar && n.astar) lines.push(`Weighted A* searches <b>${Math.max(1, Math.round(n.astar.nodes / n.wastar.nodes))}×</b> fewer cells than A* for ${pct(n.wastar.cost, n.astar.cost)} more time`);
       tourSay(`Tour · ${MAP.name} · every planner`, `Every planner's route, side by side: ${lines.slice(0, 2).join("; ")}.`);
     },
+    ai() {                                          // the same trip, planned with the terrain speeds Bruce learned
+      if (!AIS) return;
+      ai.trips = AIS.nets[AIS.nets.length - 1].trips;   // all he learned
+      setAi(true, true);
+      setMode("course");
+      tourSay(`Tour · ${MAP.name} · ◆ AI: what Bruce learned`, `The planners' clock is only Bruce's built-in model (amber). The true speeds are hidden, so he learned them from his own driving logs, ${ai.trips} practice trips on other maps: <b>blue</b> is his route now. Dashed: the quickest there is.`);
+    },
+    aiTrue() {                                      // what each route really takes, and what learning did over the whole study
+      const L = aiBy("ai-learned"), B = aiBy("ai-builtin"), T = aiBy("ai-true");
+      if (!ai.on || !L || !B || !T) return;
+      setMode("drone");
+      const off = (L.cost / T.cost - 1) * 100, s0 = AIS.study.find(s => s.trips === 0), sN = AIS.study.find(s => s.trips === ai.trips);
+      tourSay(`Tour · ${MAP.name} · ◆ AI: at the true speeds`,
+        `His built-in model expected <b>${fmtTime(B.thought)}</b>; its route really takes <b>${fmtTime(B.cost)}</b>. His learned route takes <b>${fmtTime(L.cost)}</b>, ${off < 0.05 ? "the quickest there is" : `${off.toFixed(1)}% off the quickest`}.`
+        + (s0 && sN ? ` Over ${AIS.trips_tested.toLocaleString()} test trips on maps he never drove, learning cut the average from <b>${(100 * s0.regret).toFixed(1)}%</b> slower than the quickest to <b>${(100 * sN.regret).toFixed(2)}%</b>.` : ""));
+    },
     air() {
       setAir(true, true);
       setMode("chase");
@@ -4943,7 +4959,7 @@ void main() {
   const TOUR_ACTS = {
     desert:    [[0, "intro"], [3.4, "race"], [7.5, "search"], [15.5, "searchDone"], [20, "drone"], [28, "overview"], [35, "next"]],
     island:    [[0, "intro"], [3.4, "race"], [7.5, "sensor"], [13, "roadblock"], [21, "sensorChase"], [28, "overview"], [35, "next"]],
-    grassland: [[0, "intro"], [3.4, "race"], [8, "drone"], [14, "air"], [27, "airOverview"], [34, "next"]],
+    grassland: [[0, "intro"], [3.4, "race"], [8, "drone"], [14, "ai"], [23, "aiTrue"], [34, "air"], [47, "airOverview"], [54, "next"]],
   };
   function startTour(fromMap) {
     if (plan.mode) exitPlan();
@@ -4960,6 +4976,7 @@ void main() {
     tour = null;
     tourBtn.setAttribute("aria-pressed", "false"); tourBtn.textContent = "▶ Tour";
     tourCap.hidden = true;
+    if (ai.on) $("ai").hidden = false;              // stopped at the AI stop: the panel, to explore from here
     if (mode === "course") viewFit = computeOverviewFit();   // the caption's room goes back to the map
     saveState();
   }
