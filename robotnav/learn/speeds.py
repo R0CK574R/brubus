@@ -617,6 +617,12 @@ def what_it_learned(model: SpeedModel, logged: np.ndarray | None = None) -> list
 
 
 STAGE3_ASSET = ASSET.with_name("speeds-stage3.txt")
+
+
+def checkpoint_path(trips: int) -> Path:
+    """Where the shipped career's network after `trips` trips is kept (its last one is ASSET): the viewer's AI mode
+    shows Bruce's learning with them."""
+    return ASSET.with_name(f"speeds-{trips}-trips.txt")
 CAREERS = (("plain, small network", False, SMALL), ("plain, bigger network", False, BIGGER),
            ("exploring, small network", True, SMALL), ("exploring, bigger network", True, BIGGER),
            ("exploring, size chosen from his log", True, Choose()))
@@ -646,6 +652,8 @@ def run(directory=None, checkpoints=(10, 30, 100, 300), seed: int = 0, out: Path
     final, stage3 = careers[CAREERS[-1][0]].curve[-1][2], careers[CAREERS[0][0]].curve[-1][2]
     final.save(out)
     stage3.save(Path(out).with_name(STAGE3_ASSET.name))
+    for n, _, m in careers[CAREERS[-1][0]].curve[:-1]:            # and the shipped career's earlier networks
+        m.save(Path(out).with_name(checkpoint_path(n).name))
 
     def describe(name, exploring, network, c):
         last = c.chosen[-1] if c.chosen else dict(network=[FEATURES, *network[0], 1], steps=network[1])

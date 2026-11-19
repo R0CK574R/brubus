@@ -40,7 +40,8 @@ maps he had never driven, his routes went from 6.9% slower than the quickest to 
 scouting trips onto ground he was unsure of) and a bigger network then went after that stage's two weak spots: the
 worst of 720 trips went from 13.7% slow to 1.2%, and beach sand, which he had hardly driven, is better learned.
 Last, Bruce picks his network's size himself, from a held-out slice of his own driving log, and so gets the small
-network's quick start and the bigger one's finish.
+network's quick start and the bigger one's finish. Press **◆ AI** in the [live demo](https://r0ck574r.github.io/brubus/#desert/p19/ai)
+to watch him plan with what he learned, against his built-in model and the true speeds.
 
 ![Watch the search on the desert: Dijkstra (left) spreads out evenly while A* (right) heads for the finish; both find the same 2:25 route, but A* searches 2.5 times fewer cells](docs/search.gif)
 
@@ -55,6 +56,14 @@ network's quick start and the bigger one's finish.
   drone camera, then takes to the air: our drone flies its stealth route past the
   watchtowers. The overview lays every route side by side. A caption says what's happening at each
   step. Touch anything to take over; the tour doesn't change the paths your browser remembers.
+- **◆ AI** (top left, beside ✈ Air) shows the [learning work](#stage-3-bruce-learns-his-own-terrain-speeds)
+  at work: Bruce plans each trip with the terrain speeds he learned from his own driving (blue), with his
+  built-in model (amber), and with the true speeds he can't see (dashed: the quickest there is). The stage board
+  shows what each route really takes and what he expected it to take, the rover drives at the true speeds, and
+  the **Trips** buttons (0, 10, 30, 100, 300) step through his learning. In the browser his network and the
+  hidden world give the same routes and times as Python, to the last digit.
+  [`#desert/p19/ai`](https://r0ck574r.github.io/brubus/#desert/p19/ai) opens it on the desert's path P19, and
+  [`#desert/p19/ai/t10`](https://r0ck574r.github.io/brubus/#desert/p19/ai/t10) after only 10 trips.
 - **Links to a view**: the address keeps up with what's on screen, so you can copy it and send it.
   [`#desert/p19/search`](https://r0ck574r.github.io/brubus/#desert/p19/search) opens the search replay,
   [`#island/p20/sensor`](https://r0ck574r.github.io/brubus/#island/p20/sensor) the sensor drive,
@@ -153,7 +162,7 @@ Run these from the same terminal, with the virtual environment active.
 | `python main.py route --map desert --preset 19 --landmarks` | Add A\* guided by 8 landmarks to the race: the same route, fewer cells searched |
 | `python main.py speeds eval` | Stage 3: routes planned with Bruce's built-in model, stage 3's and stage 3c's learned speeds, and the true speeds, driven in the true world on the test maps (about 50 seconds with the C++ core) |
 | `python main.py speeds learn` | Five careers of Bruce's on the same 300 missions (planning with what he believes or exploring; small network, bigger, or the size he chooses from his log), scored after 10, 30, 100 and 300 trips (needs PyTorch; about 25 minutes on two cores) |
-| `python -m pytest -q` | Run the 362 tests (59 of them hold the C++ core against Python; skipped until it's built) |
+| `python -m pytest -q` | Run the 365 tests (59 of them hold the C++ core against Python; skipped until it's built) |
 | `python main.py demo`, `python main.py benchmark` | The original 2D grid version |
 
 `python main.py course` writes the viewer twice: `output/course_3d.html` to open yourself, and
@@ -719,7 +728,8 @@ still under a minute on a CPU. And beach sand stays thin, 56 moves and 12 climbs
 **What this says.** Holding out part of your own data to choose a model is the oldest check in machine learning,
 and it carries over to a robot learning on the job: Bruce matches the network to how much he has driven, with
 nothing to go on but his own log. His network is now stage 3c's (`robotnav/assets/speeds.txt`, with a card holding
-all five careers); `python main.py speeds eval` scores it against stage 3's.
+all five careers, and `speeds-10-trips.txt`, `-30-` and `-100-` for the way there); `python main.py speeds eval`
+scores it against stage 3's. To watch him plan with it, press **◆ AI** in the [live demo](https://r0ck574r.github.io/brubus/#desert/p19/ai).
 
 ## The rover
 
@@ -1018,14 +1028,14 @@ the C++ tests under AddressSanitizer and UndefinedBehaviorSanitizer.
 | `robotnav/replan.py` | Driving with a limited sensor: D\* Lite, the rover's belief about the terrain, roadblocks, and the A\*-from-scratch comparison |
 | `robotnav/airspace.py` | The air route: flight levels, watchtowers and their lines of sight, the stealth and direct flights |
 | `robotnav/sensing.py` | How the towers detect and track, for the operator console: the chance per look against range (Swerling 1), hazard and route risk, the extended Kalman filter, Wilson's interval; the page takes its constants from here |
-| `robotnav/scene3d.py` | Exports the three maps and their preset paths into the self-contained viewer (and the live demo page, with link previews) |
+| `robotnav/scene3d.py` | Exports the three maps and their preset paths into the self-contained viewer (and the live demo page, with link previews), with Bruce's learned networks and the hidden world for the AI mode |
 | `robotnav/intro_art.py` | The intro's art: draws the sonar backdrop (range rings, bearing lines and a tick every 5 degrees, in the badge's olive on near-black) as SVG and inlines the badge |
 | `tools/shark_logo.py` | Prepares the badge (`robotnav/assets/logo.webp`) from the logo's artwork: clears its black ground so the backdrop shows around it, and saves a 900 px WebP |
-| `robotnav/viewer3d.html` | Three.js viewer: maps, sky, water, contour lines, palms and trees, planners, D\* Lite and the air route in the browser, watching the search, the sensor drive, the drone and its watchtowers, the operator console (entities, tasking, timeline, report, command bar), MIL-STD-2525 symbols and callsign tags, preset paths, picking, drawing, drone camera and its compass and altitude read-outs, the spiked tank, the tour, links to a view, the frame-rate benchmark |
+| `robotnav/viewer3d.html` | Three.js viewer: maps, sky, water, contour lines, palms and trees, planners, D\* Lite and the air route in the browser, watching the search, the sensor drive, the drone and its watchtowers, the operator console (entities, tasking, timeline, report, command bar), the AI mode (Bruce's network and the hidden world, ported from Python digit for digit), MIL-STD-2525 symbols and callsign tags, preset paths, picking, drawing, drone camera and its compass and altitude read-outs, the spiked tank, the tour, links to a view, the frame-rate benchmark |
 | `cpp/` | The C++ core: planners, D\* Lite, the air route, the detection field and Monte Carlo trials on a thread pool, map files, the `robotnav` tool, unit tests, the pybind11 module and the WebAssembly build (`cpp/wasm/`, `tools/build_wasm.sh`) ([cpp/README.md](cpp/README.md)) |
 | `robotnav/learn/` | The learning work: the labels (true time to the goal, A\* with a table of estimates, re-expanding A\*), the data set, the baseline, the network's features and inference (`features.py`, `model.py`), training with PyTorch (`train.py`), the benchmark (`evaluate.py`), and stage 3's learned terrain speeds (`speeds.py`: the hidden true world, the driving logs, the network and the study) |
 | `robotnav/landmarks.py` | A\* with landmarks (ALT): the landmarks, their fields, the lower bound and the search |
-| `robotnav/assets/heuristic.txt`, `speeds.txt`, `speeds-stage3.txt` | The trained networks (plain text, exact doubles), with model cards: the A\* estimate, and Bruce's learned speeds (stage 3c's, and stage 3's for comparison) |
+| `robotnav/assets/heuristic.txt`, `speeds*.txt` | The trained networks (plain text, exact doubles), with model cards: the A\* estimate, and Bruce's learned speeds (stage 3c's after 10, 30, 100 and 300 trips, and stage 3's for comparison) |
 | `tools/learn_figure.py` | Draws the learning section's three pictures: the labels and the search, the benchmark, and the learning curve |
 | `robotnav/assign.py` | Who goes where: the Hungarian method for a survey's assignment, and the nearest-first rule it is compared with |
 | `robotnav/cpp.py`, `parity.py`, `mapfile.py` | Run the C++ core from Python, compare it with the reference, and write the map files it reads |
@@ -1033,7 +1043,7 @@ the C++ tests under AddressSanitizer and UndefinedBehaviorSanitizer.
 | `docs/` | The live demo served by GitHub Pages (`index.html`, built by `python main.py course`), its preview image, and the README's pictures |
 | `robotnav/terrain_bench.py` | Sweeps hill height, slope limit and obstacle density |
 | `robotnav/grid.py`, `visualize.py`, `benchmark.py` | Original 2D grid world, plots and benchmark |
-| `tests/` | 362 checks: Bruce's learned speeds (the move tables against the planners, the true world, exploring, choosing the network's size, the committed networks' accuracy and routes), landmarks (never too high, consistent, the quickest route), the network (its file, its accuracy on fresh maps, the capped search's promise), the learning data's exact labels and split by map, optimality on every map, the shortest route, all 20 presets per map, the desert's oases, grade limit, water, route rules, D\* Lite (legal routes, optimal repairs, roadblocks), the air route (towers, lines of sight, hiding behind a ridge), the C++ core against Python, map rebuilds, the command line, the page head and link previews, the survey's assignment against every pairing, the console look (fonts, map symbols, tags, read-outs), the intro's flag and logo |
+| `tests/` | 365 checks: Bruce's learned speeds (the move tables against the planners, the true world, exploring, choosing the network's size, the committed networks' accuracy and routes, and the copies the viewer carries, weight for weight), landmarks (never too high, consistent, the quickest route), the network (its file, its accuracy on fresh maps, the capped search's promise), the learning data's exact labels and split by map, optimality on every map, the shortest route, all 20 presets per map, the desert's oases, grade limit, water, route rules, D\* Lite (legal routes, optimal repairs, roadblocks), the air route (towers, lines of sight, hiding behind a ridge), the C++ core against Python, map rebuilds, the command line, the page head and link previews, the survey's assignment against every pairing, the console look (fonts, map symbols, tags, read-outs), the intro's flag and logo |
 
 ## Findings
 

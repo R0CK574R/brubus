@@ -422,3 +422,13 @@ def test_choosing_gets_the_quick_start_and_the_finish(card):
         assert mean[f"{chosen}, {n} trips"] == mean[f"{small}, {n} trips"] < mean[f"{bigger}, {n} trips"]
     assert mean[f"{chosen}, 300 trips"] <= mean[f"{bigger}, 300 trips"] < mean[f"{small}, 300 trips"]
 
+
+
+def test_the_way_there_is_kept(card):
+    """The shipped career's earlier networks, which the viewer's AI mode steps through: the sizes he chose, and notes
+    saying when they were trained."""
+    career = card["careers"][-1]
+    for point, pick in zip(career["curve"][:-1], career["chosen"][:-1]):
+        m = sp.load(sp.checkpoint_path(point["trips"]))
+        assert sizes(m) == pick["network"]
+        assert any(f"after {point['trips']} trips ({point['moves']:,} logged moves" in line for line in m.note)

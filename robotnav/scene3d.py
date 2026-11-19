@@ -14,6 +14,7 @@ from pathlib import Path
 import numpy as np
 
 from .airspace import AIR, place_towers
+from .learn import speeds as SP
 from .sensing import SENSE
 from .intro_art import backdrop_svg, logo_uri
 from .terrain import SHORTEST_TIE, Terrain, preset_routes
@@ -42,6 +43,7 @@ def map_scene(t: Terrain) -> dict:
         ponds=[dict(level=float(p["level"]), cells=[int(r * t.cols + c) for r, c in p["cells"]])
                for p in t.ponds],                            # desert oases: water level and cells (flat index)
         surfaces=[dict(name=n, cost=float(c)) for n, c in zip(t.surface_names, t.surface_costs)],
+        kind=[SP.KINDS.index(n) for n in t.surface_names],   # each surface's kind of ground, for the AI mode
         start=[int(v) for v in t.start], goal=[int(v) for v in t.goal],
         presets=[dict(name=p["name"], start=list(p["start"]), goal=list(p["goal"]), time=float(p["time"]),
                       distance_m=float(p["distance_m"]), short_time=float(p["short_time"]),
@@ -49,6 +51,30 @@ def map_scene(t: Terrain) -> dict:
                  for p in preset_routes(t)],                 # the 20 optional paths, quickest route each
         towers=[list(cell) for cell in place_towers(t)],     # the air route's watchtowers
     )
+
+
+def ai_scene() -> dict:
+    """The AI mode's data (README, stage 3): the hidden true world, and Bruce's network after each checkpoint of the
+    career he learned in (the shipped one, stage 3c), with the study's test-map results. Weights travel as base64
+    little-endian doubles (mean, scale, then each layer's W row by row and b), so the browser has them exactly."""
+    import base64
+    card = json.loads(SP.ASSET.with_suffix(".card.json").read_text())
+    career = card["careers"][-1]
+    final = career["curve"][-1]["trips"]
+    summary = {s["model"]: s for s in card["summary"] if s["theme"] == "all"}
+    nets, study = [], [dict(trips=0, regret=summary["built-in"]["regret"], worst=summary["built-in"]["worst"],
+                            within_1=summary["built-in"]["within_1"])]
+    for point in career["curve"]:
+        n = point["trips"]
+        m = SP.load(SP.ASSET if n == final else SP.checkpoint_path(n))
+        flat = np.concatenate([m.mean, m.scale] + [np.concatenate([W.ravel(), b]) for W, b in m.layers])
+        nets.append(dict(trips=n, moves=point["moves"], sizes=[SP.FEATURES] + [int(W.shape[1]) for W, _ in m.layers],
+                         data=base64.b64encode(np.asarray(flat, dtype="<f8").tobytes()).decode("ascii")))
+        s = summary[f"{career['name']}, {n} trips"]
+        study.append(dict(trips=n, regret=s["regret"], worst=s["worst"], within_1=s["within_1"]))
+    return dict(kinds=list(SP.KINDS), slow=[SP.TRUE_SLOW[k] for k in SP.KINDS], uphill=[SP.TRUE_UPHILL[k] for k in SP.KINDS],
+                brake_from=SP.BRAKE_FROM, brake=SP.BRAKE, side=SP.SIDE, rough=SP.ROUGH, nets=nets, study=study,
+                trips_tested=summary["built-in"]["trips"])
 
 
 TITLE = "Rover Hill Course"
@@ -66,7 +92,7 @@ def write_viewer(maps: list[Terrain], out: str | Path, scenes: list[dict] | None
     link shows the title, a description and social.png from that address.
     """
     scene = dict(cost=dict(uphill=maps[0].uphill_penalty, cell=maps[0].cell_size, short_tie=SHORTEST_TIE), air=AIR, sense=SENSE,
-                 maps=scenes if scenes is not None else [map_scene(t) for t in maps])
+                 ai=ai_scene(), maps=scenes if scenes is not None else [map_scene(t) for t in maps])
     body = (TEMPLATE.read_text().replace("/*__SCENE__*/null", json.dumps(scene, separators=(",", ":")))
             .replace("<!--__BACKDROP__-->", backdrop_svg()).replace("__LOGO_URI__", logo_uri())
             .replace("__CORE_WASM__", core_wasm()))

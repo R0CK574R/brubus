@@ -81,6 +81,14 @@ h1 { font-family: var(--f-display); font-weight: 700; font-size: 24px; line-heig
 .sense-msg { margin: 0; min-height: 3em; font-size: 12px; line-height: 1.5; color: var(--muted); }
 .sense-msg b { color: var(--ink); font-weight: 600; }
 .sense-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+/* AI mode's panel (it borrows the sensor panel's layout): how far Bruce has learned, and what it buys on this trip */
+.ai-dot { background: var(--accent); box-shadow: 0 0 0 3px rgba(239, 230, 210, 0.2); }
+.ai-key { display: inline-flex; align-items: center; gap: 5px; margin-right: 10px; white-space: nowrap; }
+.ai-key i { display: inline-block; width: 14px; height: 3px; border-radius: 1px; background: currentColor; }
+.ai-key i.dashed { background: repeating-linear-gradient(90deg, currentColor 0 4px, transparent 4px 7px); }
+.ai-note { margin: 0; font-size: 11px; line-height: 1.45; color: var(--muted); }
+.ai-note b { color: var(--ink); font-weight: 600; }
+@media (max-width: 760px) { #ai .ai-note, #ai .ai-why { display: none; } }   /* on a phone the panel keeps to the essentials */
 #sn-block[aria-pressed="true"] { border-color: var(--caution); color: var(--caution); background: rgba(226, 173, 72, 0.1); }
 /* the frame-rate benchmark (#bench) */
 .bench { box-sizing: border-box; display: grid; gap: 6px; padding: 10px 14px 12px 16px; max-height: min(30rem, 62vh); overflow: auto; }
@@ -550,6 +558,22 @@ body.ops-on .hud { display: none; }
         <button class="chip" id="sn-block" aria-pressed="false">Drop a roadblock</button>
         <button class="chip" id="sn-clear" hidden>Clear roadblocks</button>
       </div>
+    </section>
+    <section class="board sense" id="ai" aria-label="AI: Bruce's learned terrain speeds" hidden>
+      <div class="sense-head">
+        <span class="sense-title"><span class="sense-dot ai-dot" aria-hidden="true"></span>AI · learned terrain speeds</span>
+        <span class="sense-range" role="group" aria-label="Trips Bruce has learned from">Trips
+          <button class="chip" data-trips="0" aria-pressed="false">0</button><button class="chip" data-trips="10" aria-pressed="false">10</button><button class="chip" data-trips="30" aria-pressed="false">30</button><button class="chip" data-trips="100" aria-pressed="false">100</button><button class="chip" data-trips="300" aria-pressed="true">300</button>
+        </span>
+      </div>
+      <div class="sense-stats">
+        <div class="g" title="Moves in his driving log: what the network learned from"><span>Moves logged</span><output id="ai-moves">0</output></div>
+        <div class="g" title="The network's hidden layers: he picks its size himself, from a held-out slice of his log"><span>Network</span><output id="ai-net">—</output></div>
+        <div class="g" title="How much slower his route is than the quickest there is, driven at the true speeds"><span>Learned route</span><output id="ai-learned">—</output></div>
+        <div class="g" title="The same for the route his built-in model picks"><span>Built-in route</span><output id="ai-builtin">—</output></div>
+      </div>
+      <p class="sense-msg" id="ai-msg" role="status" aria-live="polite"></p>
+      <p class="ai-note" id="ai-study"></p>
     </section>
     <section class="board bench" id="bench" aria-label="Frame-rate benchmark" hidden>
       <div class="sense-head"><span class="bench-title">Frame-rate benchmark</span><span class="bench-prog" id="bench-prog" role="status"></span></div>
@@ -3077,7 +3101,7 @@ void groundOverlay(inout vec3 col) {
       rt.cells.forEach(([r, c], k) => { const x = (c + 0.5) * MMS / C, y = (r + 0.5) * MMS / R; if (k) g.lineTo(x, y); else g.moveTo(x, y); });
       const sel = rt === current, lit = routeLit(rt);
       g.setLineDash(rt.dashed ? [3, 2.5] : []);
-      g.globalAlpha = lit ? 1 : 0.6; g.lineWidth = sel ? 2.4 : lit ? 1.6 : 1.1; g.strokeStyle = lit ? FRIEND : ROUTE; g.stroke();
+      g.globalAlpha = lit ? 1 : 0.6; g.lineWidth = sel ? 2.4 : lit ? 1.6 : 1.1; g.strokeStyle = rt.ai ? rt.color : lit ? FRIEND : ROUTE; g.stroke();
     }
     g.setLineDash([]);
     g.globalAlpha = 1;
@@ -3143,9 +3167,9 @@ void groundOverlay(inout vec3 col) {
       tr.dataset.name = rt.name;
       if (rt.user) tr.className = "mine";
       const d = rt.found ? (rt.cost - best) / best * 100 : null;
-      tr.innerHTML = `<td><span class="alg"><span class="pos">${i + 1}</span><span class="swatch${rt.dashed ? " dashed" : ""}${rt.dashed || rt.air ? " lit" : ""}"></span>${rt.name}</span></td>
+      tr.innerHTML = `<td><span class="alg"><span class="pos">${i + 1}</span><span class="swatch${rt.dashed ? " dashed" : ""}${rt.dashed || rt.air ? " lit" : ""}"${rt.ai ? ` style="color:${rt.color}"` : ""}></span>${rt.name}</span></td>
         <td>${rt.found ? fmtTime(rt.cost) : "—"} <span class="delta ${d !== null && d < 0.05 ? "best" : ""}">${fmtDelta(d)}</span></td>
-        <td>${rt.found ? rt.stats.distance_m.toFixed(0) : "—"}</td><td class="hide-sm">${!rt.found ? "—" : rt.air ? rt.seenS.toFixed(1) : rt.stats.climb_m.toFixed(0)}</td>
+        <td>${rt.found ? rt.stats.distance_m.toFixed(0) : "—"}</td><td class="hide-sm">${!rt.found ? "—" : rt.air ? rt.seenS.toFixed(1) : rt.ai ? (rt.key === "ai-true" ? "—" : fmtTime(rt.thought)) : rt.stats.climb_m.toFixed(0)}</td>
         <td>${rt.user ? "—" : rt.nodes.toLocaleString()}</td><td class="hide-sm">${rt.user ? "—" : rt.ms.toFixed(rt.ms < 10 ? 1 : 0)}</td>`;
       if (rt.found) {
         tr.tabIndex = 0;
@@ -3160,10 +3184,12 @@ void groundOverlay(inout vec3 col) {
     return ranked;
   }
   const bestPlanner = ranked => (air.on && ranked.find(r => r.key === "stealth" && r.found))
+    || (ai.on && (ranked.find(r => r.key === "ai-learned" && r.found) || ranked.find(r => r.key === "ai-builtin" && r.found)))
     || ranked.find(r => r.found && r.key !== "short" && r.key !== DSTAR.key) || ranked[0];
   const planners = () => routes.filter(r => r.found && !r.user && r.key !== "short" && r.key !== DSTAR.key);   // the five, full map known
   function renderSaving() {                         // the demo in one line: reading the hills beats the shortest route
     const el = $("board-save"), short = routes.find(r => r.key === "short" && r.found);
+    if (ai.on) { const line = aiLine(); el.hidden = !line; el.innerHTML = line; return; }   // AI: what learning bought
     const st = routes.find(r => r.key === "stealth" && r.found), di = routes.find(r => r.key === "direct" && r.found);
     if (air.on && st && di) {                       // in the air: staying hidden, for how much flight time
       el.hidden = false;
@@ -3340,16 +3366,16 @@ void groundOverlay(inout vec3 col) {
     markSelected(name);
     const d = drivenPreset();
     $("sum-pick").textContent = `${d >= 0 ? `P${d + 1} · ` : ""}${name} · ${fmtTime(current.cost)}`;
-    G.alg.textContent = name;
+    G.alg.textContent = current.gauge || name;
     refreshLayers(); drawMapLayer();
     restartLap(!!animate);
   }
   // Ours, in blue: the selected route and its dashed comparison (the hill-blind shortest route on the ground; in the
   // air both flights, stealth solid and direct dashed). Every other route is a grey line.
-  const routeLit = rt => rt === current || !!rt.dashed || !!rt.air;
+  const routeLit = rt => rt === current || !!rt.dashed || !!rt.air || !!rt.ai;
   const lineCol = new THREE.Color();
   function routeShown(rt) {                         // which routes are on the map outside the planner
-    if (rt.air) return true;                                               // in the air: the stealth and the direct flight
+    if (rt.air || rt.ai) return true;                                      // in the air: the stealth and the direct flight; AI: all three
     if (rt.key === "short") return rt === current || showShort;           // the dashed hill-blind comparison
     if (rt.user) return true;                                              // a route you drew
     if (rt === current) return !(rt.key === "astar" && drivenPreset() >= 0);   // a driven preset's own line already is A*'s path
@@ -3364,7 +3390,7 @@ void groundOverlay(inout vec3 col) {
       rt.tube.visible = on && !thick && !replay.on;
       rt.planTube.visible = on && thick && !replay.on;   // (watching the search draws its own two)
       rt.planMat.depthTest = !planning && !replay.on;   // outside the planner, hills hide the far side of a route
-      lineCol.set(lit ? FRIEND : ROUTE).convertSRGBToLinear();
+      lineCol.set(rt.ai ? rt.color : lit ? FRIEND : ROUTE).convertSRGBToLinear();   // AI's three routes keep their own colours
       rt.mat.color.copy(lineCol); rt.mat.emissive.copy(lineCol); rt.planMat.color.copy(lineCol);
       rt.planMat.opacity = sel ? 0.95 : lit ? 0.8 : 0.55;
       rt.planTube.renderOrder = sel ? 5.5 : 5;
@@ -3393,7 +3419,7 @@ void groundOverlay(inout vec3 col) {
     routes.forEach(disposeRouteVisual);
     START = start.slice(); GOAL = goal.slice(); parked = false;
     sensor.blocks = []; senseClear();               // a new trip: no roadblocks yet
-    routes = air.on ? res : res.concat([sensorRoute(start, goal)]); current = null;   // callers select() a route straight after
+    routes = air.on || ai.on ? res : res.concat([sensorRoute(start, goal)]); current = null;   // callers select() a route straight after
     routes.forEach((rt, k) => { if (rt.found) buildRouteVisual(rt, 0.22 + k * 0.06, rt.air ? rt.pts : undefined); });
     resetDraw();
     buildFlags(endpointFlags());
@@ -3821,7 +3847,7 @@ void main() {
     return Object.assign(rt, { cost: secs, objective: f.cost, idx, cells: idx.map(i => [(i / C) | 0, i % C]), pts, stepT, seenS,
                                stats: { distance_m: dist, climb_m: climb, rough_m: 0, top_m: topH } });
   }
-  const planPair = (s, g) => (air.on ? [airRoute(s, g, true), airRoute(s, g, false)] : runPlanners(s, g));
+  const planPair = (s, g) => (air.on ? [airRoute(s, g, true), airRoute(s, g, false)] : ai.on ? aiRoutes(s, g) : runPlanners(s, g));
   function buildCurtain() {                         // thin lines from the route down to the ground: how high it flies
     if (air.curtain) { scene.remove(air.curtain); air.curtain.geometry.dispose(); air.curtain.material.dispose(); air.curtain = null; }
     air.curtainOf = current;
@@ -3846,6 +3872,7 @@ void main() {
   const NOTE_AIR = "Flight time at 5 m/s. Seen: seconds inside a watchtower's line of sight. The stealth route pays 10 s for every second seen, so it hides behind hills when it can. On the ground: red, the towers see even a low flight; amber, flying low hides you.";
   function setAir(on, keepView) {
     if (on === air.on) return;
+    if (on && ai.on) setAi(false, true);
     stopReplay(); if (plan.mode) exitPlan();
     air.on = on;
     airBtn.setAttribute("aria-pressed", String(on)); airBtn.textContent = on ? "■ Ground" : "✈ Air";
@@ -3915,6 +3942,170 @@ void main() {
     d.tag.sprite.position.set(x, y + 0.85, z);
   }
   const airBtn = document.createElement("button");   // placed beside the map buttons once they exist (switching maps)
+
+  // ---------------------------------------------------------------- AI: Bruce's learned terrain speeds (README, stage 3)
+  // The simulator hides a true world from Bruce: every kind of ground has its own true speed, climbing loose ground costs
+  // more than he thinks, and side slopes and rough ground slow him. His built-in model (the planners' drive time) knows
+  // none of it; he learned it from noisy logs of his own driving on 360 training maps, none of them these three, and the
+  // page carries his network after 10, 30, 100 and 300 trips. AI mode plans each trip three ways: with what he learned
+  // (blue), with his built-in model (amber), and with the true speeds he can't see (dashed: the quickest route there is).
+  // The board's times are what each route really takes, and the rover drives at the true speeds. His inputs, the network
+  // and the true times are a 1:1 port of robotnav.learn.speeds (the same arithmetic in the same order), so the routes
+  // and times match Python's to the last digit.
+  const AIS = SCENE.ai || null;
+  const ai = { on: false, trips: AIS ? AIS.nets[AIS.nets.length - 1].trips : 0, prep: null, nets: {}, tables: {} };
+  const AI_K = [4, 0, 5, 2, -1, 3, 6, 1, 7];       // which of the 8 moves (NB order) the step (dr, dc) is: AI_K[(dr + 1) * 3 + dc + 1]
+  function aiNet(trips) {                           // his network after `trips` trips, decoded once from little-endian doubles
+    if (ai.nets[trips]) return ai.nets[trips];
+    const spec = AIS.nets.find(n => n.trips === trips), bin = atob(spec.data), dv = new DataView(new ArrayBuffer(bin.length));
+    for (let i = 0; i < bin.length; i++) dv.setUint8(i, bin.charCodeAt(i));
+    const vals = new Float64Array(bin.length / 8);
+    for (let i = 0; i < vals.length; i++) vals[i] = dv.getFloat64(i * 8, true);
+    const s = spec.sizes, wide = Math.max(...s);
+    let o = 0;
+    const take = n => vals.subarray(o, (o += n));
+    const net = { trips, moves: spec.moves, sizes: s, mean: take(s[0]), scale: take(s[0]), layers: [],
+                  a: new Float64Array(wide), z: new Float64Array(wide) };
+    for (let l = 1; l < s.length; l++) net.layers.push({ nin: s[l - 1], nout: s[l], W: take(s[l - 1] * s[l]), b: take(s[l]) });
+    return (ai.nets[trips] = net);
+  }
+  function aiPerMetre(net, x) {                     // seconds per metre: 1 + max(z, 0), NumPy's sums in NumPy's order
+    const a = net.a, z = net.z, F = net.sizes[0], L = net.layers.length;
+    for (let j = 0; j < F; j++) a[j] = (x[j] - net.mean[j]) / net.scale[j];
+    for (let l = 0; l < L; l++) {
+      const { nin, nout, W, b } = net.layers[l];
+      for (let k = 0; k < nout; k++) z[k] = b[k];
+      for (let j = 0; j < nin; j++) {
+        const aj = a[j];
+        if (aj === 0) continue;                     // (adding 0 × w changes nothing)
+        for (let k = 0, row = j * nout; k < nout; k++) z[k] += aj * W[row + k];
+      }
+      if (l + 1 < L) for (let k = 0; k < nout; k++) a[k] = Math.max(z[k], 0);
+    }
+    return 1 + Math.max(z[0], 0);
+  }
+  function aiPrep() {                               // per map: the height map's slope and roughness at every cell
+    if (ai.prep === MAP) return;
+    const N = R * C, gx = new Float64Array(N), gy = new Float64Array(N), rough = new Float64Array(N);
+    for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) {
+      const i = r * C + c, cl = Math.max(c - 1, 0), cr = Math.min(c + 1, C - 1), ru = Math.max(r - 1, 0), rd = Math.min(r + 1, R - 1);
+      gx[i] = (H[r * C + cr] - H[r * C + cl]) / ((cr - cl) * COST.cell);   // central differences, one-sided at the edges
+      gy[i] = (H[rd * C + c] - H[ru * C + c]) / ((rd - ru) * COST.cell);
+      rough[i] = Math.abs(H[i] - (H[ru * C + c] + H[rd * C + c] + H[r * C + cl] + H[r * C + cr]) / 4);
+    }
+    Object.assign(ai, { prep: MAP, gx, gy, rough, kind: MAP.kind, tables: {} });
+  }
+  const AIX = new Float64Array(14);                 // what Bruce senses of a move: his network's 14 inputs
+  function aiSense(a, b) {                          // fill AIX for the move a → b; returns its 3-D length
+    const ar = (a / C) | 0, br = (b / C) | 0, dr = br - ar, dc = (b - br * C) - (a - ar * C);
+    const run = (dr && dc ? Math.SQRT2 : 1) * COST.cell, rise = H[b] - H[a], g = rise / run;
+    AIX.fill(0);
+    AIX[0] = dr && dc ? 1 : 0; AIX[1] = g; AIX[2] = Math.max(g, 0); AIX[3] = Math.max(-g, 0);
+    AIX[4] = Math.abs(ai.gx[b] * dr - ai.gy[b] * dc) / Math.sqrt(dr * dr + dc * dc);   // the side slope where he lands
+    AIX[5] = ai.rough[b];
+    AIX[6 + ai.kind[SURF[b]]] = 1;                  // the kind of ground he lands on
+    return Math.sqrt(run * run + rise * rise);
+  }
+  function aiTrue(a, b) {                           // the hidden true world's seconds for a → b
+    const d3 = aiSense(a, b), k = ai.kind[SURF[b]], g = AIX[1], side = AIX[4];
+    return d3 * (AIS.slow[k] * (1 + AIS.uphill[k] * Math.max(g, 0) + AIS.brake * Math.max(-g - AIS.brake_from, 0))
+      * (1 + AIS.side * side * side) * (1 + AIS.rough * ai.rough[b]));
+  }
+  function aiTable(key, fn) {                       // a step for bestFirst: fn's seconds for each move (-1: not allowed), cached
+    const t = ai.tables[key] || (ai.tables[key] = new Float64Array(R * C * 8).fill(NaN));
+    return (a, b) => {
+      const ar = (a / C) | 0, br = (b / C) | 0, j = a * 8 + AI_K[(br - ar + 1) * 3 + (b - br * C) - (a - ar * C) + 1];
+      let v = t[j];
+      if (v !== v) v = t[j] = stepCost(a, b) < 0 ? -1 : fn(a, b);   // the same moves as every planner may make
+      return v;
+    };
+  }
+  function aiRoute(key, name, gauge, color, dashed, si, gi, step, truth) {
+    const t0 = performance.now(), res = bestFirst(si, gi, PRIO.astar, step), ms = performance.now() - t0, idx = [];
+    if (res.found) { for (let i = gi; i !== -1; i = res.parent[i]) idx.push(i); idx.reverse(); }
+    const stepT = [0];
+    let cost = 0, thought = 0;
+    for (let k = 1; k < idx.length; k++) {          // each step's true seconds (the rover drives them), added up in order
+      const tt = truth(idx[k - 1], idx[k]);
+      stepT.push(tt); cost += tt; thought += step(idx[k - 1], idx[k]);
+    }
+    return { key, name, gauge, color, dashed, ai: true, found: res.found, cost: res.found ? cost : Infinity, thought,
+             nodes: res.explored.length, peak: res.peak, ms, idx, cells: idx.map(i => [(i / C) | 0, i % C]),
+             explored: res.explored, opened: res.opened, stats: res.found ? statsOf(idx) : null, stepT };
+  }
+  function aiRoutes(start, goal) {                  // the trip planned with what he learned, his built-in model and the truth
+    aiPrep();
+    const si = start[0] * C + start[1], gi = goal[0] * C + goal[1], truth = aiTable("true", aiTrue), out = [];
+    if (ai.trips > 0) {
+      const net = aiNet(ai.trips);
+      out.push(aiRoute("ai-learned", `Learned · ${ai.trips} trips`, "Learned", FRIEND, false, si, gi,
+                       aiTable(`n${ai.trips}`, (a, b) => aiSense(a, b) * aiPerMetre(net, AIX)), truth));
+    }
+    out.push(aiRoute("ai-builtin", "Built-in model", "Built-in", CAUTION, false, si, gi, stepCost, truth));
+    out.push(aiRoute("ai-true", "True quickest", "True quickest", ACCENT, true, si, gi, truth, truth));
+    return out;
+  }
+  const aiBy = key => routes.find(r => r.key === key && r.found);
+  const aiPct = (r, best) => { const d = (r.cost / best.cost - 1) * 100; return d < 0.05 ? "the quickest" : `+${d.toFixed(d < 10 ? 1 : 0)}%`; };
+  function aiLine() {                               // the board's one line in AI mode: what learning bought on this trip
+    const L = aiBy("ai-learned"), B = aiBy("ai-builtin"), T = aiBy("ai-true");
+    if (parked || !B || !T) return "";
+    if (!L) return `No trips yet: his built-in model's route takes <b>${fmtTime(B.cost)}</b>; the quickest there is takes ${fmtTime(T.cost)}.`;
+    const saved = B.cost - L.cost;
+    return saved >= 0.5
+      ? `What he learned: <b>${fmtTime(L.cost)}</b> instead of ${fmtTime(B.cost)} with his built-in model, <b>${saved < 59.5 ? `${Math.round(saved)} s` : fmtTime(saved)}</b> saved; the quickest there is takes ${fmtTime(T.cost)}.`
+      : `Here his built-in model's route is about as quick: ${fmtTime(B.cost)}, and ${fmtTime(L.cost)} with what he learned; the quickest there is takes ${fmtTime(T.cost)}.`;
+  }
+  const AIP = { trips: [...document.querySelectorAll("[data-trips]")] };
+  function aiPanel() {                              // the panel: how far he has learned, and what it buys on this trip
+    if (!AIS) return;
+    AIP.trips.forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.trips === ai.trips)));
+    const net = ai.trips ? aiNet(ai.trips) : null, L = aiBy("ai-learned"), B = aiBy("ai-builtin"), T = aiBy("ai-true");
+    $("ai-moves").textContent = net ? net.moves.toLocaleString() : "0";
+    $("ai-net").textContent = net ? net.sizes.slice(1, -1).join(" × ") : "—";
+    $("ai-learned").textContent = L && T ? aiPct(L, T) : "—";
+    $("ai-builtin").textContent = B && T ? aiPct(B, T) : "—";
+    const key = (col, text, dashed) => `<span class="ai-key" style="color:${col}"><i${dashed ? ' class="dashed"' : ""}></i><b style="color:var(--ink)">${text}</b></span>`;
+    $("ai-msg").innerHTML = parked
+      ? "Pick a path in <b>More paths</b> or <b>Set start &amp; finish</b>: Bruce plans the trip with the speeds he learned, with his built-in model, and with the true speeds."
+      : `${net ? key(FRIEND, "what he learned") : ""}${key(CAUTION, "his built-in model")}${key(ACCENT, "the quickest there is", true)}`
+        + `<span class="ai-why"><br>` + (net ? `After ${ai.trips} trips of logs, his network plans with the speeds he learned. The dashed line uses the true speeds, which he can't see.`
+               : "No trips yet: he plans with his built-in model only. Pick a number of trips to see what he learned.") + "</span>";
+    const st = AIS.study.find(x => x.trips === ai.trips);
+    $("ai-study").innerHTML = (st ? `In the study (${AIS.trips_tested.toLocaleString()} trips on 45 maps he never drove), ${ai.trips ? `his routes after ${ai.trips} trips were` : "his built-in model's routes were"} <b>${(100 * st.regret).toFixed(2)}%</b> slower than the quickest on average. ` : "")
+      + "The true speeds are made up for the study; these three maps were never in his training.";
+  }
+  const NOTE_AI = "Time is what each route really takes, at the ground's true speeds; Thought is how long Bruce expected it to take. The true quickest (dashed) is planned with the true speeds, which he can't see.";
+  function aiReplan() {                             // the trip again, with the current mode's routes
+    if (!parked) {
+      const ranked = installPair(START, GOAL, planPair(START, GOAL));
+      playing = true; syncPlay();
+      select(bestPlanner(ranked).name, false);
+      drawMapLayer();
+    } else { renderBoard(); refreshLayers(); }
+    aiPanel();
+  }
+  function setAi(on, keepView) {
+    if (!AIS || on === ai.on) return;
+    if (tour) stopTour();
+    stopReplay(); if (plan.mode) exitPlan();
+    if (on && air.on) setAir(false, true);
+    ai.on = on;
+    aiBtn.setAttribute("aria-pressed", String(on)); aiBtn.textContent = on ? "■ Stop AI" : "◆ AI";
+    ["t-watch", "t-short", "t-routes"].forEach(id => { $(id).hidden = on; });
+    $("pb-draw").hidden = on;
+    document.querySelector("#board .note").textContent = on ? NOTE_AI : NOTE_GROUND;
+    document.querySelector("#board-table thead th:nth-child(4)").textContent = on ? "Thought" : "Climb m";
+    $("ai").hidden = !on;
+    aiReplan();
+    if (!keepView && on && mode === "replay") setMode("course");
+  }
+  AIP.trips.forEach(b => b.addEventListener("click", () => {
+    const n = +b.dataset.trips;
+    if (n === ai.trips) return;
+    ai.trips = n; aiReplan();
+  }));
+  const aiBtn = document.createElement("button");    // placed beside the Air button
 
   // ---------------------------------------------------------------- controls
   const modeBtns = [...document.querySelectorAll("[data-mode]")];
@@ -4001,6 +4192,7 @@ void main() {
     const ranked = installPair(s, f, res), best = bestPlanner(ranked), short = ranked.find(r => r.key === "short" && r.found);
     select(best.name, false);
     drawMapLayer(); saveState();
+    if (ai.on) { say(`${lead}START ${fmtCell(s)} → FINISH ${fmtCell(f)}. ${aiLine().replace(/<\/?b>/g, "")}`, "good"); aiPanel(); return; }
     const pct = short ? Math.round((short.cost / best.cost - 1) * 100) : 0;
     say(`${lead}START ${fmtCell(s)} → FINISH ${fmtCell(f)}: quickest ${fmtTime(best.cost)} (${best.name}). `
       + (pct >= 1 ? `The shortest route (dashed) ignores the hills and takes ${pct}% longer.` : "The shortest route is just as quick here."), "good");
@@ -4740,6 +4932,7 @@ void main() {
   function startTour(fromMap) {
     if (plan.mode) exitPlan();
     if (!pathsPanel.hidden) showPaths(false);
+    if (ai.on) setAi(false, true);
     const at = TOUR_MAPS.indexOf(fromMap);
     tour = { k: at >= 0 ? at : 0, t: 0, step: 0 };
     tourBtn.setAttribute("aria-pressed", "true"); tourBtn.textContent = "■ Stop tour";
@@ -4765,6 +4958,11 @@ void main() {
   airBtn.title = "Air route: our drone flies to the finish out of the watchtowers' sight";
   $("maps").insertBefore(airBtn, tourBtn);
   airBtn.onclick = () => setAir(!air.on);
+  aiBtn.className = "ai-btn"; aiBtn.id = "ai-btn"; aiBtn.setAttribute("aria-pressed", "false"); aiBtn.textContent = "◆ AI";
+  aiBtn.title = "AI: Bruce plans with the terrain speeds he learned from his own driving";
+  aiBtn.hidden = !AIS;
+  $("maps").insertBefore(aiBtn, tourBtn);
+  aiBtn.onclick = () => setAi(!ai.on);
   $("tour-stop").onclick = stopTour;
   // anything you do takes over from the tour (the tour's own buttons excepted); the press itself still counts
   const takeOver = ev => { if (tour && !(ev.target.closest && ev.target.closest("#tour-btn, #tour-stop"))) stopTour(); };
@@ -6264,6 +6462,7 @@ ${ops.vehs.map(v => `<li><b>${v.id}</b>: ${v.dist.toFixed(0)} m travelled, ${see
       if (tour) stopTour();
       stopReplay(); if (plan.mode) exitPlan(); if (senseView.arming) armBlock(false); showPaths(false);
       if (air.on) setAir(false, true);
+      if (ai.on) setAi(false, true);
       parkRover();
       ops.on = true; document.body.classList.add("ops-on"); OE.root.hidden = false;
       opsMapBtns.forEach((b, k) => b.setAttribute("aria-pressed", String(k === mapIdx)));
@@ -6299,7 +6498,9 @@ ${ops.vehs.map(v => `<li><b>${v.id}</b>: ${v.dist.toFixed(0)} m travelled, ${see
       const pm = /^p(\d{1,2})$/.exec(w);
       if (pm) out.path = +pm[1] - 1;
       if (Object.keys(VIEW_WORD).includes(w)) out.view = w;
-      if (w === "search" || w === "sensor" || w === "bench" || w === "air" || w === "ops" || w === "demo") out[w] = true;
+      if (w === "search" || w === "sensor" || w === "bench" || w === "air" || w === "ops" || w === "demo" || w === "ai") out[w] = true;
+      const tm = /^t(\d{1,3})$/.exec(w);
+      if (tm) out.trips = +tm[1];
     }
     return out;
   }
@@ -6310,6 +6511,7 @@ ${ops.vehs.map(v => `<li><b>${v.id}</b>: ${v.dist.toFixed(0)} m travelled, ${see
     if (d >= 0) parts.push(`p${d + 1}`);
     if (ops.on) parts.push("ops");
     else if (air.on) parts.push("air");
+    else if (ai.on) { parts.push("ai"); if (ai.trips !== AIS.nets[AIS.nets.length - 1].trips) parts.push(`t${ai.trips}`); }
     else if (replay.on) parts.push("search");
     else if (sensing()) parts.push("sensor");
     if (!plan.mode && !ops.on && VIEW_WORD[mode]) parts.push(VIEW_WORD[mode]);
@@ -6722,7 +6924,7 @@ ${ops.vehs.map(v => `<li><b>${v.id}</b>: ${v.dist.toFixed(0)} m travelled, ${see
   // changes, the planner bar opens. The picture glides to the new framing (easeView).
   if (window.ResizeObserver) {
     const refit = new ResizeObserver(() => { if (MAP && mode === "course") viewFit = computeOverviewFit(); });
-    for (const id of ["title-board", "board", "drone", "paths", "tele", "planbar", "tour-cap", "sense", "ops-top", "ops-left", "ops-right", "ops-bottom"]) refit.observe($(id));
+    for (const id of ["title-board", "board", "drone", "paths", "tele", "planbar", "tour-cap", "sense", "ai", "ops-top", "ops-left", "ops-right", "ops-bottom"]) refit.observe($(id));
   }
   if (matchMedia("(max-width: 760px)").matches) $("board").open = false;
   resize();
@@ -6734,6 +6936,10 @@ ${ops.vehs.map(v => `<li><b>${v.id}</b>: ${v.dist.toFixed(0)} m travelled, ${see
     if (link.path >= 0 && link.path < MAP.presets.length) drivePreset(link.path, !!link.view && MODES[link.view].follow);
     if (link.sensor && !parked) { const rt = routes.find(r => r.key === DSTAR.key && r.found); if (rt) select(rt.name, false); }
     if (link.air) setAir(true, !!link.view);
+    if (link.ai && AIS) {
+      if (link.trips === 0 || AIS.nets.some(n => n.trips === link.trips)) ai.trips = link.trips;
+      setAi(true, !!link.view);
+    }
     if (link.view && mode !== link.view) setMode(link.view);
     if (link.search && !parked) startReplay();
     if (link.ops) { setOps(true); if (link.demo) opsDemo(); }

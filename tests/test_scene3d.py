@@ -72,3 +72,40 @@ def test_intro_art_is_inlined(tmp_path):
     assert page.count('<svg class="intro-back"') == 1                # one backdrop, cropped to fit any screen
     assert 'src="data:image/webp;base64,' in page                  # the badge travels inside the page
     assert '<div class="intro-word">BRUBUS</div>' in page and '"Bruce · unmanned ground vehicle"' in page   # the project, and the tank's name
+
+
+def test_viewer_carries_bruces_networks_exactly(tmp_path):
+    """AI mode's data: each checkpoint network's weights decode to the committed file's doubles, bit for bit, and the
+    hidden world's numbers are Python's."""
+    import base64
+    import json
+    import re
+    import numpy as np
+    from robotnav.learn import speeds as sp
+    from robotnav.scene3d import ai_scene, map_scene
+    page = _page(tmp_path)
+    scene = json.loads(re.search(r"const SCENE = (\{.*?\});\n", page, re.S).group(1))
+    assert scene["ai"] == ai_scene()
+    ai = scene["ai"]
+    assert ai["kinds"] == list(sp.KINDS) and ai["slow"] == [sp.TRUE_SLOW[k] for k in sp.KINDS]
+    assert ai["uphill"] == [sp.TRUE_UPHILL[k] for k in sp.KINDS] and (ai["side"], ai["rough"]) == (sp.SIDE, sp.ROUGH)
+    card = json.loads(sp.ASSET.with_suffix(".card.json").read_text())
+    career = card["careers"][-1]
+    assert [n["trips"] for n in ai["nets"]] == [p["trips"] for p in career["curve"]] == [10, 30, 100, 300]
+    assert [n["sizes"] for n in ai["nets"]] == [p["network"] for p in career["chosen"]]   # the sizes he chose
+    for net in ai["nets"]:
+        m = sp.load(sp.ASSET if net["trips"] == 300 else sp.checkpoint_path(net["trips"]))
+        want = np.concatenate([m.mean, m.scale] + [np.concatenate([W.ravel(), b]) for W, b in m.layers])
+        got = np.frombuffer(base64.b64decode(net["data"]), dtype="<f8")
+        assert np.array_equal(got, want)                                          # every weight, exactly
+    assert ai["study"][0]["trips"] == 0 and ai["study"][-1]["regret"] < ai["study"][0]["regret"] / 50
+    t = solvable_map("island", seed=3, size=48)
+    assert [sp.KINDS[k] for k in map_scene(t)["kind"]] == list(t.surface_names)   # each surface's kind of ground
+
+
+def test_viewer_has_the_ai_mode(tmp_path):
+    page = _page(tmp_path)
+    assert 'id="ai"' in page and 'data-trips="300"' in page and 'aiBtn.textContent = "◆ AI"' in page   # panel, chips, button
+    for fn in ("function aiPerMetre(", "function aiSense(", "function aiTrue(", "function aiRoutes(", "function setAi("):
+        assert fn in page                                                         # his network, his senses, the truth
+    assert 'w === "ai"' in page and "/^t(\\d{1,3})$/" in page                    # the #ai link, and /t30 for fewer trips
