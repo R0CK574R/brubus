@@ -450,6 +450,11 @@ his network's size from his own log.
 The classical planners stay as they are, exact and checked bit for bit; anything learned sits beside them and is
 judged against them.
 
+In the [live demo](https://r0ck574r.github.io/brubus/#desert/p19/ai), **◆ AI** shows what he learned on any trip,
+and the tour stops on the grassland to show it:
+
+![The tour's AI stop on the grassland, path P15: the camera rises over the map while Bruce plans the trip three ways, with the terrain speeds he learned (blue), with his built-in model (amber) and with the true speeds he can't see (dashed, the quickest there is); then the drone camera follows him on his learned route and the caption gives the numbers: his built-in model expected 2:12 and its route really takes 2:50, his learned route takes 2:38, 0.2% off the quickest, and over 720 test trips learning cut the average from 6.9% slower than the quickest to 0.06%](docs/ai.gif)
+
 ### Stage 1: the data
 
 **The data.** `python main.py dataset build` makes 450 new maps (150 per theme, seeds 1000 to 1149, from the
