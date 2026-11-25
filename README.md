@@ -41,7 +41,10 @@ scouting trips onto ground he was unsure of) and a bigger network then went afte
 worst of 720 trips went from 13.7% slow to 1.2%, and beach sand, which he had hardly driven, is better learned.
 Last, Bruce picks his network's size himself, from a held-out slice of his own driving log, and so gets the small
 network's quick start and the bigger one's finish. Press **◆ AI** in the [live demo](https://r0ck574r.github.io/brubus/#desert/p19/ai)
-to watch him plan with what he learned, against his built-in model and the true speeds.
+to watch him plan with what he learned, against his built-in model and the true speeds. Then, in stage 4, he loses
+his map of the ground (he keeps its heights) and has to see it: a camera, a small U-Net that labels 94% of the ground
+right (colour alone, 84%), and a map that prices unseen ground by the ground round it bring his routes on maps he has
+never seen from 11.6% slower than the quickest, driving blind, to 3.9%.
 
 ![Watch the search on the desert: Dijkstra (left) spreads out evenly while A* (right) heads for the finish; both find the same 2:25 route, but A* searches 2.5 times fewer cells](docs/search.gif)
 
@@ -164,7 +167,12 @@ Run these from the same terminal, with the virtual environment active.
 | `python main.py route --map desert --preset 19 --landmarks` | Add A\* guided by 8 landmarks to the race: the same route, fewer cells searched |
 | `python main.py speeds eval` | Stage 3: routes planned with Bruce's built-in model, stage 3's and stage 3c's learned speeds, and the true speeds, driven in the true world on the test maps (about 50 seconds with the C++ core) |
 | `python main.py speeds learn` | Five careers of Bruce's on the same 300 missions (planning with what he believes or exploring; small network, bigger, or the size he chooses from his log), scored after 10, 30, 100 and 300 trips (needs PyTorch; about 25 minutes on two cores) |
-| `python -m pytest -q` | Run the 365 tests (59 of them hold the C++ core against Python; skipped until it's built) |
+| `python main.py vision build` | Stage 4's [camera frames](#stage-4-bruce-learns-to-see-the-ground): 12,960 frames from the learning data's maps, every pixel labelled (about 6 minutes on two cores) |
+| `python main.py vision check` | Checksums, the split by map, and six maps' frames rendered again, bit for bit |
+| `python main.py vision train` | Train the colour model, the classic model and the network again (needs PyTorch; about 17 minutes) |
+| `python main.py vision choose` | The 41 validation runs each way of seeing's drive settings were chosen from (about 40 minutes on two cores) |
+| `python main.py vision eval` | How well each one labels the test frames, then 90 test trips driven every way of seeing (about 16 minutes on two cores) |
+| `python -m pytest -q` | Run the 381 tests (59 of them hold the C++ core against Python; skipped until it's built) |
 | `python main.py demo`, `python main.py benchmark` | The original 2D grid version |
 
 `python main.py course` writes the viewer twice: `output/course_3d.html` to open yourself, and
@@ -446,7 +454,9 @@ measured it against the classical planners: it lost to a technique from 2005 (la
 the planner. Stage 3 takes the learning where it wins: Bruce learns his own terrain speeds from his driving, and
 his routes on ground he has never seen come out 0.09% slower than the quickest instead of 6.9%. Stage 3b goes after
 its two weak spots: ground he never drove, and rare steep moves the network didn't fit. Stage 3c lets him choose
-his network's size from his own log.
+his network's size from his own log. Stage 4 takes his map of the ground away, so he has to see it: perception
+feeding the planner, with a network that labels his camera's pixels judged against two classical baselines by how
+he drives, not only by how many pixels it gets right.
 The classical planners stay as they are, exact and checked bit for bit; anything learned sits beside them and is
 judged against them.
 
@@ -737,6 +747,127 @@ and it carries over to a robot learning on the job: Bruce matches the network to
 nothing to go on but his own log. His network is now stage 3c's (`robotnav/assets/speeds.txt`, with a card holding
 all five careers, and `speeds-10-trips.txt`, `-30-` and `-100-` for the way there); `python main.py speeds eval`
 scores it against stage 3's. To watch him plan with it, press **◆ AI** in the [live demo](https://r0ck574r.github.io/brubus/#desert/p19/ai).
+
+### Stage 4: Bruce learns to see the ground
+
+Until now Bruce has known his whole map. A real robot can have the heights before it sets out (satellite elevation
+data), but not what the ground is made of: firm sand or soft, grass or tall grass. That it has to see for itself, and
+it decides how fast it can go. So stage 4 takes the kinds of ground away. Bruce knows the heights, his short-range
+sensor finds obstacles within 5 m as before, and a forward camera shows him the ground. A model labels every pixel,
+what it sees goes onto his map, and D\* Lite plans again at every step.
+
+**The camera.** 128 × 64 pixels, 90° wide, 1.2 m up and tilted 10° down, rendered in NumPy by marching each ray over
+the height field (`robotnav/learn/camera.py`): steps that grow with distance and the crossing interpolated, checked
+against a march in 4 mm steps; trees as cylinders, rocks as domes, water flat at its level. The colours are the
+viewer's, with a texture for each kind of ground that fades with distance and a slight tint per cell, under a random
+light: sun direction and height, haze, exposure, white balance and sensor noise. Every pixel's label is exact, since
+the renderer knows what each ray meets. Each pixel also carries how far away the bare ground along its ray is, which
+Bruce can work out from the elevation data before he sees anything. It's a simple camera (no cast shadows, motion
+blur, mud or dust), so the numbers below measure the method, not a real sensor.
+
+**The data.** `python main.py vision build` renders 12,960 frames from stage 1's maps, split the same way, by map
+(11,520 frames from the 360 training maps, 720 each from the 45 validation and 45 test maps), from random places on
+open ground, looking any way: 291 MB in 6 minutes, kept out of git like stage 1's data. `python main.py vision
+check` verifies every file's checksum and the split against stage 1's, and renders six maps' frames again, which must
+match bit for bit.
+
+**Three ways to label a pixel.** Twelve classes: the eight kinds of ground, rock, tree, water and sky. Every model
+knows what sort of country Bruce is in (on the grassland a pixel is grass, tall grass, a rock, a tree or sky), and
+what the elevation data says about each pixel's ray (one that meets bare ground can't show sky).
+
+- **Colour only**: a Gaussian over red, green and blue for each class, and Bayes' rule.
+- **Classic machine learning**: logistic regression on 11 hand-made features per pixel: its colour, the mean and
+  spread of the colours round it, how much edge there is round it (texture), and its distance.
+- **A network**: a small U-Net (61,564 weights) that reads the picture and the distances and labels every 2 × 2
+  pixels, trained with PyTorch on a CPU in 16 minutes (16 epochs, chosen over 8 on the validation frames). Bruce
+  runs it in NumPy, about 0.1 s a frame, with its sums in one fixed order, so the tests check its output to the last
+  bit.
+
+On the 720 test frames (maps none of them trained on), how often each labels a pixel right: over all pixels, over
+the ground (the right kind of ground), and on the ground by how far away it is:
+
+| | All pixels | Ground | 0–5 m | 5–10 m | 10–20 m | 20–40 m | Over 40 m | Calibration error |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Colour only | 88.4% | 83.6% | 85.7% | 85.0% | 78.5% | 56.7% | 32.3% | 0.026 |
+| Classic ML | 92.3% | 90.6% | 93.9% | 90.0% | 80.9% | 66.2% | 45.7% | 0.046 |
+| **Network** | **95.2%** | **94.3%** | **96.5%** | **94.1%** | **88.7%** | **74.7%** | **56.6%** | **0.004** |
+
+On the ground the network gets 5.7% of pixels wrong, against 9.4% for the classic model and 16.4% for colour
+alone. The hard part is telling apart kinds that look alike: tall grass from grass (it takes 13% of the tall grass
+for grass; colour alone, 35%) and soft sand from firm (5%; colour alone, 17%). Far away, a pixel covers a lot of ground
+and all three fall off. The network is also calibrated, which the map needs since it adds up probabilities: when it
+says 80% sure, it is right about 80% of the time (calibration error 0.004, against 0.026 and 0.046). Where it does
+worse is the rarest ground: oasis grass and beach sand, each about half a percent of the training pixels, which
+colour alone gets right more often (97% and 100% against 80% and 94%).
+
+**From pixels to his map.** Each pixel a model thinks is ground goes on the cell the elevation data says it shows.
+Each frame gives every cell it sees the average, over its pixels, of how likely each kind of ground is, and the
+frames add up into a belief for each cell, starting from how common each kind is in the training frames. A move's
+time uses the slowdown that belief expects. Ground he drives over he knows. A belief can make a move quicker as well
+as slower (soft sand seen from afar may turn out firm up close), which D\* Lite handles.
+
+**Ground comes in fields.** The first validation drives found a trap. Ground he hadn't seen was priced at the
+average, so seeing tall grass ahead, he turned towards ground he hadn't seen, found more of the same field there, and
+turned again: on one validation trip, with perfect labels, he drove over 36 cells of tall grass against the quickest
+route's 15, and took 36% longer than the quickest, more than driving blind (28%). Cells taken one by one forget that
+ground comes in fields. So ground he hasn't seen near ground he has seen or driven over is priced by the beliefs
+round it (the prior counting as one cell). With perfect labels that halved his loss (4.3% to 2.0% on the 30
+validation trips, worst 36% to 6%). With colour alone it made things worse (4.8% to 5.4%): spreading a belief
+spreads its mistakes. So how far to spread is chosen for each model, with the rest of its settings, on the validation
+drives:
+
+| Bruce... | Pixels he uses | Unseen ground priced by the ground within |
+|---|---|---|
+| with no camera | | 3 cells |
+| with colour only | all | (not spread) |
+| with classic ML | within 20 m | 6 cells |
+| with the network | within 20 m | 6 cells |
+| with perfect labels | all | 10 cells |
+
+In all of them a cell's time is the slowdown its belief expects; taking the likeliest kind's did worse in each
+model's chosen settings.
+
+**The drives.** Two trips on each of the 45 test maps, 40 to 70 m apart as the crow flies (about 55 steps, one
+frame a step), each driven once every way, under the same light, and scored by its true drive time against the
+quickest route the whole map allows:
+
+| Bruce... | Mean | Median | Worst | Within 1% | Blind's loss won back |
+|---|---:|---:|---:|---:|---:|
+| knows the ground (only obstacles to find, within 5 m) | 0.7% | 0.2% | 8.1% | 79% | |
+| with no camera (he knows only the ground he drives over) | 11.6% | 8.5% | 43.7% | 19% | |
+| with colour only | 5.9% | 2.6% | 37.5% | 31% | 52% |
+| with classic ML | 5.4% | 2.7% | 38.2% | 33% | 57% |
+| **with the network** | **3.9%** | **1.8%** | **21.7%** | **34%** | **71%** |
+| with perfect labels | 2.4% | 0.9% | 17.1% | 52% | 85% |
+
+Seeing pays: from 11.6% slower than the quickest with no camera to 3.9% with the network, which wins back 71% of
+what driving blind loses, against 57% for the classic model and 52% for colour alone. Trip by trip it beats the
+classic model by 1.5 points (± 0.7, one standard error) and colour alone by 2.1 (± 0.9), and its worst trip is 22%
+against their 38%. With perfect labels he would win back 85%; the rest is what one frame a step, looking only the
+way he is about to go, never shows him.
+
+By theme it follows the labels. On the grassland, where the network tells tall grass from grass far better (92.5% of
+the ground right, against 86% and 77%), it drives 4.1% against 6.0% and 7.0%; colour alone is no better there than
+no camera (6.9%). On the island, 2.8% against 5.3% and 5.9%. In the desert all three drive alike (4.7% to 4.8%,
+against 2.4% with perfect labels), though they get 93%, 90% and 84% of its ground right: better pixels didn't turn
+into better drives there. On the 30 validation trips the classic model had even looked a little better than the
+network (3.7% against 4.2%); the 90 test trips, three times as many, are the sterner judge.
+
+![Top: a test frame of median difficulty from island-1059, never trained on: the camera's picture (a bay, a sandy shore, grass and jungle slopes, palms), the renderer's exact labels, and the network's, right on 93% of the ground. Bottom left: the right kind of ground by distance for the network (blue, 96.5% within 5 m down to 56.6% beyond 40 m), classic ML (amber) and colour only (grey), with a dotted line at 20 m, as far as the learned models' pixels count. Bottom right: how much slower than the quickest route the 90 test trips were: no camera 11.6%, colour only 5.9%, classic ML 5.4%, network 3.9%, perfect labels 2.4%, knowing the ground 0.7%](docs/learn-vision.png)
+
+**What this says.** A better eye makes a better driver, but not point for point, and only once the map makes good
+use of what it sees. The network's labels are 40% fewer wrong than the classic model's and its drives lose 28% less
+time, yet in the desert the same gain in labels bought nothing. And what made seeing pay was as much the map as the
+model: priced cell by cell, ground he hadn't seen kept luring him into fields whose edge he had just seen, and with
+perfect labels he sometimes did worse than blind. It is stage 2's lesson from the other side: a learned part is worth
+what it changes in the planner's decisions, so it is scored by the drives, not only by the pixels.
+
+The code is in `robotnav/learn/camera.py` (the camera) and `robotnav/learn/vision.py` (the frames, the models, the
+map and the drives); the trained models and their card, with every validation run and the test's 540 drives, are
+`robotnav/assets/vision.npz` and `vision.card.json`; `tests/test_camera.py` and `tests/test_vision.py` check the
+geometry, the labels, the belief, the drives, and the committed network to the last bit. `python main.py vision
+choose` drives the 41 validation runs again, and `python main.py vision eval` the test (about 16 minutes on two
+cores).
 
 ## The rover
 
@@ -1040,17 +1171,17 @@ the C++ tests under AddressSanitizer and UndefinedBehaviorSanitizer.
 | `tools/shark_logo.py` | Prepares the badge (`robotnav/assets/logo.webp`) from the logo's artwork: clears its black ground so the backdrop shows around it, and saves a 900 px WebP |
 | `robotnav/viewer3d.html` | Three.js viewer: maps, sky, water, contour lines, palms and trees, planners, D\* Lite and the air route in the browser, watching the search, the sensor drive, the drone and its watchtowers, the operator console (entities, tasking, timeline, report, command bar), the AI mode (Bruce's network and the hidden world, ported from Python digit for digit), MIL-STD-2525 symbols and callsign tags, preset paths, picking, drawing, drone camera and its compass and altitude read-outs, the spiked tank, the tour, links to a view, the frame-rate benchmark |
 | `cpp/` | The C++ core: planners, D\* Lite, the air route, the detection field and Monte Carlo trials on a thread pool, map files, the `robotnav` tool, unit tests, the pybind11 module and the WebAssembly build (`cpp/wasm/`, `tools/build_wasm.sh`) ([cpp/README.md](cpp/README.md)) |
-| `robotnav/learn/` | The learning work: the labels (true time to the goal, A\* with a table of estimates, re-expanding A\*), the data set, the baseline, the network's features and inference (`features.py`, `model.py`), training with PyTorch (`train.py`), the benchmark (`evaluate.py`), and stage 3's learned terrain speeds (`speeds.py`: the hidden true world, the driving logs, the network and the study) |
+| `robotnav/learn/` | The learning work: the labels (true time to the goal, A\* with a table of estimates, re-expanding A\*), the data set, the baseline, the network's features and inference (`features.py`, `model.py`), training with PyTorch (`train.py`), the benchmark (`evaluate.py`), stage 3's learned terrain speeds (`speeds.py`: the hidden true world, the driving logs, the network and the study), and stage 4's seeing (`camera.py`: the camera and its exact labels; `vision.py`: the frames, the colour and classic baselines, the U-Net and its NumPy inference, the map built from what he sees, the drives and the study) |
 | `robotnav/landmarks.py` | A\* with landmarks (ALT): the landmarks, their fields, the lower bound and the search |
-| `robotnav/assets/heuristic.txt`, `speeds*.txt` | The trained networks (plain text, exact doubles), with model cards: the A\* estimate, and Bruce's learned speeds (stage 3c's after 10, 30, 100 and 300 trips, and stage 3's for comparison) |
-| `tools/learn_figure.py` | Draws the learning section's three pictures: the labels and the search, the benchmark, and the learning curve |
+| `robotnav/assets/heuristic.txt`, `speeds*.txt`, `vision.npz` | The trained networks, with model cards: the A\* estimate, and Bruce's learned speeds (plain text, exact doubles; stage 3c's after 10, 30, 100 and 300 trips, and stage 3's for comparison), and stage 4's three ways of labelling a pixel (the network's weights as 32-bit floats, with the frame they are checked on) |
+| `tools/learn_figure.py` | Draws the learning section's four pictures: the labels and the search, the benchmark, the learning curve, and what the camera sees and what it is worth |
 | `robotnav/assign.py` | Who goes where: the Hungarian method for a survey's assignment, and the nearest-first rule it is compared with |
 | `robotnav/cpp.py`, `parity.py`, `mapfile.py` | Run the C++ core from Python, compare it with the reference, and write the map files it reads |
 | `maps/` | The live demo's three maps as map files, for the C++ tool |
 | `docs/` | The live demo served by GitHub Pages (`index.html`, built by `python main.py course`), its preview image, and the README's pictures |
 | `robotnav/terrain_bench.py` | Sweeps hill height, slope limit and obstacle density |
 | `robotnav/grid.py`, `visualize.py`, `benchmark.py` | Original 2D grid world, plots and benchmark |
-| `tests/` | 365 checks: Bruce's learned speeds (the move tables against the planners, the true world, exploring, choosing the network's size, the committed networks' accuracy and routes, and the copies the viewer carries, weight for weight), landmarks (never too high, consistent, the quickest route), the network (its file, its accuracy on fresh maps, the capped search's promise), the learning data's exact labels and split by map, optimality on every map, the shortest route, all 20 presets per map, the desert's oases, grade limit, water, route rules, D\* Lite (legal routes, optimal repairs, roadblocks), the air route (towers, lines of sight, hiding behind a ridge), the C++ core against Python, map rebuilds, the command line, the page head and link previews, the survey's assignment against every pairing, the console look (fonts, map symbols, tags, read-outs), the intro's flag and logo |
+| `tests/` | 381 checks: stage 4's camera (rays against a fine march, labels against the map, a flat field against geometry) and seeing (the frames reproducible, what a pixel can be, the belief and the fields it spreads to, drives that get there, the committed network to the last bit), Bruce's learned speeds (the move tables against the planners, the true world, exploring, choosing the network's size, the committed networks' accuracy and routes, and the copies the viewer carries, weight for weight), landmarks (never too high, consistent, the quickest route), the network (its file, its accuracy on fresh maps, the capped search's promise), the learning data's exact labels and split by map, optimality on every map, the shortest route, all 20 presets per map, the desert's oases, grade limit, water, route rules, D\* Lite (legal routes, optimal repairs, roadblocks), the air route (towers, lines of sight, hiding behind a ridge), the C++ core against Python, map rebuilds, the command line, the page head and link previews, the survey's assignment against every pairing, the console look (fonts, map symbols, tags, read-outs), the intro's flag and logo |
 
 ## Findings
 
@@ -1128,6 +1259,10 @@ The air route, over each map's 20 preset trips (medians; `python main.py fly` fo
 
 - Wrap the C++ planners as a ROS 2 Nav2 planner plugin
 - Moving obstacles, and a rover sensor blocked by hills (the towers already use line of sight)
+- What Bruce sees, in the viewer: the camera frame, the network's labels over it, and his map filling in as he drives
+- Seeing more than one frame a step ahead: turning the camera, or a wider lens, since with perfect labels he still
+  loses 2.4%; and finding out why better labels didn't pay in the desert
+- Obstacles from the camera too: trees and rocks it sees long before his 5 m sensor finds them
 - Exploring by what a sort of move could change in his plans, not only by how rarely he has driven it
 - Bruce's learned speeds in the viewer: the route he believes in against the one the true world rewards
 - Landmarks in the browser, so the viewer's race and the console plan with them too

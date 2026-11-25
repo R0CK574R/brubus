@@ -1,0 +1,4706 @@
+{
+ "name": "Stage 4: Bruce learns to see the ground",
+ "made_with": [
+  "python main.py vision build",
+  "python main.py vision train --epochs 16",
+  "python main.py vision choose (each way of seeing's drive settings, on validation maps: 5 per theme, 2 trips each)",
+  "python main.py vision eval --split test"
+ ],
+ "data": {
+  "name": "vision-v1",
+  "sha256": "b10f4dda0db2749d110d8becedb911e2338a172e9146b78f6ae5adb4e4a6face",
+  "source": {
+   "name": "terrain-v1",
+   "sha256": "c0668a0520b66b3fb0b712d48a11a11d3e2cbc0fa0d9ae52c02cade286026b7a"
+  },
+  "frames": {
+   "train": {
+    "grassland": 3840,
+    "desert": 3840,
+    "island": 3840
+   },
+   "val": {
+    "grassland": 240,
+    "desert": 240,
+    "island": 240
+   },
+   "test": {
+    "grassland": 240,
+    "desert": 240,
+    "island": 240
+   }
+  },
+  "camera": {
+   "width": 128,
+   "height": 64,
+   "hfov": 90.0,
+   "pitch": -10.0,
+   "eye": 1.2
+  },
+  "classes": [
+   "Grass",
+   "Tall grass",
+   "Firm sand",
+   "Soft sand",
+   "Rocky ground",
+   "Oasis grass",
+   "Sand",
+   "Jungle",
+   "Rock",
+   "Tree",
+   "Water",
+   "Sky"
+  ],
+  "frames_per_map": {
+   "train": 32,
+   "val": 16,
+   "test": 16
+  }
+ },
+ "network": {
+  "kind": "U-Net (3 x 3 convolutions, ReLU, max-pooling, nearest upsampling, one skip)",
+  "layers": {
+   "stem": [
+    [
+     4,
+     16
+    ]
+   ],
+   "down1": [
+    [
+     16,
+     24
+    ],
+    [
+     24,
+     24
+    ]
+   ],
+   "down2": [
+    [
+     24,
+     48
+    ],
+    [
+     48,
+     48
+    ]
+   ],
+   "up1": [
+    [
+     72,
+     24
+    ],
+    [
+     24,
+     24
+    ]
+   ],
+   "head": [
+    24,
+    12
+   ]
+  },
+  "parameters": 61564,
+  "epochs": 16,
+  "batch": 32,
+  "learning_rate": 0.003,
+  "optimiser": "Adam, one-cycle schedule",
+  "augmentation": "mirrored left-right, half the frames",
+  "losses": [
+   0.956492,
+   0.451874,
+   0.334811,
+   0.276918,
+   0.23974,
+   0.205848,
+   0.190009,
+   0.176553,
+   0.166059,
+   0.156217,
+   0.142827,
+   0.130545,
+   0.124728,
+   0.117667,
+   0.112037,
+   0.109507
+  ],
+  "train_seconds": 1004.6,
+  "inference": "NumPy, float64, sums in one fixed order (the weights stored as float32)"
+ },
+ "baselines": {
+  "colour": "a Gaussian per class over red, green and blue; Bayes' rule with the class shares per theme",
+  "pixel": {
+   "model": "multinomial logistic regression",
+   "features": [
+    "red",
+    "green",
+    "blue",
+    "red 5x5 mean",
+    "green 5x5 mean",
+    "blue 5x5 mean",
+    "red 5x5 spread",
+    "green 5x5 spread",
+    "blue 5x5 spread",
+    "edges 5x5",
+    "distance"
+   ],
+   "pixels": 1500000,
+   "steps": 3000
+  }
+ },
+ "choices": {
+  "epochs": {
+   "chosen": 16,
+   "val": {
+    "16": {
+     "accuracy": 0.951856,
+     "ground_accuracy": 0.942562,
+     "ece": 0.004546,
+     "by_distance": [
+      {
+       "band": [
+        0.0,
+        5.0
+       ],
+       "pixels": 2185639,
+       "accuracy": 0.959554
+      },
+      {
+       "band": [
+        5.0,
+        10.0
+       ],
+       "pixels": 629651,
+       "accuracy": 0.943115
+      },
+      {
+       "band": [
+        10.0,
+        20.0
+       ],
+       "pixels": 297697,
+       "accuracy": 0.896939
+      },
+      {
+       "band": [
+        20.0,
+        40.0
+       ],
+       "pixels": 97037,
+       "accuracy": 0.757927
+      },
+      {
+       "band": [
+        40.0,
+        null
+       ],
+       "pixels": 17336,
+       "accuracy": 0.597139
+      }
+     ],
+     "iou": {
+      "Grass": 0.9204,
+      "Tall grass": 0.7318,
+      "Firm sand": 0.8922,
+      "Soft sand": 0.8566,
+      "Rocky ground": 0.8674,
+      "Oasis grass": 0.7466,
+      "Sand": 0.8333,
+      "Jungle": 0.9539,
+      "Rock": 0.617,
+      "Tree": 0.8832,
+      "Water": 0.9383,
+      "Sky": 0.97
+     }
+    },
+    "8": {
+     "accuracy": 0.944634,
+     "ground_accuracy": 0.932192,
+     "ece": 0.004866,
+     "by_distance": [
+      {
+       "band": [
+        0.0,
+        5.0
+       ],
+       "pixels": 2185639,
+       "accuracy": 0.953031
+      },
+      {
+       "band": [
+        5.0,
+        10.0
+       ],
+       "pixels": 629651,
+       "accuracy": 0.931643
+      },
+      {
+       "band": [
+        10.0,
+        20.0
+       ],
+       "pixels": 297697,
+       "accuracy": 0.874332
+      },
+      {
+       "band": [
+        20.0,
+        40.0
+       ],
+       "pixels": 97037,
+       "accuracy": 0.71483
+      },
+      {
+       "band": [
+        40.0,
+        null
+       ],
+       "pixels": 17336,
+       "accuracy": 0.535129
+      }
+     ],
+     "iou": {
+      "Grass": 0.9095,
+      "Tall grass": 0.6981,
+      "Firm sand": 0.8713,
+      "Soft sand": 0.8369,
+      "Rocky ground": 0.8313,
+      "Oasis grass": 0.7186,
+      "Sand": 0.7795,
+      "Jungle": 0.9395,
+      "Rock": 0.5524,
+      "Tree": 0.8722,
+      "Water": 0.9373,
+      "Sky": 0.9693
+     }
+    }
+   }
+  },
+  "drive_settings": {
+   "every_drive": {
+    "mode": "expected",
+    "temper": 1.0,
+    "max_range": null,
+    "unseen": "prior"
+   },
+   "chosen": {
+    "blind": {
+     "spread": 3
+    },
+    "truth": {
+     "spread": 10
+    },
+    "colour": {},
+    "pixel": {
+     "max_range": 20.0,
+     "spread": 6
+    },
+    "net": {
+     "max_range": 20.0,
+     "spread": 6
+    }
+   },
+   "val": {
+    "reference": {
+     "settings": {
+      "mode": "expected",
+      "temper": 1.0,
+      "max_range": null,
+      "unseen": "prior"
+     },
+     "drives": {
+      "blind": {
+       "trips": 30,
+       "mean": 0.095309,
+       "median": 0.083665,
+       "worst": 0.27758,
+       "per_theme": {
+        "grassland": 0.063792,
+        "desert": 0.122505,
+        "island": 0.099629
+       }
+      },
+      "map": {
+       "trips": 30,
+       "mean": 0.017015,
+       "median": 0.006118,
+       "worst": 0.171634,
+       "per_theme": {
+        "grassland": 0.014134,
+        "desert": 0.002543,
+        "island": 0.034367
+       }
+      }
+     }
+    },
+    "truth, unseen at prior": {
+     "settings": {
+      "mode": "expected",
+      "temper": 1.0,
+      "max_range": null,
+      "unseen": "prior"
+     },
+     "drives": {
+      "truth": {
+       "trips": 30,
+       "mean": 0.043023,
+       "median": 0.010981,
+       "worst": 0.359619,
+       "per_theme": {
+        "grassland": 0.056803,
+        "desert": 0.012424,
+        "island": 0.059841
+       }
+      }
+     }
+    },
+    "truth, unseen at fastest": {
+     "settings": {
+      "mode": "expected",
+      "temper": 1.0,
+      "max_range": null,
+      "unseen": "fastest"
+     },
+     "drives": {
+      "truth": {
+       "trips": 30,
+       "mean": 0.050785,
+       "median": 0.032443,
+       "worst": 0.335299,
+       "per_theme": {
+        "grassland": 0.051325,
+        "desert": 0.027519,
+        "island": 0.07351
+       }
+      }
+     }
+    },
+    "net, expected": {
+     "settings": {
+      "mode": "expected",
+      "temper": 1.0,
+      "max_range": null,
+      "unseen": "prior"
+     },
+     "drives": {
+      "net": {
+       "trips": 30,
+       "mean": 0.060409,
+       "median": 0.042379,
+       "worst": 0.359619,
+       "per_theme": {
+        "grassland": 0.075627,
+        "desert": 0.040536,
+        "island": 0.065062
+       }
+      }
+     }
+    },
+    "net, likeliest": {
+     "settings": {
+      "mode": "likeliest",
+      "temper": 1.0,
+      "max_range": null,
+      "unseen": "prior"
+     },
+     "drives": {
+      "net": {
+       "trips": 30,
+       "mean": 0.055182,
+       "median": 0.040579,
+       "worst": 0.359619,
+       "per_theme": {
+        "grassland": 0.058503,
+        "desert": 0.04208,
+        "island": 0.064963
+       }
+      }
+     }
+    },
+    "net, expected, temper 0.5": {
+     "settings": {
+      "mode": "expected",
+      "temper": 0.5,
+      "max_range": null,
+      "unseen": "prior"
+     },
+     "drives": {
+      "net": {
+       "trips": 30,
+       "mean": 0.057871,
+       "median": 0.035469,
+       "worst": 0.368859,
+       "per_theme": {
+        "grassland": 0.075503,
+        "desert": 0.037775,
+        "island": 0.060335
+       }
+      }
+     }
+    },
+    "net, expected, 20 m": {
+     "settings": {
+      "mode": "expected",
+      "temper": 1.0,
+      "max_range": 20.0,
+      "unseen": "prior"
+     },
+     "drives": {
+      "net": {
+       "trips": 30,
+       "mean": 0.052054,
+       "median": 0.035447,
+       "worst": 0.298449,
+       "per_theme": {
+        "grassland": 0.050041,
+        "desert": 0.052027,
+        "island": 0.054093
+       }
+      }
+     }
+    },
+    "colour, expected": {
+     "settings": {
+      "mode": "expected",
+      "temper": 1.0,
+      "max_range": null,
+      "unseen": "prior"
+     },
+     "drives": {
+      "colour": {
+       "trips": 30,
+       "mean": 0.047937,
+       "median": 0.02647,
+       "worst": 0.201041,
+       "per_theme": {
+        "grassland": 0.046478,
+        "desert": 0.040498,
+        "island": 0.056834
+       }
+      }
+     }
+    },
+    "colour, expected, 20 m": {
+     "settings": {
+      "mode": "expected",
+      "temper": 1.0,
+      "max_range": 20.0,
+      "unseen": "prior"
+     },
+     "drives": {
+      "colour": {
+       "trips": 30,
+       "mean": 0.052959,
+       "median": 0.034939,
+       "worst": 0.28907,
+       "per_theme": {
+        "grassland": 0.062107,
+        "desert": 0.040919,
+        "island": 0.05585
+       }
+      }
+     }
+    },
+    "colour, expected, 10 m": {
+     "settings": {
+      "mode": "expected",
+      "temper": 1.0,
+      "max_range": 10.0,
+      "unseen": "prior"
+     },
+     "drives": {
+      "colour": {
+       "trips": 30,
+       "mean": 0.056516,
+       "median": 0.037029,
+       "worst": 0.298433,
+       "per_theme": {
+        "grassland": 0.066288,
+        "desert": 0.056157,
+        "island": 0.047102
+       }
+      }
+     }
+    },
+    "colour, likeliest": {
+     "settings": {
+      "mode": "likeliest",
+      "temper": 1.0,
+      "max_range": null,
+      "unseen": "prior"
+     },
+     "drives": {
+      "colour": {
+       "trips": 30,
+       "mean": 0.058754,
+       "median": 0.050608,
+       "worst": 0.206573,
+       "per_theme": {
+        "grassland": 0.050208,
+        "desert": 0.060909,
+        "island": 0.065146
+       }
+      }
+     }
+    },
+    "colour, likeliest, 20 m": {
+     "settings": {
+      "mode": "likeliest",
+      "temper": 1.0,
+      "max_range": 20.0,
+      "unseen": "prior"
+     },
+     "drives": {
+      "colour": {
+       "trips": 30,
+       "mean": 0.061255,
+       "median": 0.045203,
+       "worst": 0.18028,
+       "per_theme": {
+        "grassland": 0.036235,
+        "desert": 0.069596,
+        "island": 0.077935
+       }
+      }
+     }
+    },
+    "colour, likeliest, 10 m": {
+     "settings": {
+      "mode": "likeliest",
+      "temper": 1.0,
+      "max_range": 10.0,
+      "unseen": "prior"
+     },
+     "drives": {
+      "colour": {
+       "trips": 30,
+       "mean": 0.066986,
+       "median": 0.027789,
+       "worst": 0.298433,
+       "per_theme": {
+        "grassland": 0.079121,
+        "desert": 0.065282,
+        "island": 0.056554
+       }
+      }
+     }
+    },
+    "pixel, expected": {
+     "settings": {
+      "mode": "expected",
+      "temper": 1.0,
+      "max_range": null,
+      "unseen": "prior"
+     },
+     "drives": {
+      "pixel": {
+       "trips": 30,
+       "mean": 0.044946,
+       "median": 0.017153,
+       "worst": 0.296149,
+       "per_theme": {
+        "grassland": 0.070535,
+        "desert": 0.01836,
+        "island": 0.045944
+       }
+      }
+     }
+    },
+    "pixel, expected, 20 m": {
+     "settings": {
+      "mode": "expected",
+      "temper": 1.0,
+      "max_range": 20.0,
+      "unseen": "prior"
+     },
+     "drives": {
+      "pixel": {
+       "trips": 30,
+       "mean": 0.053401,
+       "median": 0.0237,
+       "worst": 0.30769,
+       "per_theme": {
+        "grassland": 0.070494,
+        "desert": 0.050171,
+        "island": 0.039539
+       }
+      }
+     }
+    },
+    "pixel, expected, 10 m": {
+     "settings": {
+      "mode": "expected",
+      "temper": 1.0,
+      "max_range": 10.0,
+      "unseen": "prior"
+     },
+     "drives": {
+      "pixel": {
+       "trips": 30,
+       "mean": 0.057041,
+       "median": 0.032728,
+       "worst": 0.296149,
+       "per_theme": {
+        "grassland": 0.066738,
+        "desert": 0.043169,
+        "island": 0.061214
+       }
+      }
+     }
+    },
+    "pixel, likeliest": {
+     "settings": {
+      "mode": "likeliest",
+      "temper": 1.0,
+      "max_range": null,
+      "unseen": "prior"
+     },
+     "drives": {
+      "pixel": {
+       "trips": 30,
+       "mean": 0.058647,
+       "median": 0.025575,
+       "worst": 0.303374,
+       "per_theme": {
+        "grassland": 0.080367,
+        "desert": 0.033352,
+        "island": 0.062221
+       }
+      }
+     }
+    },
+    "truth, spread 3": {
+     "settings": {
+      "mode": "expected",
+      "temper": 1.0,
+      "max_range": null,
+      "unseen": "prior",
+      "spread": 3
+     },
+     "drives": {
+      "truth": {
+       "trips": 30,
+       "mean": 0.029167,
+       "median": 0.016411,
+       "worst": 0.178192,
+       "per_theme": {
+        "grassland": 0.025528,
+        "desert": 0.02258,
+        "island": 0.039392
+       }
+      }
+     }
+    },
+    "blind, spread 3": {
+     "settings": {
+      "mode": "expected",
+      "temper": 1.0,
+      "max_range": null,
+      "unseen": "prior",
+      "spread": 3
+     },
+     "drives": {
+      "blind": {
+       "trips": 30,
+       "mean": 0.091661,
+       "median": 0.076843,
+       "worst": 0.279495,
+       "per_theme": {
+        "grassland": 0.063903,
+        "desert": 0.117898,
+        "island": 0.093183
+       }
+      }
+     }
+    },
+    "truth, spread 6": {
+     "settings": {
+      "mode": "expected",
+      "temper": 1.0,
+      "max_range": null,
+      "unseen": "prior",
+      "spread": 6
+     },
+     "drives": {
+      "truth": {
+       "trips": 30,
+       "mean": 0.022369,
+       "median": 0.01505,
+       "worst": 0.079107,
+       "per_theme": {
+        "grassland": 0.019413,
+        "desert": 0.022103,
+        "island": 0.025591
+       }
+      }
+     }
+    },
+    "blind, spread 6": {
+     "settings": {
+      "mode": "expected",
+      "temper": 1.0,
+      "max_range": null,
+      "unseen": "prior",
+      "spread": 6
+     },
+     "drives": {
+      "blind": {
+       "trips": 30,
+       "mean": 0.094265,
+       "median": 0.079558,
+       "worst": 0.27758,
+       "per_theme": {
+        "grassland": 0.062046,
+        "desert": 0.121878,
+        "island": 0.098872
+       }
+      }
+     }
+    },
+    "colour, spread 3": {
+     "settings": {
+      "mode": "expected",
+      "temper": 1.0,
+      "max_range": null,
+      "unseen": "prior",
+      "spread": 3
+     },
+     "drives": {
+      "colour": {
+       "trips": 30,
+       "mean": 0.05301,
+       "median": 0.048899,
+       "worst": 0.158289,
+       "per_theme": {
+        "grassland": 0.042786,
+        "desert": 0.057167,
+        "island": 0.059077
+       }
+      }
+     }
+    },
+    "colour, spread 6": {
+     "settings": {
+      "mode": "expected",
+      "temper": 1.0,
+      "max_range": null,
+      "unseen": "prior",
+      "spread": 6
+     },
+     "drives": {
+      "colour": {
+       "trips": 30,
+       "mean": 0.053936,
+       "median": 0.041298,
+       "worst": 0.247879,
+       "per_theme": {
+        "grassland": 0.048196,
+        "desert": 0.06499,
+        "island": 0.048622
+       }
+      }
+     }
+    },
+    "truth, spread 10": {
+     "settings": {
+      "mode": "expected",
+      "temper": 1.0,
+      "max_range": null,
+      "unseen": "prior",
+      "spread": 10
+     },
+     "drives": {
+      "truth": {
+       "trips": 30,
+       "mean": 0.019953,
+       "median": 0.013472,
+       "worst": 0.062332,
+       "per_theme": {
+        "grassland": 0.019399,
+        "desert": 0.018239,
+        "island": 0.022221
+       }
+      }
+     }
+    },
+    "net, expected, spread 6": {
+     "settings": {
+      "mode": "expected",
+      "temper": 1.0,
+      "max_range": null,
+      "unseen": "prior",
+      "spread": 6
+     },
+     "drives": {
+      "net": {
+       "trips": 30,
+       "mean": 0.044741,
+       "median": 0.031841,
+       "worst": 0.247366,
+       "per_theme": {
+        "grassland": 0.061914,
+        "desert": 0.02838,
+        "island": 0.043927
+       }
+      }
+     }
+    },
+    "net, expected, 20 m, spread 6": {
+     "settings": {
+      "mode": "expected",
+      "temper": 1.0,
+      "max_range": 20.0,
+      "unseen": "prior",
+      "spread": 6
+     },
+     "drives": {
+      "net": {
+       "trips": 30,
+       "mean": 0.042177,
+       "median": 0.027516,
+       "worst": 0.243312,
+       "per_theme": {
+        "grassland": 0.023221,
+        "desert": 0.041183,
+        "island": 0.062128
+       }
+      }
+     }
+    },
+    "net, likeliest, spread 6": {
+     "settings": {
+      "mode": "likeliest",
+      "temper": 1.0,
+      "max_range": null,
+      "unseen": "prior",
+      "spread": 6
+     },
+     "drives": {
+      "net": {
+       "trips": 30,
+       "mean": 0.059669,
+       "median": 0.048856,
+       "worst": 0.213085,
+       "per_theme": {
+        "grassland": 0.056074,
+        "desert": 0.069773,
+        "island": 0.053159
+       }
+      }
+     }
+    },
+    "net, likeliest, 20 m, spread 6": {
+     "settings": {
+      "mode": "likeliest",
+      "temper": 1.0,
+      "max_range": 20.0,
+      "unseen": "prior",
+      "spread": 6
+     },
+     "drives": {
+      "net": {
+       "trips": 30,
+       "mean": 0.047323,
+       "median": 0.04819,
+       "worst": 0.123287,
+       "per_theme": {
+        "grassland": 0.03511,
+        "desert": 0.053094,
+        "island": 0.053766
+       }
+      }
+     }
+    },
+    "pixel, expected, spread 6": {
+     "settings": {
+      "mode": "expected",
+      "temper": 1.0,
+      "max_range": null,
+      "unseen": "prior",
+      "spread": 6
+     },
+     "drives": {
+      "pixel": {
+       "trips": 30,
+       "mean": 0.043933,
+       "median": 0.033788,
+       "worst": 0.20344,
+       "per_theme": {
+        "grassland": 0.045628,
+        "desert": 0.045592,
+        "island": 0.040579
+       }
+      }
+     }
+    },
+    "pixel, expected, 20 m, spread 6": {
+     "settings": {
+      "mode": "expected",
+      "temper": 1.0,
+      "max_range": 20.0,
+      "unseen": "prior",
+      "spread": 6
+     },
+     "drives": {
+      "pixel": {
+       "trips": 30,
+       "mean": 0.037178,
+       "median": 0.020938,
+       "worst": 0.208063,
+       "per_theme": {
+        "grassland": 0.046506,
+        "desert": 0.028133,
+        "island": 0.036894
+       }
+      }
+     }
+    },
+    "pixel, likeliest, spread 6": {
+     "settings": {
+      "mode": "likeliest",
+      "temper": 1.0,
+      "max_range": null,
+      "unseen": "prior",
+      "spread": 6
+     },
+     "drives": {
+      "pixel": {
+       "trips": 30,
+       "mean": 0.05458,
+       "median": 0.047936,
+       "worst": 0.158232,
+       "per_theme": {
+        "grassland": 0.05716,
+        "desert": 0.056054,
+        "island": 0.050525
+       }
+      }
+     }
+    },
+    "pixel, likeliest, 20 m, spread 6": {
+     "settings": {
+      "mode": "likeliest",
+      "temper": 1.0,
+      "max_range": 20.0,
+      "unseen": "prior",
+      "spread": 6
+     },
+     "drives": {
+      "pixel": {
+       "trips": 30,
+       "mean": 0.056506,
+       "median": 0.049629,
+       "worst": 0.189944,
+       "per_theme": {
+        "grassland": 0.056702,
+        "desert": 0.058359,
+        "island": 0.054456
+       }
+      }
+     }
+    },
+    "colour, expected, 20 m, spread 6": {
+     "settings": {
+      "mode": "expected",
+      "temper": 1.0,
+      "max_range": 20.0,
+      "unseen": "prior",
+      "spread": 6
+     },
+     "drives": {
+      "colour": {
+       "trips": 30,
+       "mean": 0.054265,
+       "median": 0.031042,
+       "worst": 0.252382,
+       "per_theme": {
+        "grassland": 0.05123,
+        "desert": 0.065647,
+        "island": 0.045918
+       }
+      }
+     }
+    },
+    "colour, likeliest, spread 6": {
+     "settings": {
+      "mode": "likeliest",
+      "temper": 1.0,
+      "max_range": null,
+      "unseen": "prior",
+      "spread": 6
+     },
+     "drives": {
+      "colour": {
+       "trips": 30,
+       "mean": 0.067111,
+       "median": 0.051448,
+       "worst": 0.239928,
+       "per_theme": {
+        "grassland": 0.051698,
+        "desert": 0.068975,
+        "island": 0.080659
+       }
+      }
+     }
+    },
+    "colour, likeliest, 20 m, spread 6": {
+     "settings": {
+      "mode": "likeliest",
+      "temper": 1.0,
+      "max_range": 20.0,
+      "unseen": "prior",
+      "spread": 6
+     },
+     "drives": {
+      "colour": {
+       "trips": 30,
+       "mean": 0.060967,
+       "median": 0.049301,
+       "worst": 0.196606,
+       "per_theme": {
+        "grassland": 0.051589,
+        "desert": 0.070319,
+        "island": 0.060994
+       }
+      }
+     }
+    },
+    "blind, spread 10": {
+     "settings": {
+      "mode": "expected",
+      "temper": 1.0,
+      "max_range": null,
+      "unseen": "prior",
+      "spread": 10
+     },
+     "drives": {
+      "blind": {
+       "trips": 30,
+       "mean": 0.113251,
+       "median": 0.062582,
+       "worst": 0.348658,
+       "per_theme": {
+        "grassland": 0.068928,
+        "desert": 0.16928,
+        "island": 0.101545
+       }
+      }
+     }
+    },
+    "net, expected, 20 m, spread 10": {
+     "settings": {
+      "mode": "expected",
+      "temper": 1.0,
+      "max_range": 20.0,
+      "unseen": "prior",
+      "spread": 10
+     },
+     "drives": {
+      "net": {
+       "trips": 30,
+       "mean": 0.049271,
+       "median": 0.041717,
+       "worst": 0.28033,
+       "per_theme": {
+        "grassland": 0.048698,
+        "desert": 0.050972,
+        "island": 0.048143
+       }
+      }
+     }
+    },
+    "pixel, expected, 20 m, spread 10": {
+     "settings": {
+      "mode": "expected",
+      "temper": 1.0,
+      "max_range": 20.0,
+      "unseen": "prior",
+      "spread": 10
+     },
+     "drives": {
+      "pixel": {
+       "trips": 30,
+       "mean": 0.045681,
+       "median": 0.021537,
+       "worst": 0.30769,
+       "per_theme": {
+        "grassland": 0.072903,
+        "desert": 0.025736,
+        "island": 0.038405
+       }
+      }
+     }
+    },
+    "net, expected, 20 m, spread 3": {
+     "settings": {
+      "mode": "expected",
+      "temper": 1.0,
+      "max_range": 20.0,
+      "unseen": "prior",
+      "spread": 3
+     },
+     "drives": {
+      "net": {
+       "trips": 30,
+       "mean": 0.051827,
+       "median": 0.035062,
+       "worst": 0.368859,
+       "per_theme": {
+        "grassland": 0.05785,
+        "desert": 0.042064,
+        "island": 0.055565
+       }
+      }
+     }
+    },
+    "pixel, expected, 20 m, spread 3": {
+     "settings": {
+      "mode": "expected",
+      "temper": 1.0,
+      "max_range": 20.0,
+      "unseen": "prior",
+      "spread": 3
+     },
+     "drives": {
+      "pixel": {
+       "trips": 30,
+       "mean": 0.050112,
+       "median": 0.032929,
+       "worst": 0.205899,
+       "per_theme": {
+        "grassland": 0.059627,
+        "desert": 0.049642,
+        "island": 0.041068
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "val": {
+  "pixels": {
+   "colour": {
+    "accuracy": 0.87727,
+    "ground_accuracy": 0.82216,
+    "ece": 0.021449,
+    "by_distance": [
+     {
+      "band": [
+       0.0,
+       5.0
+      ],
+      "pixels": 2185639,
+      "accuracy": 0.83821
+     },
+     {
+      "band": [
+       5.0,
+       10.0
+      ],
+      "pixels": 629651,
+      "accuracy": 0.841179
+     },
+     {
+      "band": [
+       10.0,
+       20.0
+      ],
+      "pixels": 297697,
+      "accuracy": 0.777653
+     },
+     {
+      "band": [
+       20.0,
+       40.0
+      ],
+      "pixels": 97037,
+      "accuracy": 0.547729
+     },
+     {
+      "band": [
+       40.0,
+       null
+      ],
+      "pixels": 17336,
+      "accuracy": 0.408226
+     }
+    ],
+    "iou": {
+     "Grass": 0.783,
+     "Tall grass": 0.3756,
+     "Firm sand": 0.7543,
+     "Soft sand": 0.6981,
+     "Rocky ground": 0.639,
+     "Oasis grass": 0.8088,
+     "Sand": 0.6506,
+     "Jungle": 0.7422,
+     "Rock": 0.29,
+     "Tree": 0.7263,
+     "Water": 0.9202,
+     "Sky": 0.9925
+    }
+   },
+   "pixel": {
+    "accuracy": 0.918519,
+    "ground_accuracy": 0.896406,
+    "ece": 0.042363,
+    "by_distance": [
+     {
+      "band": [
+       0.0,
+       5.0
+      ],
+      "pixels": 2185639,
+      "accuracy": 0.925703
+     },
+     {
+      "band": [
+       5.0,
+       10.0
+      ],
+      "pixels": 629651,
+      "accuracy": 0.887096
+     },
+     {
+      "band": [
+       10.0,
+       20.0
+      ],
+      "pixels": 297697,
+      "accuracy": 0.807852
+     },
+     {
+      "band": [
+       20.0,
+       40.0
+      ],
+      "pixels": 97037,
+      "accuracy": 0.636757
+     },
+     {
+      "band": [
+       40.0,
+       null
+      ],
+      "pixels": 17336,
+      "accuracy": 0.51494
+     }
+    ],
+    "iou": {
+     "Grass": 0.8604,
+     "Tall grass": 0.5264,
+     "Firm sand": 0.844,
+     "Soft sand": 0.8085,
+     "Rocky ground": 0.7453,
+     "Oasis grass": 0.7382,
+     "Sand": 0.6368,
+     "Jungle": 0.8486,
+     "Rock": 0.1141,
+     "Tree": 0.8125,
+     "Water": 0.9007,
+     "Sky": 0.992
+    }
+   },
+   "net": {
+    "accuracy": 0.951856,
+    "ground_accuracy": 0.942562,
+    "ece": 0.004546,
+    "by_distance": [
+     {
+      "band": [
+       0.0,
+       5.0
+      ],
+      "pixels": 2185639,
+      "accuracy": 0.959554
+     },
+     {
+      "band": [
+       5.0,
+       10.0
+      ],
+      "pixels": 629651,
+      "accuracy": 0.943115
+     },
+     {
+      "band": [
+       10.0,
+       20.0
+      ],
+      "pixels": 297697,
+      "accuracy": 0.896939
+     },
+     {
+      "band": [
+       20.0,
+       40.0
+      ],
+      "pixels": 97037,
+      "accuracy": 0.757927
+     },
+     {
+      "band": [
+       40.0,
+       null
+      ],
+      "pixels": 17336,
+      "accuracy": 0.597139
+     }
+    ],
+    "iou": {
+     "Grass": 0.9204,
+     "Tall grass": 0.7318,
+     "Firm sand": 0.8922,
+     "Soft sand": 0.8566,
+     "Rocky ground": 0.8674,
+     "Oasis grass": 0.7466,
+     "Sand": 0.8333,
+     "Jungle": 0.9539,
+     "Rock": 0.617,
+     "Tree": 0.8832,
+     "Water": 0.9383,
+     "Sky": 0.97
+    }
+   }
+  }
+ },
+ "test": {
+  "pixels": {
+   "colour": {
+    "accuracy": 0.884487,
+    "ground_accuracy": 0.835926,
+    "ece": 0.025843,
+    "by_distance": [
+     {
+      "band": [
+       0.0,
+       5.0
+      ],
+      "pixels": 2076394,
+      "accuracy": 0.857173
+     },
+     {
+      "band": [
+       5.0,
+       10.0
+      ],
+      "pixels": 635941,
+      "accuracy": 0.850301
+     },
+     {
+      "band": [
+       10.0,
+       20.0
+      ],
+      "pixels": 293409,
+      "accuracy": 0.784966
+     },
+     {
+      "band": [
+       20.0,
+       40.0
+      ],
+      "pixels": 104870,
+      "accuracy": 0.566797
+     },
+     {
+      "band": [
+       40.0,
+       null
+      ],
+      "pixels": 19671,
+      "accuracy": 0.323471
+     }
+    ],
+    "iou": {
+     "Grass": 0.8051,
+     "Tall grass": 0.3736,
+     "Firm sand": 0.7576,
+     "Soft sand": 0.6849,
+     "Rocky ground": 0.5797,
+     "Oasis grass": 0.8765,
+     "Sand": 0.8099,
+     "Jungle": 0.7534,
+     "Rock": 0.3335,
+     "Tree": 0.7706,
+     "Water": 0.9223,
+     "Sky": 0.9915
+    }
+   },
+   "pixel": {
+    "accuracy": 0.923081,
+    "ground_accuracy": 0.906373,
+    "ece": 0.045697,
+    "by_distance": [
+     {
+      "band": [
+       0.0,
+       5.0
+      ],
+      "pixels": 2076394,
+      "accuracy": 0.938713
+     },
+     {
+      "band": [
+       5.0,
+       10.0
+      ],
+      "pixels": 635941,
+      "accuracy": 0.899821
+     },
+     {
+      "band": [
+       10.0,
+       20.0
+      ],
+      "pixels": 293409,
+      "accuracy": 0.809283
+     },
+     {
+      "band": [
+       20.0,
+       40.0
+      ],
+      "pixels": 104870,
+      "accuracy": 0.661676
+     },
+     {
+      "band": [
+       40.0,
+       null
+      ],
+      "pixels": 19671,
+      "accuracy": 0.457221
+     }
+    ],
+    "iou": {
+     "Grass": 0.8819,
+     "Tall grass": 0.4925,
+     "Firm sand": 0.852,
+     "Soft sand": 0.808,
+     "Rocky ground": 0.7036,
+     "Oasis grass": 0.7285,
+     "Sand": 0.8639,
+     "Jungle": 0.8872,
+     "Rock": 0.1496,
+     "Tree": 0.8267,
+     "Water": 0.9019,
+     "Sky": 0.9908
+    }
+   },
+   "net": {
+    "accuracy": 0.95236,
+    "ground_accuracy": 0.943282,
+    "ece": 0.003973,
+    "by_distance": [
+     {
+      "band": [
+       0.0,
+       5.0
+      ],
+      "pixels": 2076394,
+      "accuracy": 0.965333
+     },
+     {
+      "band": [
+       5.0,
+       10.0
+      ],
+      "pixels": 635941,
+      "accuracy": 0.941322
+     },
+     {
+      "band": [
+       10.0,
+       20.0
+      ],
+      "pixels": 293409,
+      "accuracy": 0.887048
+     },
+     {
+      "band": [
+       20.0,
+       40.0
+      ],
+      "pixels": 104870,
+      "accuracy": 0.746591
+     },
+     {
+      "band": [
+       40.0,
+       null
+      ],
+      "pixels": 19671,
+      "accuracy": 0.566468
+     }
+    ],
+    "iou": {
+     "Grass": 0.9285,
+     "Tall grass": 0.7601,
+     "Firm sand": 0.8887,
+     "Soft sand": 0.8523,
+     "Rocky ground": 0.8279,
+     "Oasis grass": 0.6922,
+     "Sand": 0.8355,
+     "Jungle": 0.9408,
+     "Rock": 0.6436,
+     "Tree": 0.8883,
+     "Water": 0.9363,
+     "Sky": 0.9686
+    }
+   }
+  },
+  "confusion_net": [
+   [
+    1360836,
+    26470,
+    0,
+    0,
+    0,
+    0,
+    632,
+    3630
+   ],
+   [
+    33531,
+    220725,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    615103,
+    18829,
+    15218,
+    1972,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    13476,
+    232232,
+    2162,
+    196,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    12035,
+    2404,
+    219985,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    4439,
+    407,
+    11,
+    18939,
+    0,
+    0
+   ],
+   [
+    980,
+    0,
+    0,
+    0,
+    0,
+    0,
+    17162,
+    173
+   ],
+   [
+    7474,
+    0,
+    0,
+    0,
+    0,
+    0,
+    139,
+    267760
+   ]
+  ],
+  "kinds": [
+   "Grass",
+   "Tall grass",
+   "Firm sand",
+   "Soft sand",
+   "Rocky ground",
+   "Oasis grass",
+   "Sand",
+   "Jungle"
+  ],
+  "drives": [
+   {
+    "theme": "all",
+    "variant": "map",
+    "name": "knows the ground",
+    "trips": 90,
+    "mean": 0.006961,
+    "median": 0.001936,
+    "worst": 0.08144,
+    "within_1": 0.788889,
+    "removed": 1.0,
+    "frames": 0.0,
+    "seen_right": null,
+    "seconds": 0.021444
+   },
+   {
+    "theme": "all",
+    "variant": "blind",
+    "name": "no camera",
+    "trips": 90,
+    "mean": 0.116447,
+    "median": 0.084978,
+    "worst": 0.43678,
+    "within_1": 0.188889,
+    "removed": 0.0,
+    "frames": 0.0,
+    "seen_right": null,
+    "seconds": 0.066667
+   },
+   {
+    "theme": "all",
+    "variant": "truth",
+    "name": "camera, perfect labels",
+    "trips": 90,
+    "mean": 0.023575,
+    "median": 0.00943,
+    "worst": 0.170569,
+    "within_1": 0.522222,
+    "removed": 0.848251,
+    "frames": 52.355556,
+    "seen_right": 1.0,
+    "seconds": 3.545556
+   },
+   {
+    "theme": "all",
+    "variant": "colour",
+    "name": "camera + colour only",
+    "trips": 90,
+    "mean": 0.059041,
+    "median": 0.026003,
+    "worst": 0.374995,
+    "within_1": 0.311111,
+    "removed": 0.524322,
+    "frames": 51.522222,
+    "seen_right": 0.760568,
+    "seconds": 3.411333
+   },
+   {
+    "theme": "all",
+    "variant": "pixel",
+    "name": "camera + classic ML",
+    "trips": 90,
+    "mean": 0.053823,
+    "median": 0.027223,
+    "worst": 0.382118,
+    "within_1": 0.333333,
+    "removed": 0.571984,
+    "frames": 51.555556,
+    "seen_right": 0.86066,
+    "seconds": 3.476667
+   },
+   {
+    "theme": "all",
+    "variant": "net",
+    "name": "camera + network",
+    "trips": 90,
+    "mean": 0.038535,
+    "median": 0.017677,
+    "worst": 0.216659,
+    "within_1": 0.344444,
+    "removed": 0.711616,
+    "frames": 52.666667,
+    "seen_right": 0.929193,
+    "seconds": 8.428556
+   },
+   {
+    "theme": "grassland",
+    "variant": "map",
+    "name": "knows the ground",
+    "trips": 30,
+    "mean": 0.00818,
+    "median": 0.005273,
+    "worst": 0.043981,
+    "within_1": 0.733333,
+    "removed": 1.0,
+    "frames": 0.0,
+    "seen_right": null,
+    "seconds": 0.021
+   },
+   {
+    "theme": "grassland",
+    "variant": "blind",
+    "name": "no camera",
+    "trips": 30,
+    "mean": 0.069192,
+    "median": 0.062969,
+    "worst": 0.256812,
+    "within_1": 0.233333,
+    "removed": 0.0,
+    "frames": 0.0,
+    "seen_right": null,
+    "seconds": 0.061667
+   },
+   {
+    "theme": "grassland",
+    "variant": "truth",
+    "name": "camera, perfect labels",
+    "trips": 30,
+    "mean": 0.023911,
+    "median": 0.008542,
+    "worst": 0.170569,
+    "within_1": 0.566667,
+    "removed": 0.742175,
+    "frames": 50.533333,
+    "seen_right": 1.0,
+    "seconds": 3.542667
+   },
+   {
+    "theme": "grassland",
+    "variant": "colour",
+    "name": "camera + colour only",
+    "trips": 30,
+    "mean": 0.069673,
+    "median": 0.043964,
+    "worst": 0.276683,
+    "within_1": 0.2,
+    "removed": -0.007876,
+    "frames": 49.733333,
+    "seen_right": 0.704565,
+    "seconds": 3.431333
+   },
+   {
+    "theme": "grassland",
+    "variant": "pixel",
+    "name": "camera + classic ML",
+    "trips": 30,
+    "mean": 0.060154,
+    "median": 0.041841,
+    "worst": 0.2939,
+    "within_1": 0.233333,
+    "removed": 0.148136,
+    "frames": 49.766667,
+    "seen_right": 0.776871,
+    "seconds": 3.520667
+   },
+   {
+    "theme": "grassland",
+    "variant": "net",
+    "name": "camera + network",
+    "trips": 30,
+    "mean": 0.040942,
+    "median": 0.030817,
+    "worst": 0.170569,
+    "within_1": 0.266667,
+    "removed": 0.463032,
+    "frames": 51.233333,
+    "seen_right": 0.917677,
+    "seconds": 8.524667
+   },
+   {
+    "theme": "desert",
+    "variant": "map",
+    "name": "knows the ground",
+    "trips": 30,
+    "mean": 0.006862,
+    "median": 0.000258,
+    "worst": 0.08144,
+    "within_1": 0.8,
+    "removed": 1.0,
+    "frames": 0.0,
+    "seen_right": null,
+    "seconds": 0.021333
+   },
+   {
+    "theme": "desert",
+    "variant": "blind",
+    "name": "no camera",
+    "trips": 30,
+    "mean": 0.151096,
+    "median": 0.116,
+    "worst": 0.43678,
+    "within_1": 0.166667,
+    "removed": 0.0,
+    "frames": 0.0,
+    "seen_right": null,
+    "seconds": 0.073333
+   },
+   {
+    "theme": "desert",
+    "variant": "truth",
+    "name": "camera, perfect labels",
+    "trips": 30,
+    "mean": 0.024485,
+    "median": 0.013551,
+    "worst": 0.096235,
+    "within_1": 0.466667,
+    "removed": 0.87782,
+    "frames": 54.6,
+    "seen_right": 1.0,
+    "seconds": 3.585667
+   },
+   {
+    "theme": "desert",
+    "variant": "colour",
+    "name": "camera + colour only",
+    "trips": 30,
+    "mean": 0.048133,
+    "median": 0.018173,
+    "worst": 0.241635,
+    "within_1": 0.433333,
+    "removed": 0.713865,
+    "frames": 53.266667,
+    "seen_right": 0.752309,
+    "seconds": 3.362333
+   },
+   {
+    "theme": "desert",
+    "variant": "pixel",
+    "name": "camera + classic ML",
+    "trips": 30,
+    "mean": 0.048312,
+    "median": 0.035857,
+    "worst": 0.179617,
+    "within_1": 0.3,
+    "removed": 0.712619,
+    "frames": 53.8,
+    "seen_right": 0.87333,
+    "seconds": 3.454667
+   },
+   {
+    "theme": "desert",
+    "variant": "net",
+    "name": "camera + network",
+    "trips": 30,
+    "mean": 0.046822,
+    "median": 0.02495,
+    "worst": 0.216659,
+    "within_1": 0.333333,
+    "removed": 0.722949,
+    "frames": 54.7,
+    "seen_right": 0.918403,
+    "seconds": 8.328
+   },
+   {
+    "theme": "island",
+    "variant": "map",
+    "name": "knows the ground",
+    "trips": 30,
+    "mean": 0.005841,
+    "median": 0.002205,
+    "worst": 0.028615,
+    "within_1": 0.833333,
+    "removed": 1.0,
+    "frames": 0.0,
+    "seen_right": null,
+    "seconds": 0.022
+   },
+   {
+    "theme": "island",
+    "variant": "blind",
+    "name": "no camera",
+    "trips": 30,
+    "mean": 0.129054,
+    "median": 0.114185,
+    "worst": 0.326157,
+    "within_1": 0.166667,
+    "removed": 0.0,
+    "frames": 0.0,
+    "seen_right": null,
+    "seconds": 0.065
+   },
+   {
+    "theme": "island",
+    "variant": "truth",
+    "name": "camera, perfect labels",
+    "trips": 30,
+    "mean": 0.022331,
+    "median": 0.008021,
+    "worst": 0.137119,
+    "within_1": 0.533333,
+    "removed": 0.866164,
+    "frames": 51.933333,
+    "seen_right": 1.0,
+    "seconds": 3.508333
+   },
+   {
+    "theme": "island",
+    "variant": "colour",
+    "name": "camera + colour only",
+    "trips": 30,
+    "mean": 0.059319,
+    "median": 0.018828,
+    "worst": 0.374995,
+    "within_1": 0.3,
+    "removed": 0.565971,
+    "frames": 51.566667,
+    "seen_right": 0.862162,
+    "seconds": 3.440333
+   },
+   {
+    "theme": "island",
+    "variant": "pixel",
+    "name": "camera + classic ML",
+    "trips": 30,
+    "mean": 0.053003,
+    "median": 0.011602,
+    "worst": 0.382118,
+    "within_1": 0.466667,
+    "removed": 0.617234,
+    "frames": 51.1,
+    "seen_right": 0.935259,
+    "seconds": 3.454667
+   },
+   {
+    "theme": "island",
+    "variant": "net",
+    "name": "camera + network",
+    "trips": 30,
+    "mean": 0.027842,
+    "median": 0.012604,
+    "worst": 0.15358,
+    "within_1": 0.433333,
+    "removed": 0.821441,
+    "frames": 52.066667,
+    "seen_right": 0.952883,
+    "seconds": 8.433
+   }
+  ],
+  "trips": [
+   {
+    "map": "grassland-1009",
+    "theme": "grassland",
+    "trip": 0,
+    "start": [
+     65,
+     78
+    ],
+    "goal": [
+     10,
+     76
+    ],
+    "optimal": 72.139218,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.0,
+     "truth": 0.0,
+     "colour": 0.021029,
+     "pixel": 0.0,
+     "net": 0.0
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 55,
+     "colour": 56,
+     "pixel": 55,
+     "net": 55
+    }
+   },
+   {
+    "map": "grassland-1009",
+    "theme": "grassland",
+    "trip": 1,
+    "start": [
+     15,
+     18
+    ],
+    "goal": [
+     38,
+     58
+    ],
+    "optimal": 57.96563,
+    "extra": {
+     "map": 0.008126,
+     "blind": 0.008837,
+     "truth": 0.008126,
+     "colour": 0.035724,
+     "pixel": 0.008126,
+     "net": 0.008126
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 43,
+     "colour": 43,
+     "pixel": 43,
+     "net": 43
+    }
+   },
+   {
+    "map": "grassland-1019",
+    "theme": "grassland",
+    "trip": 0,
+    "start": [
+     34,
+     61
+    ],
+    "goal": [
+     43,
+     8
+    ],
+    "optimal": 98.925808,
+    "extra": {
+     "map": 0.003407,
+     "blind": 0.102259,
+     "truth": 0.098761,
+     "colour": 0.041794,
+     "pixel": 0.102031,
+     "net": 0.102114
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 56,
+     "colour": 54,
+     "pixel": 54,
+     "net": 56
+    }
+   },
+   {
+    "map": "grassland-1019",
+    "theme": "grassland",
+    "trip": 1,
+    "start": [
+     82,
+     30
+    ],
+    "goal": [
+     41,
+     82
+    ],
+    "optimal": 92.02934,
+    "extra": {
+     "map": 0.014769,
+     "blind": 0.103509,
+     "truth": 0.007445,
+     "colour": 0.039296,
+     "pixel": 0.015168,
+     "net": 0.063631
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 57,
+     "colour": 60,
+     "pixel": 57,
+     "net": 63
+    }
+   },
+   {
+    "map": "grassland-1029",
+    "theme": "grassland",
+    "trip": 0,
+    "start": [
+     28,
+     68
+    ],
+    "goal": [
+     76,
+     22
+    ],
+    "optimal": 97.341007,
+    "extra": {
+     "map": 0.006037,
+     "blind": 0.006351,
+     "truth": 0.004788,
+     "colour": 0.004788,
+     "pixel": 0.004788,
+     "net": 0.004788
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 59,
+     "colour": 59,
+     "pixel": 59,
+     "net": 59
+    }
+   },
+   {
+    "map": "grassland-1029",
+    "theme": "grassland",
+    "trip": 1,
+    "start": [
+     22,
+     42
+    ],
+    "goal": [
+     72,
+     15
+    ],
+    "optimal": 86.283865,
+    "extra": {
+     "map": 0.00026,
+     "blind": 0.085494,
+     "truth": 0.007539,
+     "colour": 0.089908,
+     "pixel": 0.059079,
+     "net": 0.016275
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 52,
+     "colour": 57,
+     "pixel": 54,
+     "net": 53
+    }
+   },
+   {
+    "map": "grassland-1039",
+    "theme": "grassland",
+    "trip": 0,
+    "start": [
+     40,
+     8
+    ],
+    "goal": [
+     45,
+     63
+    ],
+    "optimal": 83.805456,
+    "extra": {
+     "map": 0.007811,
+     "blind": 0.045873,
+     "truth": 0.007811,
+     "colour": 0.044936,
+     "pixel": 0.043335,
+     "net": 0.044936
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 59,
+     "colour": 59,
+     "pixel": 59,
+     "net": 59
+    }
+   },
+   {
+    "map": "grassland-1039",
+    "theme": "grassland",
+    "trip": 1,
+    "start": [
+     5,
+     37
+    ],
+    "goal": [
+     59,
+     4
+    ],
+    "optimal": 94.831588,
+    "extra": {
+     "map": 0.001552,
+     "blind": 0.066884,
+     "truth": 0.01889,
+     "colour": 0.067733,
+     "pixel": 0.049608,
+     "net": 0.101452
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 59,
+     "colour": 59,
+     "pixel": 58,
+     "net": 69
+    }
+   },
+   {
+    "map": "grassland-1049",
+    "theme": "grassland",
+    "trip": 0,
+    "start": [
+     16,
+     83
+    ],
+    "goal": [
+     71,
+     61
+    ],
+    "optimal": 91.303307,
+    "extra": {
+     "map": 0.008342,
+     "blind": 0.024652,
+     "truth": 0.02206,
+     "colour": 0.019221,
+     "pixel": 0.019207,
+     "net": 0.026593
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 55,
+     "colour": 56,
+     "pixel": 56,
+     "net": 56
+    }
+   },
+   {
+    "map": "grassland-1049",
+    "theme": "grassland",
+    "trip": 1,
+    "start": [
+     11,
+     15
+    ],
+    "goal": [
+     61,
+     26
+    ],
+    "optimal": 76.688295,
+    "extra": {
+     "map": 5.1e-05,
+     "blind": 0.086561,
+     "truth": 0.04554,
+     "colour": 0.087029,
+     "pixel": 0.098094,
+     "net": 0.065572
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 53,
+     "colour": 50,
+     "pixel": 50,
+     "net": 53
+    }
+   },
+   {
+    "map": "grassland-1059",
+    "theme": "grassland",
+    "trip": 0,
+    "start": [
+     27,
+     54
+    ],
+    "goal": [
+     83,
+     44
+    ],
+    "optimal": 94.251132,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.086642,
+     "truth": 0.006811,
+     "colour": 0.00192,
+     "pixel": 0.111358,
+     "net": 0.00719
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 59,
+     "colour": 59,
+     "pixel": 60,
+     "net": 59
+    }
+   },
+   {
+    "map": "grassland-1059",
+    "theme": "grassland",
+    "trip": 1,
+    "start": [
+     90,
+     69
+    ],
+    "goal": [
+     61,
+     21
+    ],
+    "optimal": 80.475367,
+    "extra": {
+     "map": 0.008409,
+     "blind": 0.045405,
+     "truth": 0.00841,
+     "colour": 0.020289,
+     "pixel": 0.020171,
+     "net": 0.011165
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 57,
+     "colour": 55,
+     "pixel": 55,
+     "net": 60
+    }
+   },
+   {
+    "map": "grassland-1069",
+    "theme": "grassland",
+    "trip": 0,
+    "start": [
+     62,
+     16
+    ],
+    "goal": [
+     23,
+     36
+    ],
+    "optimal": 65.570062,
+    "extra": {
+     "map": 0.02835,
+     "blind": 0.202099,
+     "truth": 0.02835,
+     "colour": 0.273079,
+     "pixel": 0.02835,
+     "net": 0.032961
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 45,
+     "colour": 45,
+     "pixel": 45,
+     "net": 45
+    }
+   },
+   {
+    "map": "grassland-1069",
+    "theme": "grassland",
+    "trip": 1,
+    "start": [
+     86,
+     79
+    ],
+    "goal": [
+     73,
+     32
+    ],
+    "optimal": 73.348126,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.017725,
+     "truth": 0.0,
+     "colour": 0.0,
+     "pixel": 0.0,
+     "net": 0.0
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 48,
+     "colour": 48,
+     "pixel": 48,
+     "net": 48
+    }
+   },
+   {
+    "map": "grassland-1079",
+    "theme": "grassland",
+    "trip": 0,
+    "start": [
+     13,
+     70
+    ],
+    "goal": [
+     43,
+     36
+    ],
+    "optimal": 92.958902,
+    "extra": {
+     "map": 0.015474,
+     "blind": 0.069341,
+     "truth": 0.062059,
+     "colour": 0.0603,
+     "pixel": 0.062517,
+     "net": 0.062196
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 43,
+     "colour": 43,
+     "pixel": 42,
+     "net": 43
+    }
+   },
+   {
+    "map": "grassland-1079",
+    "theme": "grassland",
+    "trip": 1,
+    "start": [
+     47,
+     10
+    ],
+    "goal": [
+     69,
+     61
+    ],
+    "optimal": 94.282621,
+    "extra": {
+     "map": 0.043981,
+     "blind": 0.002088,
+     "truth": 0.010396,
+     "colour": 0.00209,
+     "pixel": 0.064818,
+     "net": 0.074004
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 52,
+     "colour": 52,
+     "pixel": 54,
+     "net": 52
+    }
+   },
+   {
+    "map": "grassland-1089",
+    "theme": "grassland",
+    "trip": 0,
+    "start": [
+     78,
+     28
+    ],
+    "goal": [
+     38,
+     42
+    ],
+    "optimal": 79.878826,
+    "extra": {
+     "map": 0.017806,
+     "blind": 0.059055,
+     "truth": 0.002064,
+     "colour": 0.067495,
+     "pixel": 0.083292,
+     "net": 0.028672
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 40,
+     "colour": 40,
+     "pixel": 40,
+     "net": 43
+    }
+   },
+   {
+    "map": "grassland-1089",
+    "theme": "grassland",
+    "trip": 1,
+    "start": [
+     56,
+     55
+    ],
+    "goal": [
+     84,
+     24
+    ],
+    "optimal": 60.689232,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.256812,
+     "truth": 0.023458,
+     "colour": 0.276683,
+     "pixel": 0.208418,
+     "net": 0.01612
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 46,
+     "colour": 38,
+     "pixel": 38,
+     "net": 47
+    }
+   },
+   {
+    "map": "grassland-1099",
+    "theme": "grassland",
+    "trip": 0,
+    "start": [
+     89,
+     7
+    ],
+    "goal": [
+     71,
+     49
+    ],
+    "optimal": 54.452832,
+    "extra": {
+     "map": 0.002905,
+     "blind": 0.026201,
+     "truth": 0.024741,
+     "colour": 0.02592,
+     "pixel": 0.026095,
+     "net": 0.043468
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 42,
+     "colour": 42,
+     "pixel": 42,
+     "net": 42
+    }
+   },
+   {
+    "map": "grassland-1099",
+    "theme": "grassland",
+    "trip": 1,
+    "start": [
+     68,
+     31
+    ],
+    "goal": [
+     39,
+     66
+    ],
+    "optimal": 68.138411,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.115246,
+     "truth": 0.043048,
+     "colour": 0.11347,
+     "pixel": 0.002595,
+     "net": 0.018687
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 43,
+     "colour": 40,
+     "pixel": 39,
+     "net": 40
+    }
+   },
+   {
+    "map": "grassland-1109",
+    "theme": "grassland",
+    "trip": 0,
+    "start": [
+     81,
+     91
+    ],
+    "goal": [
+     38,
+     90
+    ],
+    "optimal": 84.841292,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.0,
+     "truth": 0.004871,
+     "colour": 0.003619,
+     "pixel": 0.004871,
+     "net": 0.006947
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 43,
+     "colour": 43,
+     "pixel": 43,
+     "net": 43
+    }
+   },
+   {
+    "map": "grassland-1109",
+    "theme": "grassland",
+    "trip": 1,
+    "start": [
+     23,
+     87
+    ],
+    "goal": [
+     74,
+     65
+    ],
+    "optimal": 75.23865,
+    "extra": {
+     "map": 0.01495,
+     "blind": 0.084462,
+     "truth": 0.008674,
+     "colour": 0.000162,
+     "pixel": 0.018053,
+     "net": 0.015046
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 53,
+     "colour": 51,
+     "pixel": 51,
+     "net": 52
+    }
+   },
+   {
+    "map": "grassland-1119",
+    "theme": "grassland",
+    "trip": 0,
+    "start": [
+     9,
+     52
+    ],
+    "goal": [
+     58,
+     89
+    ],
+    "optimal": 78.321287,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.025463,
+     "truth": 0.004185,
+     "colour": 0.021924,
+     "pixel": 0.00422,
+     "net": 0.00422
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 55,
+     "colour": 53,
+     "pixel": 55,
+     "net": 55
+    }
+   },
+   {
+    "map": "grassland-1119",
+    "theme": "grassland",
+    "trip": 1,
+    "start": [
+     24,
+     53
+    ],
+    "goal": [
+     69,
+     16
+    ],
+    "optimal": 75.855181,
+    "extra": {
+     "map": 0.005468,
+     "blind": 0.231549,
+     "truth": 0.170569,
+     "colour": 0.221708,
+     "pixel": 0.2939,
+     "net": 0.170569
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 53,
+     "colour": 49,
+     "pixel": 48,
+     "net": 53
+    }
+   },
+   {
+    "map": "grassland-1129",
+    "theme": "grassland",
+    "trip": 0,
+    "start": [
+     90,
+     85
+    ],
+    "goal": [
+     55,
+     54
+    ],
+    "optimal": 85.127353,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.078566,
+     "truth": 0.00418,
+     "colour": 0.10754,
+     "pixel": 0.096985,
+     "net": 0.00418
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 41,
+     "colour": 38,
+     "pixel": 40,
+     "net": 41
+    }
+   },
+   {
+    "map": "grassland-1129",
+    "theme": "grassland",
+    "trip": 1,
+    "start": [
+     85,
+     47
+    ],
+    "goal": [
+     77,
+     93
+    ],
+    "optimal": 74.900979,
+    "extra": {
+     "map": 0.022537,
+     "blind": 0.046007,
+     "truth": 0.040347,
+     "colour": 0.045151,
+     "pixel": 0.040347,
+     "net": 0.042229
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 49,
+     "colour": 46,
+     "pixel": 49,
+     "net": 49
+    }
+   },
+   {
+    "map": "grassland-1139",
+    "theme": "grassland",
+    "trip": 0,
+    "start": [
+     50,
+     72
+    ],
+    "goal": [
+     53,
+     31
+    ],
+    "optimal": 93.76904,
+    "extra": {
+     "map": 0.005077,
+     "blind": 0.005752,
+     "truth": 0.009638,
+     "colour": 0.053623,
+     "pixel": 0.015046,
+     "net": 0.046035
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 41,
+     "colour": 41,
+     "pixel": 41,
+     "net": 41
+    }
+   },
+   {
+    "map": "grassland-1139",
+    "theme": "grassland",
+    "trip": 1,
+    "start": [
+     93,
+     40
+    ],
+    "goal": [
+     39,
+     26
+    ],
+    "optimal": 126.121838,
+    "extra": {
+     "map": 0.023394,
+     "blind": 0.105505,
+     "truth": 0.03784,
+     "colour": 0.150311,
+     "pixel": 0.148532,
+     "net": 0.088665
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 54,
+     "colour": 54,
+     "pixel": 55,
+     "net": 54
+    }
+   },
+   {
+    "map": "grassland-1149",
+    "theme": "grassland",
+    "trip": 0,
+    "start": [
+     23,
+     53
+    ],
+    "goal": [
+     50,
+     86
+    ],
+    "optimal": 71.155728,
+    "extra": {
+     "map": 0.005733,
+     "blind": 0.005733,
+     "truth": 0.005733,
+     "colour": 0.042992,
+     "pixel": 0.081359,
+     "net": 0.03524
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 37,
+     "colour": 39,
+     "pixel": 39,
+     "net": 38
+    }
+   },
+   {
+    "map": "grassland-1149",
+    "theme": "grassland",
+    "trip": 1,
+    "start": [
+     26,
+     12
+    ],
+    "goal": [
+     36,
+     75
+    ],
+    "optimal": 112.550471,
+    "extra": {
+     "map": 0.000973,
+     "blind": 0.081692,
+     "truth": 0.000986,
+     "colour": 0.150443,
+     "pixel": 0.094254,
+     "net": 0.087166
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 67,
+     "colour": 63,
+     "pixel": 64,
+     "net": 66
+    }
+   },
+   {
+    "map": "desert-1009",
+    "theme": "desert",
+    "trip": 0,
+    "start": [
+     29,
+     17
+    ],
+    "goal": [
+     59,
+     49
+    ],
+    "optimal": 54.604595,
+    "extra": {
+     "map": 0.006423,
+     "blind": 0.033562,
+     "truth": 0.006272,
+     "colour": 0.033383,
+     "pixel": 0.048479,
+     "net": 0.006423
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 38,
+     "colour": 38,
+     "pixel": 40,
+     "net": 38
+    }
+   },
+   {
+    "map": "desert-1009",
+    "theme": "desert",
+    "trip": 1,
+    "start": [
+     95,
+     48
+    ],
+    "goal": [
+     56,
+     35
+    ],
+    "optimal": 49.425949,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.009482,
+     "truth": 0.0,
+     "colour": 0.001133,
+     "pixel": 0.001585,
+     "net": 3.6e-05
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 39,
+     "colour": 39,
+     "pixel": 39,
+     "net": 39
+    }
+   },
+   {
+    "map": "desert-1019",
+    "theme": "desert",
+    "trip": 0,
+    "start": [
+     73,
+     76
+    ],
+    "goal": [
+     32,
+     79
+    ],
+    "optimal": 78.660497,
+    "extra": {
+     "map": 0.036725,
+     "blind": 0.097829,
+     "truth": 0.041655,
+     "colour": 0.046494,
+     "pixel": 0.069508,
+     "net": 0.031047
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 48,
+     "colour": 48,
+     "pixel": 51,
+     "net": 48
+    }
+   },
+   {
+    "map": "desert-1019",
+    "theme": "desert",
+    "trip": 1,
+    "start": [
+     29,
+     41
+    ],
+    "goal": [
+     83,
+     5
+    ],
+    "optimal": 108.823069,
+    "extra": {
+     "map": 0.01591,
+     "blind": 0.112753,
+     "truth": 0.01591,
+     "colour": 0.019354,
+     "pixel": 0.051802,
+     "net": 0.013206
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 73,
+     "colour": 59,
+     "pixel": 65,
+     "net": 58
+    }
+   },
+   {
+    "map": "desert-1029",
+    "theme": "desert",
+    "trip": 0,
+    "start": [
+     76,
+     90
+    ],
+    "goal": [
+     42,
+     52
+    ],
+    "optimal": 87.453184,
+    "extra": {
+     "map": 0.000497,
+     "blind": 0.015124,
+     "truth": 0.00622,
+     "colour": 0.006836,
+     "pixel": 0.028663,
+     "net": 0.024426
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 55,
+     "colour": 55,
+     "pixel": 54,
+     "net": 58
+    }
+   },
+   {
+    "map": "desert-1029",
+    "theme": "desert",
+    "trip": 1,
+    "start": [
+     36,
+     86
+    ],
+    "goal": [
+     88,
+     76
+    ],
+    "optimal": 86.421879,
+    "extra": {
+     "map": 0.004424,
+     "blind": 0.153924,
+     "truth": 0.095819,
+     "colour": 0.084943,
+     "pixel": 0.179617,
+     "net": 0.16088
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 52,
+     "colour": 52,
+     "pixel": 53,
+     "net": 53
+    }
+   },
+   {
+    "map": "desert-1039",
+    "theme": "desert",
+    "trip": 0,
+    "start": [
+     58,
+     89
+    ],
+    "goal": [
+     2,
+     76
+    ],
+    "optimal": 91.169761,
+    "extra": {
+     "map": 0.011191,
+     "blind": 0.032652,
+     "truth": 0.011191,
+     "colour": 0.000314,
+     "pixel": 0.000124,
+     "net": 5.4e-05
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 60,
+     "colour": 60,
+     "pixel": 60,
+     "net": 60
+    }
+   },
+   {
+    "map": "desert-1039",
+    "theme": "desert",
+    "trip": 1,
+    "start": [
+     63,
+     5
+    ],
+    "goal": [
+     65,
+     48
+    ],
+    "optimal": 57.749206,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.054749,
+     "truth": 0.002113,
+     "colour": 0.078079,
+     "pixel": 0.069058,
+     "net": 0.214942
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 43,
+     "colour": 43,
+     "pixel": 43,
+     "net": 45
+    }
+   },
+   {
+    "map": "desert-1049",
+    "theme": "desert",
+    "trip": 0,
+    "start": [
+     33,
+     93
+    ],
+    "goal": [
+     61,
+     35
+    ],
+    "optimal": 87.930392,
+    "extra": {
+     "map": 0.08144,
+     "blind": 0.252995,
+     "truth": 0.081451,
+     "colour": 0.001061,
+     "pixel": 0.178361,
+     "net": 0.068328
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 61,
+     "colour": 62,
+     "pixel": 60,
+     "net": 62
+    }
+   },
+   {
+    "map": "desert-1049",
+    "theme": "desert",
+    "trip": 1,
+    "start": [
+     63,
+     36
+    ],
+    "goal": [
+     17,
+     51
+    ],
+    "optimal": 92.945685,
+    "extra": {
+     "map": 0.007983,
+     "blind": 0.235945,
+     "truth": 0.0563,
+     "colour": 0.073554,
+     "pixel": 0.137941,
+     "net": 0.04665
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 66,
+     "colour": 57,
+     "pixel": 48,
+     "net": 58
+    }
+   },
+   {
+    "map": "desert-1059",
+    "theme": "desert",
+    "trip": 0,
+    "start": [
+     36,
+     31
+    ],
+    "goal": [
+     60,
+     79
+    ],
+    "optimal": 86.963998,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.00979,
+     "truth": 0.002161,
+     "colour": 0.002766,
+     "pixel": 0.002188,
+     "net": 0.004055
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 48,
+     "colour": 48,
+     "pixel": 48,
+     "net": 48
+    }
+   },
+   {
+    "map": "desert-1059",
+    "theme": "desert",
+    "trip": 1,
+    "start": [
+     70,
+     74
+    ],
+    "goal": [
+     15,
+     57
+    ],
+    "optimal": 127.526804,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.021798,
+     "truth": 0.005543,
+     "colour": 0.030931,
+     "pixel": 0.028788,
+     "net": 0.027766
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 59,
+     "colour": 59,
+     "pixel": 59,
+     "net": 59
+    }
+   },
+   {
+    "map": "desert-1069",
+    "theme": "desert",
+    "trip": 0,
+    "start": [
+     60,
+     79
+    ],
+    "goal": [
+     60,
+     22
+    ],
+    "optimal": 79.176268,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.232577,
+     "truth": 0.02209,
+     "colour": 0.012024,
+     "pixel": 0.04101,
+     "net": 0.216659
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 60,
+     "colour": 57,
+     "pixel": 60,
+     "net": 60
+    }
+   },
+   {
+    "map": "desert-1069",
+    "theme": "desert",
+    "trip": 1,
+    "start": [
+     81,
+     66
+    ],
+    "goal": [
+     14,
+     77
+    ],
+    "optimal": 109.666725,
+    "extra": {
+     "map": 0.010807,
+     "blind": 0.341825,
+     "truth": 0.026065,
+     "colour": 0.026085,
+     "pixel": 0.054411,
+     "net": 0.059225
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 75,
+     "colour": 75,
+     "pixel": 74,
+     "net": 75
+    }
+   },
+   {
+    "map": "desert-1079",
+    "theme": "desert",
+    "trip": 0,
+    "start": [
+     94,
+     55
+    ],
+    "goal": [
+     50,
+     1
+    ],
+    "optimal": 109.048819,
+    "extra": {
+     "map": 0.001636,
+     "blind": 0.117692,
+     "truth": 0.001636,
+     "colour": 0.073954,
+     "pixel": 0.019027,
+     "net": 0.108428
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 66,
+     "colour": 68,
+     "pixel": 70,
+     "net": 76
+    }
+   },
+   {
+    "map": "desert-1079",
+    "theme": "desert",
+    "trip": 1,
+    "start": [
+     38,
+     6
+    ],
+    "goal": [
+     79,
+     0
+    ],
+    "optimal": 49.464399,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.00076,
+     "truth": 0.0,
+     "colour": 0.002551,
+     "pixel": 3.5e-05,
+     "net": 1.2e-05
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 41,
+     "colour": 41,
+     "pixel": 41,
+     "net": 41
+    }
+   },
+   {
+    "map": "desert-1089",
+    "theme": "desert",
+    "trip": 0,
+    "start": [
+     93,
+     25
+    ],
+    "goal": [
+     30,
+     3
+    ],
+    "optimal": 105.168895,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.43678,
+     "truth": 0.070401,
+     "colour": 0.069505,
+     "pixel": 0.041464,
+     "net": 0.011874
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 67,
+     "colour": 67,
+     "pixel": 63,
+     "net": 64
+    }
+   },
+   {
+    "map": "desert-1089",
+    "theme": "desert",
+    "trip": 1,
+    "start": [
+     94,
+     85
+    ],
+    "goal": [
+     57,
+     57
+    ],
+    "optimal": 71.934011,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.35892,
+     "truth": 0.0,
+     "colour": 4e-05,
+     "pixel": 0.016235,
+     "net": 0.016288
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 44,
+     "colour": 44,
+     "pixel": 52,
+     "net": 52
+    }
+   },
+   {
+    "map": "desert-1099",
+    "theme": "desert",
+    "trip": 0,
+    "start": [
+     14,
+     23
+    ],
+    "goal": [
+     56,
+     71
+    ],
+    "optimal": 111.02074,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.01464,
+     "truth": 0.028302,
+     "colour": 0.005072,
+     "pixel": 0.050243,
+     "net": 0.028628
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 67,
+     "colour": 64,
+     "pixel": 64,
+     "net": 68
+    }
+   },
+   {
+    "map": "desert-1099",
+    "theme": "desert",
+    "trip": 1,
+    "start": [
+     73,
+     92
+    ],
+    "goal": [
+     23,
+     94
+    ],
+    "optimal": 67.559993,
+    "extra": {
+     "map": 0.000966,
+     "blind": 0.000966,
+     "truth": 0.000966,
+     "colour": 0.002375,
+     "pixel": 0.002396,
+     "net": 0.000966
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 50,
+     "colour": 50,
+     "pixel": 50,
+     "net": 50
+    }
+   },
+   {
+    "map": "desert-1109",
+    "theme": "desert",
+    "trip": 0,
+    "start": [
+     12,
+     41
+    ],
+    "goal": [
+     51,
+     84
+    ],
+    "optimal": 87.762003,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.278454,
+     "truth": 0.005697,
+     "colour": 0.000635,
+     "pixel": 0.003418,
+     "net": 0.025473
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 47,
+     "colour": 47,
+     "pixel": 48,
+     "net": 48
+    }
+   },
+   {
+    "map": "desert-1109",
+    "theme": "desert",
+    "trip": 1,
+    "start": [
+     60,
+     59
+    ],
+    "goal": [
+     7,
+     74
+    ],
+    "optimal": 104.397005,
+    "extra": {
+     "map": 0.001475,
+     "blind": 0.114309,
+     "truth": 0.096235,
+     "colour": 0.096248,
+     "pixel": 0.111552,
+     "net": 0.096931
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 56,
+     "colour": 56,
+     "pixel": 56,
+     "net": 56
+    }
+   },
+   {
+    "map": "desert-1119",
+    "theme": "desert",
+    "trip": 0,
+    "start": [
+     56,
+     41
+    ],
+    "goal": [
+     46,
+     0
+    ],
+    "optimal": 57.854397,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.150575,
+     "truth": 0.0,
+     "colour": 8e-05,
+     "pixel": 0.004613,
+     "net": 0.000123
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 41,
+     "colour": 41,
+     "pixel": 41,
+     "net": 41
+    }
+   },
+   {
+    "map": "desert-1119",
+    "theme": "desert",
+    "trip": 1,
+    "start": [
+     39,
+     6
+    ],
+    "goal": [
+     27,
+     59
+    ],
+    "optimal": 81.828757,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.40224,
+     "truth": 0.009858,
+     "colour": 0.009843,
+     "pixel": 0.020329,
+     "net": 0.011614
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 55,
+     "colour": 54,
+     "pixel": 54,
+     "net": 55
+    }
+   },
+   {
+    "map": "desert-1129",
+    "theme": "desert",
+    "trip": 0,
+    "start": [
+     61,
+     20
+    ],
+    "goal": [
+     4,
+     51
+    ],
+    "optimal": 100.521325,
+    "extra": {
+     "map": 0.002273,
+     "blind": 0.190757,
+     "truth": 0.028022,
+     "colour": 0.219104,
+     "pixel": 0.094405,
+     "net": 0.031418
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 64,
+     "colour": 69,
+     "pixel": 64,
+     "net": 66
+    }
+   },
+   {
+    "map": "desert-1129",
+    "theme": "desert",
+    "trip": 1,
+    "start": [
+     35,
+     64
+    ],
+    "goal": [
+     92,
+     37
+    ],
+    "optimal": 111.306827,
+    "extra": {
+     "map": 1.8e-05,
+     "blind": 0.099871,
+     "truth": 0.05445,
+     "colour": 0.219993,
+     "pixel": 0.115244,
+     "net": 0.073018
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 65,
+     "colour": 59,
+     "pixel": 59,
+     "net": 64
+    }
+   },
+   {
+    "map": "desert-1139",
+    "theme": "desert",
+    "trip": 0,
+    "start": [
+     39,
+     24
+    ],
+    "goal": [
+     21,
+     61
+    ],
+    "optimal": 54.075653,
+    "extra": {
+     "map": 0.016991,
+     "blind": 0.275131,
+     "truth": 0.016991,
+     "colour": 0.016991,
+     "pixel": 0.043794,
+     "net": 0.001382
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 38,
+     "colour": 38,
+     "pixel": 38,
+     "net": 37
+    }
+   },
+   {
+    "map": "desert-1139",
+    "theme": "desert",
+    "trip": 1,
+    "start": [
+     93,
+     35
+    ],
+    "goal": [
+     58,
+     72
+    ],
+    "optimal": 102.114674,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.333152,
+     "truth": 0.002213,
+     "colour": 0.241635,
+     "pixel": 3.9e-05,
+     "net": 0.003184
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 62,
+     "colour": 51,
+     "pixel": 62,
+     "net": 62
+    }
+   },
+   {
+    "map": "desert-1149",
+    "theme": "desert",
+    "trip": 0,
+    "start": [
+     3,
+     41
+    ],
+    "goal": [
+     47,
+     44
+    ],
+    "optimal": 61.336592,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.151217,
+     "truth": 0.017955,
+     "colour": 0.00463,
+     "pixel": 0.004335,
+     "net": 0.114527
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 44,
+     "colour": 44,
+     "pixel": 44,
+     "net": 46
+    }
+   },
+   {
+    "map": "desert-1149",
+    "theme": "desert",
+    "trip": 1,
+    "start": [
+     58,
+     58
+    ],
+    "goal": [
+     46,
+     6
+    ],
+    "optimal": 70.86476,
+    "extra": {
+     "map": 0.007107,
+     "blind": 0.00241,
+     "truth": 0.029022,
+     "colour": 0.064365,
+     "pixel": 0.030705,
+     "net": 0.007107
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 54,
+     "colour": 53,
+     "pixel": 54,
+     "net": 54
+    }
+   },
+   {
+    "map": "island-1009",
+    "theme": "island",
+    "trip": 0,
+    "start": [
+     78,
+     50
+    ],
+    "goal": [
+     25,
+     52
+    ],
+    "optimal": 73.198871,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.00106,
+     "truth": 0.012709,
+     "colour": 2.5e-05,
+     "pixel": 9.4e-05,
+     "net": 2.3e-05
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 53,
+     "colour": 53,
+     "pixel": 53,
+     "net": 53
+    }
+   },
+   {
+    "map": "island-1009",
+    "theme": "island",
+    "trip": 1,
+    "start": [
+     60,
+     82
+    ],
+    "goal": [
+     54,
+     32
+    ],
+    "optimal": 74.505733,
+    "extra": {
+     "map": 0.009443,
+     "blind": 0.201328,
+     "truth": 0.058573,
+     "colour": 0.118422,
+     "pixel": 0.133321,
+     "net": 0.122642
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 51,
+     "colour": 53,
+     "pixel": 51,
+     "net": 52
+    }
+   },
+   {
+    "map": "island-1019",
+    "theme": "island",
+    "trip": 0,
+    "start": [
+     5,
+     50
+    ],
+    "goal": [
+     42,
+     13
+    ],
+    "optimal": 84.019685,
+    "extra": {
+     "map": 0.00063,
+     "blind": 0.27909,
+     "truth": 0.137119,
+     "colour": 0.020484,
+     "pixel": 0.146555,
+     "net": 0.15358
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 51,
+     "colour": 48,
+     "pixel": 51,
+     "net": 51
+    }
+   },
+   {
+    "map": "island-1019",
+    "theme": "island",
+    "trip": 1,
+    "start": [
+     19,
+     30
+    ],
+    "goal": [
+     68,
+     59
+    ],
+    "optimal": 82.586085,
+    "extra": {
+     "map": 0.003199,
+     "blind": 0.083639,
+     "truth": 0.0,
+     "colour": 0.017809,
+     "pixel": 0.002747,
+     "net": 0.002747
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 53,
+     "colour": 53,
+     "pixel": 53,
+     "net": 53
+    }
+   },
+   {
+    "map": "island-1029",
+    "theme": "island",
+    "trip": 0,
+    "start": [
+     66,
+     18
+    ],
+    "goal": [
+     19,
+     62
+    ],
+    "optimal": 105.322944,
+    "extra": {
+     "map": 0.005404,
+     "blind": 0.177913,
+     "truth": 0.000207,
+     "colour": 3.4e-05,
+     "pixel": 0.000107,
+     "net": 0.000365
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 61,
+     "colour": 61,
+     "pixel": 61,
+     "net": 61
+    }
+   },
+   {
+    "map": "island-1029",
+    "theme": "island",
+    "trip": 1,
+    "start": [
+     13,
+     39
+    ],
+    "goal": [
+     69,
+     50
+    ],
+    "optimal": 79.055504,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.018075,
+     "truth": 0.0,
+     "colour": 0.010082,
+     "pixel": 0.063188,
+     "net": 0.0
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 56,
+     "colour": 56,
+     "pixel": 56,
+     "net": 56
+    }
+   },
+   {
+    "map": "island-1039",
+    "theme": "island",
+    "trip": 0,
+    "start": [
+     71,
+     70
+    ],
+    "goal": [
+     61,
+     30
+    ],
+    "optimal": 58.902829,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.007317,
+     "truth": 0.0,
+     "colour": 0.001509,
+     "pixel": 0.000139,
+     "net": 0.000371
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 40,
+     "colour": 40,
+     "pixel": 40,
+     "net": 40
+    }
+   },
+   {
+    "map": "island-1039",
+    "theme": "island",
+    "trip": 1,
+    "start": [
+     31,
+     67
+    ],
+    "goal": [
+     61,
+     40
+    ],
+    "optimal": 55.965824,
+    "extra": {
+     "map": 0.000215,
+     "blind": 0.132216,
+     "truth": 0.000215,
+     "colour": 0.000215,
+     "pixel": 0.000215,
+     "net": 0.000512
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 39,
+     "colour": 39,
+     "pixel": 39,
+     "net": 39
+    }
+   },
+   {
+    "map": "island-1049",
+    "theme": "island",
+    "trip": 0,
+    "start": [
+     51,
+     34
+    ],
+    "goal": [
+     24,
+     64
+    ],
+    "optimal": 48.431008,
+    "extra": {
+     "map": 0.009147,
+     "blind": 0.009318,
+     "truth": 0.001351,
+     "colour": 0.003231,
+     "pixel": 0.0,
+     "net": 0.007487
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 32,
+     "colour": 31,
+     "pixel": 32,
+     "net": 32
+    }
+   },
+   {
+    "map": "island-1049",
+    "theme": "island",
+    "trip": 1,
+    "start": [
+     40,
+     25
+    ],
+    "goal": [
+     82,
+     55
+    ],
+    "optimal": 76.383228,
+    "extra": {
+     "map": 0.00655,
+     "blind": 0.222965,
+     "truth": 0.082158,
+     "colour": 0.24752,
+     "pixel": 0.242279,
+     "net": 0.134917
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 50,
+     "colour": 48,
+     "pixel": 48,
+     "net": 51
+    }
+   },
+   {
+    "map": "island-1059",
+    "theme": "island",
+    "trip": 0,
+    "start": [
+     67,
+     51
+    ],
+    "goal": [
+     67,
+     7
+    ],
+    "optimal": 64.755249,
+    "extra": {
+     "map": 0.02024,
+     "blind": 0.233826,
+     "truth": 0.011712,
+     "colour": 0.011712,
+     "pixel": 0.011712,
+     "net": 0.041009
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 46,
+     "colour": 46,
+     "pixel": 46,
+     "net": 47
+    }
+   },
+   {
+    "map": "island-1059",
+    "theme": "island",
+    "trip": 1,
+    "start": [
+     49,
+     34
+    ],
+    "goal": [
+     86,
+     56
+    ],
+    "optimal": 53.656442,
+    "extra": {
+     "map": 0.024615,
+     "blind": 0.293541,
+     "truth": 0.009221,
+     "colour": 0.374995,
+     "pixel": 0.382118,
+     "net": 0.01154
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 45,
+     "colour": 41,
+     "pixel": 42,
+     "net": 46
+    }
+   },
+   {
+    "map": "island-1069",
+    "theme": "island",
+    "trip": 0,
+    "start": [
+     20,
+     34
+    ],
+    "goal": [
+     63,
+     40
+    ],
+    "optimal": 85.748884,
+    "extra": {
+     "map": 0.017698,
+     "blind": 0.051461,
+     "truth": 0.0,
+     "colour": 0.071021,
+     "pixel": 0.069922,
+     "net": 0.04432
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 44,
+     "colour": 44,
+     "pixel": 44,
+     "net": 46
+    }
+   },
+   {
+    "map": "island-1069",
+    "theme": "island",
+    "trip": 1,
+    "start": [
+     67,
+     42
+    ],
+    "goal": [
+     16,
+     58
+    ],
+    "optimal": 106.709616,
+    "extra": {
+     "map": 0.002203,
+     "blind": 0.080997,
+     "truth": 0.002203,
+     "colour": 0.115156,
+     "pixel": 0.006205,
+     "net": 0.013669
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 52,
+     "colour": 52,
+     "pixel": 52,
+     "net": 52
+    }
+   },
+   {
+    "map": "island-1079",
+    "theme": "island",
+    "trip": 0,
+    "start": [
+     12,
+     63
+    ],
+    "goal": [
+     49,
+     84
+    ],
+    "optimal": 95.125299,
+    "extra": {
+     "map": 0.002207,
+     "blind": 0.154796,
+     "truth": 0.002207,
+     "colour": 0.008671,
+     "pixel": 0.002207,
+     "net": 0.020945
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 40,
+     "colour": 40,
+     "pixel": 40,
+     "net": 41
+    }
+   },
+   {
+    "map": "island-1079",
+    "theme": "island",
+    "trip": 1,
+    "start": [
+     54,
+     17
+    ],
+    "goal": [
+     39,
+     66
+    ],
+    "optimal": 99.544536,
+    "extra": {
+     "map": 7.6e-05,
+     "blind": 0.015301,
+     "truth": 0.015407,
+     "colour": 0.149217,
+     "pixel": 0.02943,
+     "net": 0.015337
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 50,
+     "colour": 60,
+     "pixel": 50,
+     "net": 50
+    }
+   },
+   {
+    "map": "island-1089",
+    "theme": "island",
+    "trip": 0,
+    "start": [
+     70,
+     83
+    ],
+    "goal": [
+     54,
+     15
+    ],
+    "optimal": 114.083053,
+    "extra": {
+     "map": 0.001668,
+     "blind": 0.077843,
+     "truth": 0.015971,
+     "colour": 0.05946,
+     "pixel": 0.015971,
+     "net": 0.014404
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 68,
+     "colour": 70,
+     "pixel": 68,
+     "net": 68
+    }
+   },
+   {
+    "map": "island-1089",
+    "theme": "island",
+    "trip": 1,
+    "start": [
+     44,
+     91
+    ],
+    "goal": [
+     33,
+     32
+    ],
+    "optimal": 94.366125,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.182123,
+     "truth": 0.00681,
+     "colour": 0.015117,
+     "pixel": 0.011797,
+     "net": 0.010041
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 59,
+     "colour": 59,
+     "pixel": 59,
+     "net": 59
+    }
+   },
+   {
+    "map": "island-1099",
+    "theme": "island",
+    "trip": 0,
+    "start": [
+     13,
+     48
+    ],
+    "goal": [
+     75,
+     46
+    ],
+    "optimal": 102.675752,
+    "extra": {
+     "map": 0.005734,
+     "blind": 0.182973,
+     "truth": 0.006735,
+     "colour": 0.043466,
+     "pixel": 0.00643,
+     "net": 0.006488
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 62,
+     "colour": 63,
+     "pixel": 62,
+     "net": 62
+    }
+   },
+   {
+    "map": "island-1099",
+    "theme": "island",
+    "trip": 1,
+    "start": [
+     43,
+     71
+    ],
+    "goal": [
+     58,
+     15
+    ],
+    "optimal": 79.940339,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.006215,
+     "truth": 0.002614,
+     "colour": 0.002614,
+     "pixel": 0.002614,
+     "net": 0.002614
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 57,
+     "colour": 57,
+     "pixel": 57,
+     "net": 57
+    }
+   },
+   {
+    "map": "island-1109",
+    "theme": "island",
+    "trip": 0,
+    "start": [
+     68,
+     79
+    ],
+    "goal": [
+     55,
+     35
+    ],
+    "optimal": 94.970224,
+    "extra": {
+     "map": 0.028615,
+     "blind": 0.131565,
+     "truth": 0.051391,
+     "colour": 0.033934,
+     "pixel": 0.05262,
+     "net": 0.051391
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 48,
+     "colour": 45,
+     "pixel": 46,
+     "net": 48
+    }
+   },
+   {
+    "map": "island-1109",
+    "theme": "island",
+    "trip": 1,
+    "start": [
+     8,
+     51
+    ],
+    "goal": [
+     57,
+     44
+    ],
+    "optimal": 107.657005,
+    "extra": {
+     "map": 0.003002,
+     "blind": 0.05125,
+     "truth": 6e-06,
+     "colour": 0.016287,
+     "pixel": 0.003002,
+     "net": 0.003008
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 51,
+     "colour": 56,
+     "pixel": 50,
+     "net": 50
+    }
+   },
+   {
+    "map": "island-1119",
+    "theme": "island",
+    "trip": 0,
+    "start": [
+     45,
+     29
+    ],
+    "goal": [
+     85,
+     42
+    ],
+    "optimal": 56.32379,
+    "extra": {
+     "map": 0.024355,
+     "blind": 0.024663,
+     "truth": 0.024355,
+     "colour": 0.024355,
+     "pixel": 0.024919,
+     "net": 0.024355
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 41,
+     "colour": 41,
+     "pixel": 41,
+     "net": 41
+    }
+   },
+   {
+    "map": "island-1119",
+    "theme": "island",
+    "trip": 1,
+    "start": [
+     26,
+     30
+    ],
+    "goal": [
+     69,
+     83
+    ],
+    "optimal": 119.330877,
+    "extra": {
+     "map": 0.00036,
+     "blind": 0.326157,
+     "truth": 0.028815,
+     "colour": 0.300625,
+     "pixel": 0.288647,
+     "net": 0.033235
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 73,
+     "colour": 65,
+     "pixel": 63,
+     "net": 75
+    }
+   },
+   {
+    "map": "island-1129",
+    "theme": "island",
+    "trip": 0,
+    "start": [
+     28,
+     73
+    ],
+    "goal": [
+     39,
+     31
+    ],
+    "optimal": 65.163141,
+    "extra": {
+     "map": 0.000233,
+     "blind": 0.306691,
+     "truth": 0.014763,
+     "colour": 0.000233,
+     "pixel": 0.000233,
+     "net": 0.000233
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 44,
+     "colour": 44,
+     "pixel": 44,
+     "net": 44
+    }
+   },
+   {
+    "map": "island-1129",
+    "theme": "island",
+    "trip": 1,
+    "start": [
+     24,
+     28
+    ],
+    "goal": [
+     70,
+     76
+    ],
+    "optimal": 114.953901,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.24354,
+     "truth": 0.108716,
+     "colour": 0.006526,
+     "pixel": 0.011491,
+     "net": 0.016666
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 88,
+     "colour": 80,
+     "pixel": 82,
+     "net": 82
+    }
+   },
+   {
+    "map": "island-1139",
+    "theme": "island",
+    "trip": 0,
+    "start": [
+     26,
+     64
+    ],
+    "goal": [
+     55,
+     13
+    ],
+    "optimal": 102.678107,
+    "extra": {
+     "map": 0.00682,
+     "blind": 0.027495,
+     "truth": 0.006821,
+     "colour": 0.011224,
+     "pixel": 0.020012,
+     "net": 0.006821
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 55,
+     "colour": 55,
+     "pixel": 56,
+     "net": 55
+    }
+   },
+   {
+    "map": "island-1139",
+    "theme": "island",
+    "trip": 1,
+    "start": [
+     23,
+     48
+    ],
+    "goal": [
+     55,
+     7
+    ],
+    "optimal": 58.895058,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.00089,
+     "truth": 2e-06,
+     "colour": 0.035673,
+     "pixel": 2e-06,
+     "net": 0.000135
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 43,
+     "colour": 46,
+     "pixel": 43,
+     "net": 43
+    }
+   },
+   {
+    "map": "island-1149",
+    "theme": "island",
+    "trip": 0,
+    "start": [
+     75,
+     27
+    ],
+    "goal": [
+     49,
+     79
+    ],
+    "optimal": 83.252276,
+    "extra": {
+     "map": 0.0,
+     "blind": 0.096806,
+     "truth": 0.028711,
+     "colour": 0.019847,
+     "pixel": 0.005146,
+     "net": 0.032178
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 58,
+     "colour": 53,
+     "pixel": 53,
+     "net": 58
+    }
+   },
+   {
+    "map": "island-1149",
+    "theme": "island",
+    "trip": 1,
+    "start": [
+     26,
+     78
+    ],
+    "goal": [
+     62,
+     45
+    ],
+    "optimal": 96.587422,
+    "extra": {
+     "map": 0.002808,
+     "blind": 0.250563,
+     "truth": 0.041139,
+     "colour": 0.060096,
+     "pixel": 0.056953,
+     "net": 0.06421
+    },
+    "frames": {
+     "map": 0,
+     "blind": 0,
+     "truth": 48,
+     "colour": 48,
+     "pixel": 51,
+     "net": 50
+    }
+   }
+  ]
+ },
+ "reference": {
+  "pose": [
+   50.0,
+   30.0,
+   1.2
+  ],
+  "net_logits_sha256": "2a28b60631cee3804ce9d4518076df9a6beaccb9c669fe656b966ed83020b661",
+  "accuracy": {
+   "colour": 0.97168,
+   "pixel": 0.970093,
+   "net": 0.96582
+  },
+  "labels_sha256": {
+   "colour": "4a6a540e2a489acd1de3cbd7df2e03afa6e17969231713411c018968bf4fe0e3",
+   "pixel": "c26605fd8bed2f4a1b28a99ec3fc776bf6752b31ba3c470f168e62ffdacaa7ec",
+   "net": "1d1d818f680ac60200a5f067f94768481f1f256112a381f2c77f67837a0e3240"
+  }
+ }
+}

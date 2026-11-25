@@ -1,8 +1,10 @@
-"""Draw the README's pictures of the learning work (both need the data set: python main.py dataset build).
+"""Draw the README's pictures of the learning work (they need the data sets: python main.py dataset build, and for
+the last one python main.py vision build).
 
     python tools/learn_figure.py            # docs/learn-labels.png: one test map, one goal, one trip
     python tools/learn_figure.py bench      # docs/learn-benchmark.png: cells searched against longer routes
     python tools/learn_figure.py speeds     # docs/learn-speeds.png: stage 3's learning curve (from its card)
+    python tools/learn_figure.py vision     # docs/learn-vision.png: stage 4, what the camera sees and what it's worth
 
 Left, the label: the true drive time from every cell to the goal. Middle, A*'s estimate of the same thing today,
 the octile distance, on the same colour scale: it ignores the hills and the slow ground. Right, what that costs: the
@@ -257,5 +259,132 @@ def speeds() -> None:
     print(out)
 
 
+def vision() -> None:
+    """Stage 4: one test frame (the picture, what each pixel really is, what the network says it is), how often each
+    model gets the kind of ground right by distance, and the drives' extra time, read from the card (`python main.py
+    vision eval`) and the camera frames (`python main.py vision build`)."""
+    import json
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib import font_manager
+    from matplotlib.patches import Patch
+    from robotnav.learn import camera as cam
+    from robotnav.learn import vision as V
+
+    for f in font_manager.findSystemFonts():
+        if "Inter" in Path(f).name:
+            font_manager.fontManager.addfont(f)
+    plt.rcParams.update({"font.family": ["Inter", "DejaVu Sans"], "text.color": INK, "axes.labelcolor": DIM,
+                         "xtick.color": DIM, "ytick.color": DIM})
+    card = json.loads(V.ASSET.with_suffix(".card.json").read_text())
+    net = V.models_from()["net"]
+    m = V.load_manifest()
+    # the frame: of the test frames showing three kinds of ground or more, the one on which the network's share of
+    # the ground right is the median: a typical frame, not a good one
+    shots = []
+    for e in (e for e in m["maps"] if e["split"] == "test"):
+        a = V.load(V.DEFAULT_DIR, e)
+        for i, lab in enumerate(a["labels"]):
+            if sum(np.mean(lab == k) > 0.02 for k in range(cam.GROUND)) >= 3:
+                pred = net.log_probs(a["images"][i], a["dist"][i], e["theme"]).argmax(-1)
+                ground = lab < cam.GROUND
+                shots.append((float(np.mean(pred[ground] == lab[ground])), e["id"], i, e, a, pred))
+    shots.sort(key=lambda x: x[:3])
+    right, _, i, e, a, pred = shots[len(shots) // 2]
+    image, label = a["images"][i], a["labels"][i]
+    colours = cam.label_colors()
+
+    fig = plt.figure(figsize=(14.5, 9.0), dpi=130, facecolor=BG)
+    grid = fig.add_gridspec(2, 6, height_ratios=[1.0, 1.25], left=0.05, right=0.985, top=0.86, bottom=0.08,
+                            hspace=0.62, wspace=0.55)
+    panels = [(fig.add_subplot(grid[0, 0:2]), image, "What the camera sees",
+              f"a test frame of median difficulty ({e['id']}, never trained on)"),
+             (fig.add_subplot(grid[0, 2:4]), colours[label], "What each pixel really is", "the renderer's exact labels"),
+             (fig.add_subplot(grid[0, 4:6]), colours[pred], "What the network says",
+              f"the right kind on {100 * right:.0f}% of this frame's ground")]
+    for ax, img, title, sub in panels:
+        ax.imshow(img, interpolation="nearest")
+        ax.set_xticks([])
+        ax.set_yticks([])
+        for side in ax.spines.values():
+            side.set_color("#2a3038")
+        ax.set_title(title, loc="left", fontsize=13, color=INK, fontweight="semibold", pad=20)
+        ax.text(0, 1.03, sub, transform=ax.transAxes, fontsize=10, color=DIM, va="bottom")
+    shown = sorted(set(np.unique(label).tolist()) | set(np.unique(pred).tolist()))
+    fig.legend([Patch(facecolor=colours[k], edgecolor="none") for k in shown], [cam.CLASSES[k] for k in shown],
+               loc="upper center", bbox_to_anchor=(0.52, 0.535), ncol=len(shown), frameon=False, fontsize=10,
+               labelcolor=INK, handlelength=1.2, columnspacing=1.6)
+
+    ax = fig.add_subplot(grid[1, 0:3])
+    ax.set_facecolor(PANEL)
+    for side in ax.spines.values():
+        side.set_color("#2a3038")
+    ax.grid(True, axis="y", color="#1f252c", linewidth=0.8)
+    test = card["test"]["pixels"]
+    bands = [b["band"] for b in test["net"]["by_distance"]]
+    names = [f"{a_:.0f}-{b_:.0f} m" if b_ is not None else f"over {a_:.0f} m" for a_, b_ in bands]
+    x = np.arange(len(bands))
+    for key, name, colour in (("colour", "colour only", DIM), ("pixel", "classic ML", AMBER), ("net", "network", BLUE)):
+        v = [100 * b["accuracy"] for b in test[key]["by_distance"]]
+        ax.plot(x, v, color=colour, lw=2.2 if key == "net" else 1.8, zorder=3)
+        ax.scatter(x, v, s=50, color=colour, edgecolor=PANEL, linewidth=1.5, zorder=4)
+        ax.annotate(f"{name} ({100 * test[key]['ground_accuracy']:.1f}%)", (x[-1], v[-1]), xytext=(9, 0),
+                    textcoords="offset points", fontsize=10, color=INK, va="center")
+    cut = V.CHOSEN["net"].get("max_range")
+    if cut:                                                      # how far Bruce trusts the two learned models
+        at = next(j for j, (_, b_) in enumerate(bands) if b_ == cut) + 0.5
+        ax.axvline(at, color=DIM, lw=1, ls=(0, (1, 3)), zorder=1)
+        ax.text(at - 0.08, 33, f"the learned models'\npixels count up\nto {cut:.0f} m", fontsize=9.5, color=DIM,
+                ha="right", va="bottom")
+    ax.set_xticks(x)
+    ax.set_xticklabels(names)
+    ax.set_xlim(-0.3, len(x) + 0.75)
+    ax.set_ylim(30, 100)
+    ax.set_yticks([40, 60, 80, 100])
+    ax.set_yticklabels(["40%", "60%", "80%", "100%"])
+    ax.set_xlabel("how far away the ground is")
+    frames = sum(card["data"]["frames"]["test"].values())
+    ax.set_title("The right kind of ground, by distance", loc="left", fontsize=13, color=INK, fontweight="semibold",
+                 pad=20)
+    ax.text(0, 1.03, f"ground pixels of the {frames} test frames (all of them, in brackets)", transform=ax.transAxes,
+            fontsize=10, color=DIM, va="bottom")
+
+    ax = fig.add_subplot(grid[1, 3:6])
+    ax.set_facecolor(PANEL)
+    for side in ax.spines.values():
+        side.set_color("#2a3038")
+    ax.grid(True, axis="x", color="#1f252c", linewidth=0.8)
+    drives = {s["variant"]: s for s in card["test"]["drives"] if s["theme"] == "all"}
+    order = [("blind", "no camera", "#4a535d"), ("colour", "camera + colour only", DIM),
+             ("pixel", "camera + classic ML", AMBER), ("net", "camera + network", BLUE),
+             ("truth", "camera, perfect labels", "#cfd6dc"), ("map", "knows the ground", "#cfd6dc")]
+    y = np.arange(len(order))[::-1] * 1.5
+    for yy, (key, name, colour) in zip(y, order):
+        v = 100 * drives[key]["mean"]
+        hatch = "////" if key == "map" else None
+        ax.barh(yy, v, height=0.62, color=colour if key != "map" else PANEL, edgecolor=colour, linewidth=1.4,
+                hatch=hatch, zorder=3)
+        ax.text(v + 0.15, yy, f"{v:.1f}%", va="center", fontsize=10, color=INK)
+        ax.text(0.05, yy + 0.42, name, va="bottom", fontsize=10, color=INK)
+    ax.set_yticks([])
+    ax.set_ylim(y[-1] - 0.6, y[0] + 1.05)
+    top = max(100 * s["mean"] for s in drives.values())
+    ax.set_xlim(0, top * 1.18)
+    ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:.0f}%"))
+    ax.set_xlabel("slower than the quickest route the whole map allows (mean)")
+    trips = drives["net"]["trips"]
+    ax.set_title("Driving with what he sees", loc="left", fontsize=13, color=INK, fontweight="semibold", pad=20)
+    ax.text(0, 1.03, f"{trips} trips across the 45 test maps, re-planning with D* Lite", transform=ax.transAxes,
+            fontsize=10, color=DIM, va="bottom")
+
+    fig.text(0.05, 0.955, "Bruce learns to see the ground", fontsize=15, color=INK, fontweight="semibold")
+    fig.text(0.05, 0.92, "he knows the heights from elevation data, not what the ground is: soft sand or firm, grass or "
+             "tall grass; his camera has to tell him", fontsize=11, color=DIM)
+    out = ROOT / "docs" / "learn-vision.png"
+    fig.savefig(out, facecolor=BG)
+    print(out, e["id"], i, f"network right on {100 * right:.1f}% of the frame's ground")
+
+
 if __name__ == "__main__":
-    {"bench": bench, "speeds": speeds}.get(sys.argv[1] if sys.argv[1:] else "", main)()
+    {"bench": bench, "speeds": speeds, "vision": vision}.get(sys.argv[1] if sys.argv[1:] else "", main)()

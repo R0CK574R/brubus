@@ -24,6 +24,11 @@
     python main.py route --map desert --preset 19 --landmarks   # add A* guided by 8 landmarks to the race
     python main.py speeds learn         # Bruce learns his terrain speeds from his driving, plain and exploring (PyTorch)
     python main.py speeds eval          # plan with what he learned on maps he never drove, scored in the true world
+    python main.py vision build         # stage 4: camera frames from stage 1's maps, every pixel labelled
+    python main.py vision check         # checksums, splits, and frames rendered again bit for bit
+    python main.py vision train         # two baselines and the network that sees the ground (PyTorch)
+    python main.py vision choose        # each way of seeing's drive settings, chosen on validation maps
+    python main.py vision eval          # how well each one sees, then drives that plan with what it sees
 """
 from __future__ import annotations
 
@@ -453,6 +458,67 @@ def speeds(args) -> None:
               f"{w['learned_uphill']:.1f}{drove}")
 
 
+def vision(args) -> None:
+    """Stage 4: Bruce knows his map's heights but not its ground, and sees the ground with his camera."""
+    from robotnav.learn import vision as V
+
+    folder, terrain = Path(args.dir), Path(args.terrain)
+    path = Path(args.model or V.ASSET)
+    if args.action == "build":
+        print(f"Rendering camera frames from the maps in {terrain} into {folder}")
+        m = V.build(folder, terrain_dir=terrain, jobs=args.jobs, command="python main.py vision build")
+        for sp, per in m["frames"].items():
+            print(f"  {sp:<6} " + ", ".join(f"{th} {n:,}" for th, n in per.items()) + " frames")
+        print(f"manifest: {folder / 'manifest.json'}  (sha256 {m['sha256'][:16]}...), {m['build_seconds']:.0f} s")
+    elif args.action == "check":
+        problems = V.check(folder, terrain, audit=args.audit)
+        for p_ in problems:
+            print("  PROBLEM:", p_)
+        if problems:
+            raise SystemExit(1)
+        print("all good")
+    elif args.action == "train":
+        try:
+            import torch  # noqa: F401
+        except ImportError:
+            raise SystemExit("Training needs PyTorch: python -m pip install torch (nothing else in Brubus does)")
+        models = V.train(folder, epochs=args.epochs)
+        ref = V.save_models(models, path)
+        print(f"saved {path}  (network checksum on the reference frame {ref['net_logits_sha256'][:16]}...)")
+        frames = V.load_split(folder, "val")
+        print(f"How well each one labels the pixels of the {len(frames['labels'])} validation frames:")
+        print(V.score_table([V.pixel_scores(m, frames) for m in V.models_from(path).values()]))
+    elif args.action == "choose":
+        print(f"The validation drives each way of seeing's settings are chosen from ({len(V.VALIDATION_RUNS)} runs, "
+              "5 maps per theme, 2 trips each; extra time over the quickest route):")
+        res = V.choose(model_path=path, terrain_dir=terrain, vision_dir=folder, jobs=args.jobs)
+        print("Chosen (robotnav/learn/vision.py keeps them as CHOSEN):")
+        for v, over in res["chosen"].items():
+            print(f"  {V.VARIANT_NAMES[v]:<24} {json.dumps(over)}" + ("" if over == V.CHOSEN.get(v) else
+                                                                     f"   (CHOSEN has {json.dumps(V.CHOSEN.get(v))})"))
+        if args.out:
+            Path(args.out).write_text(json.dumps(res, indent=1))
+            print(f"saved {args.out}")
+    else:
+        models = V.models_from(path)
+        frames = V.load_split(folder, args.split)
+        print(f"How well each one labels the pixels of the {len(frames['labels'])} {args.split} frames "
+              "(ground: is it the right kind of ground?):")
+        scores = [V.pixel_scores(m, frames) for m in models.values()]
+        print(V.score_table(scores))
+        print(f"Drives on the {args.split} maps, {args.trips} per map, against the quickest route the whole map allows:")
+        rows = V.drive_study(args.split, model_path=path, terrain_dir=terrain, vision_dir=folder, trips=args.trips,
+                             jobs=args.jobs)
+        summary = V.summarize_drives(rows)
+        for theme in ("all", "grassland", "desert", "island"):
+            print(f" {theme}:")
+            print(V.drive_table(summary, theme))
+        if args.out:
+            Path(args.out).write_text(json.dumps(dict(split=args.split, pixels=scores, drives=summary, trips=rows),
+                                                 indent=1))
+            print(f"saved {args.out}")
+
+
 def parity(args) -> None:
     """The C++ core against the Python reference on the preset trips: identical results, and how much faster."""
     from robotnav import cpp
@@ -636,6 +702,19 @@ def main() -> None:
                      help="train a network after this many trips (learn)")
     spd.add_argument("--split", choices=["train", "val", "test"], default="test", help="maps to score on (eval)")
     spd.set_defaults(func=speeds)
+
+    vi = sub.add_parser("vision", help="Bruce sees the ground with his camera: the frames, the models, the drives")
+    vi.add_argument("action", choices=["build", "check", "train", "choose", "eval"])
+    vi.add_argument("--dir", default="data/vision-v1", help="the camera frames (default data/vision-v1)")
+    vi.add_argument("--terrain", default="data/terrain-v1", help="stage 1's maps (python main.py dataset build)")
+    vi.add_argument("--model", help="the models' file (default robotnav/assets/vision.npz)")
+    vi.add_argument("--epochs", type=int, default=16, help="the network's training epochs (train)")
+    vi.add_argument("--split", choices=["train", "val", "test"], default="test", help="frames and maps (eval)")
+    vi.add_argument("--trips", type=int, default=2, help="drives per map (eval)")
+    vi.add_argument("--jobs", type=int, default=os.cpu_count() or 1, help="maps rendered or driven at once")
+    vi.add_argument("--audit", type=int, default=2, help="maps per split rendered again (check)")
+    vi.add_argument("--out", help="save the numbers as JSON (choose, eval)")
+    vi.set_defaults(func=vision)
 
     eb = sub.add_parser("explore-bench", help="sensor drives on every preset: time lost, D* Lite vs A* from scratch")
     eb.add_argument("--ranges", type=float, nargs="+", default=[5.0, 10.0, 20.0], help="sensor ranges in metres")
