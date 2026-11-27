@@ -89,6 +89,21 @@ h1 { font-family: var(--f-display); font-weight: 700; font-size: 24px; line-heig
 .ai-note { margin: 0; font-size: 11px; line-height: 1.45; color: var(--muted); }
 .ai-note b { color: var(--ink); font-weight: 600; }
 @media (max-width: 760px) { #ai .ai-note, #ai .ai-why { display: none; } }   /* on a phone the panel keeps to the essentials */
+.eyes-dot { background: #74d39a; box-shadow: 0 0 0 3px rgba(116, 211, 154, 0.22); }
+.eyes-frames { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.eyes-frames figure { margin: 0; display: grid; gap: 3px; min-width: 0; }
+.eyes-frames canvas { display: block; width: 100%; aspect-ratio: 2 / 1; image-rendering: pixelated; border-radius: 3px; background: #000;
+                      box-shadow: 0 0 0 1px var(--edge); }
+.eyes-frames figcaption { font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.eyes-key { display: flex; flex-wrap: wrap; gap: 3px 11px; min-height: 15px; font-size: 11px; color: var(--muted); }
+.eyes-key span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.eyes-key i { width: 9px; height: 9px; border-radius: 2px; }
+.eyes-truth { margin-left: auto; align-self: center; }
+@media (max-width: 760px) {                         /* on a phone: the two pictures, the switches and two read-outs, so the map shows */
+  #eyes .ai-note, #eyes .eyes-key, #eyes .sense-msg, #eyes .sense-stats .g:nth-child(2), #eyes .sense-stats .g:nth-child(4) { display: none; }
+  #eyes .sense-range { font-size: 0; } #eyes .sense-range .chip, #eyes .eyes-truth { padding: 5px 7px; font-size: 11.5px; }
+  #eyes .eyes-frames { gap: 6px; } #eyes .eyes-frames figcaption { font-size: 9.5px; letter-spacing: 0.04em; }
+}
 #sn-block[aria-pressed="true"] { border-color: var(--caution); color: var(--caution); background: rgba(226, 173, 72, 0.1); }
 /* the frame-rate benchmark (#bench) */
 .bench { box-sizing: border-box; display: grid; gap: 6px; padding: 10px 14px 12px 16px; max-height: min(30rem, 62vh); overflow: auto; }
@@ -575,6 +590,28 @@ body.ops-on .hud { display: none; }
       <p class="sense-msg" id="ai-msg" role="status" aria-live="polite"></p>
       <p class="ai-note" id="ai-study"></p>
     </section>
+    <section class="board sense" id="eyes" aria-label="Camera: what Bruce sees" hidden>
+      <div class="sense-head">
+        <span class="sense-title"><span class="sense-dot eyes-dot" aria-hidden="true"></span>Camera · what Bruce sees</span>
+        <span class="sense-range" role="group" aria-label="What reads his camera">Reads it
+          <button class="chip" data-eye="net" aria-pressed="true">Network</button><button class="chip" data-eye="pixel" aria-pressed="false">Classic ML</button><button class="chip" data-eye="colour" aria-pressed="false">Colour</button><button class="chip" data-eye="truth" aria-pressed="false">Perfect</button>
+        </span>
+      </div>
+      <div class="eyes-frames">
+        <figure><canvas id="ey-cam" width="128" height="64" role="img" aria-label="Bruce's camera frame"></canvas><figcaption>His camera</figcaption></figure>
+        <figure><canvas id="ey-lab" width="128" height="64" role="img" aria-label="What the network labels each pixel"></canvas><figcaption id="ey-lab-cap">What the network sees</figcaption></figure>
+      </div>
+      <div class="eyes-key" id="ey-key" aria-hidden="true"></div>
+      <div class="sense-stats">
+        <div class="g" title="Camera frames so far, one a step"><span>Frame</span><output id="ey-frame">0</output></div>
+        <div class="g" title="Cells of ground his camera has seen"><span>Ground seen</span><output id="ey-seen">0</output></div>
+        <div class="g" title="Of the ground he has seen, how much he believes is the right kind"><span>Believed right</span><output><span id="ey-right">—</span><small>%</small></output></div>
+        <div class="g" title="How much slower his drive is than the quickest route there is"><span>vs quickest</span><output id="ey-vs">—</output></div>
+        <button class="chip eyes-truth" id="ey-truth" aria-pressed="false" title="The true labels in the camera's picture, and the true ground on the map">Show the truth</button>
+      </div>
+      <p class="sense-msg" id="ey-msg" role="status" aria-live="polite"></p>
+      <p class="ai-note" id="ey-study"></p>
+    </section>
     <section class="board bench" id="bench" aria-label="Frame-rate benchmark" hidden>
       <div class="sense-head"><span class="bench-title">Frame-rate benchmark</span><span class="bench-prog" id="bench-prog" role="status"></span></div>
       <p class="bench-gpu" id="bench-gpu"></p>
@@ -739,6 +776,7 @@ body.ops-on .hud { display: none; }
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script id="eyes-core" type="text/plain">/*__EYES__*/</script>
 <script>
 const SCENE = /*__SCENE__*/null;
 const CORE_B64 = "__CORE_WASM__";   // the C++ core as WebAssembly, in base64 (robotnav/assets/robotnav_core.wasm)
@@ -1658,6 +1696,9 @@ uniform vec2 uRoverXZ, uGrid;                        // where the rover is; colu
 uniform sampler2D uThreat;                           // air route: per cell, 2 if a tower sees even the lowest flight level,
 uniform float uThreatOn;                             // 1 if it sees only higher ones (so flying low hides), 0 if neither
 uniform vec2 uContour;                               // contour lines: x the interval (m), y the sea level (none below it)
+uniform sampler2D uBelief;                           // camera mode: per cell, the colour of the kind Bruce believes it is (alpha: seen)
+uniform vec4 uBeliefP;                               // x: on, y: his short-range sensor's reach (m), z: how far his camera's view is drawn (m), w: show it
+uniform vec2 uEyeXZ, uEyeDir;                        // where the camera is, and which way it looks (unit vector)
 vec3 gEmit = vec3(0.0);                              // light the overlays add, so they read in shadow too
 float contourAt(float f, float px, float crowd) {    // 1 on a contour of f (one every whole number), about px pixels wide,
   float w = max(fwidth(f), 1e-5), d = abs(fract(f + 0.5) - 0.5) / w;   // fading out where they come closer than 1/crowd px
@@ -1705,6 +1746,30 @@ void groundOverlay(inout vec3 col) {
     col = mix(col, vec3(0.6, 0.34, 0.07), (any - hi) * (0.12 + 0.08 * hatch));
     gEmit += vec3(0.3, 0.02, 0.01) * hi * 0.18;
   }
+  if (uBeliefP.x > 0.5) {                           // camera mode: his map, coloured by what he believes each cell is
+    vec2 cell = floor(g + 0.5);
+    vec4 bt = texture2D(uBelief, (clamp(cell, vec2(0.0), uGrid - 1.0) + 0.5) / uGrid);
+    vec2 f = abs(fract(g + 0.5) - 0.5);
+    float e = max(f.x, f.y), aa = fwidth(e);
+    float edge = smoothstep(0.5 - 2.5 * aa, 0.5 - 0.5 * aa, e) * (1.0 - smoothstep(0.06, 0.22, aa));
+    if (bt.a > 0.5) {
+      vec3 bc = pow(bt.rgb, vec3(2.2));
+      col = mix(col, bc, 0.62) * (1.0 - 0.3 * edge);
+      gEmit += bc * 0.05;
+    } else col = mix(col, vec3(dot(col, vec3(0.3, 0.59, 0.11))) * vec3(0.5, 0.56, 0.74), 0.74);   // not seen yet
+    vec2 d = vWPos.xz - uEyeXZ;
+    float dist = length(d), dd = fwidth(dist);
+    float ring = 1.0 - smoothstep(0.06 + dd, 0.16 + 2.0 * dd, abs(dist - uBeliefP.y));   // the short-range sensor's reach
+    gEmit += uSenseCol * ring * 0.6;
+    if (uBeliefP.w > 0.5) {                          // the camera's view: 90 degrees wide
+      float c = dot(d / max(dist, 1e-4), uEyeDir), dc = fwidth(c);
+      if (c > 0.7071 && dist < uBeliefP.z) {
+        float side = 1.0 - smoothstep(0.0, 0.004 + 2.0 * dc, c - 0.7071);
+        float arc = 1.0 - smoothstep(0.0, 0.08 + 2.0 * dd, uBeliefP.z - dist);
+        gEmit += uSenseCol * (0.1 * (1.0 - dist / uBeliefP.z) + 0.8 * max(side, arc));
+      }
+    }
+  }
   if (uFogP.y > 0.5) {
     vec2 i0 = floor(g), w = g - i0;                  // between the four nearest cells, so the edge of the known ground is soft
     float k = mix(mix(knownAt(i0), knownAt(i0 + vec2(1.0, 0.0)), w.x), mix(knownAt(i0 + vec2(0.0, 1.0)), knownAt(i0 + vec2(1.0)), w.x), w.y);
@@ -1721,7 +1786,9 @@ void groundOverlay(inout vec3 col) {
   const OVER = { uSearch: { value: null }, uSearchP: { value: new THREE.Vector4(0, 0, 40, 0) }, uSearchCol: { value: new THREE.Color() },
                  uKnown: { value: null }, uFogP: { value: new THREE.Vector4(0, 0, 5, 0) }, uRoverXZ: { value: new THREE.Vector2() },
                  uGrid: { value: new THREE.Vector2(1, 1) }, uSenseCol: { value: lin(FRIEND) },
-                 uThreat: { value: null }, uThreatOn: { value: 0 }, uContour: { value: new THREE.Vector2(1, -1e4) } };
+                 uThreat: { value: null }, uThreatOn: { value: 0 }, uContour: { value: new THREE.Vector2(1, -1e4) },
+                 uBelief: { value: null }, uBeliefP: { value: new THREE.Vector4(0, 5, 20, 0) }, uEyeXZ: { value: new THREE.Vector2() },
+                 uEyeDir: { value: new THREE.Vector2(0, -1) } };
   function groundMaterial() {
     const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 });
     m.onBeforeCompile = sh => {
@@ -3094,14 +3161,14 @@ void groundOverlay(inout vec3 col) {
       g.strokeStyle = i === driven ? FRIEND : ROUTE; g.stroke();
     }
     g.globalAlpha = 1;
-    const shown = routes.filter(r => r.found && routeShown(r) && !(r === current && r.key === DSTAR.key))
+    const shown = routes.filter(r => r.found && routeShown(r) && !(r === current && (r.key === DSTAR.key || r.drive)))
       .sort((a, b) => (routeLit(a) - routeLit(b)) || ((a === current) - (b === current)));
     for (const rt of shown) {
       g.beginPath();
       rt.cells.forEach(([r, c], k) => { const x = (c + 0.5) * MMS / C, y = (r + 0.5) * MMS / R; if (k) g.lineTo(x, y); else g.moveTo(x, y); });
       const sel = rt === current, lit = routeLit(rt);
       g.setLineDash(rt.dashed ? [3, 2.5] : []);
-      g.globalAlpha = lit ? 1 : 0.6; g.lineWidth = sel ? 2.4 : lit ? 1.6 : 1.1; g.strokeStyle = rt.ai ? rt.color : lit ? FRIEND : ROUTE; g.stroke();
+      g.globalAlpha = lit ? 1 : 0.6; g.lineWidth = sel ? 2.4 : lit ? 1.6 : 1.1; g.strokeStyle = rt.ai || rt.own ? rt.color : lit ? FRIEND : ROUTE; g.stroke();
     }
     g.setLineDash([]);
     g.globalAlpha = 1;
@@ -3113,6 +3180,9 @@ void groundOverlay(inout vec3 col) {
       }
       for (const [r, c] of airspace.towers) drawSymbol(g, "tower", (c + 0.5) * MMS / C, (r + 0.5) * MMS / R, 15);
     }
+    drawEnds(g);
+  }
+  function drawEnds(g) {                            // the start (a ring) and the finish (a dot) on the mini-map
     if (!START) return;                             // parked: no start or finish
     [[START, false], [GOAL, true]].forEach(([[r, c], fill]) => {
       g.beginPath(); g.arc((c + 0.5) * MMS / C, (r + 0.5) * MMS / R, 3.8, 0, Math.PI * 2);
@@ -3143,6 +3213,19 @@ void groundOverlay(inout vec3 col) {
       for (let j = k - current.planFrom[k] + 1; j < plan0.length; j++) { const [x, y] = at(plan0[j]); g.lineTo(x, y); }
       g.setLineDash([3, 3]); g.lineWidth = 1.6; g.globalAlpha = 0.9; g.stroke(); g.setLineDash([]); g.globalAlpha = 1;
     }
+    if (eyesShowing() && eyes.cv && eyes.texOf === current) {   // the camera mode: his map, where he has been, his plan from here
+      const k = eyes.k, at = i => [(i % C + 0.5) * MMS / C, (((i / C) | 0) + 0.5) * MMS / R], pl = eyes.linePl;
+      g.globalAlpha = 0.84; g.imageSmoothingEnabled = false; g.drawImage(eyes.cv, 0, 0, MMS, MMS); g.imageSmoothingEnabled = true; g.globalAlpha = 1;
+      g.lineJoin = g.lineCap = "round";
+      g.beginPath(); for (let j = 0; j <= k && j < current.idx.length; j++) { const [x, y] = at(current.idx[j]); if (j) g.lineTo(x, y); else g.moveTo(x, y); }
+      g.lineTo(rx, ry); g.lineWidth = 2.4; g.strokeStyle = current.color; g.stroke();
+      if (pl && pl.length > 1) {
+        g.beginPath(); g.moveTo(rx, ry);
+        for (let j = 1; j < pl.length; j++) { const [x, y] = at(pl[j]); g.lineTo(x, y); }
+        g.setLineDash([3, 3]); g.lineWidth = 1.6; g.globalAlpha = 0.9; g.stroke(); g.setLineDash([]); g.globalAlpha = 1;
+      }
+      drawEnds(g);
+    }
     // the rover or the drone: its friendly symbol, with a direction-of-movement line (MIL-STD-2525)
     const lead = 13;
     g.beginPath(); g.moveTo(rx, ry); g.lineTo(rx + fwd.x * lead, ry + fwd.z * lead);
@@ -3157,8 +3240,8 @@ void groundOverlay(inout vec3 col) {
     $("board-empty").hidden = !parked;              // parked: nothing to race yet
     $("board-table").hidden = $("board-toggles").hidden = parked;
     if (parked) { rowsEl.textContent = ""; $("board-save").hidden = true; $("sum-pick").textContent = "No route"; return []; }
-    const best = Math.min(...routes.filter(r => r.found).map(r => r.cost));
-    const key = r => (r.found ? Math.round(r.cost * 1e6) : 1e18);      // ties go to the planners, then the shortest route
+    const best = Math.min(...routes.filter(r => r.found && !r.growing).map(r => r.cost));
+    const key = r => (r.growing ? 1e17 : r.found ? Math.round(r.cost * 1e6) : 1e18);   // ties go to the planners, then the shortest route
     const ranked = [...routes].sort((a, b) => (key(a) - key(b)) || ((a.user ? 1 : 0) - (b.user ? 1 : 0))
       || ((a.key === "short" ? 1 : 0) - (b.key === "short" ? 1 : 0)) || ((a.nodes || 0) - (b.nodes || 0)));
     rowsEl.textContent = "";
@@ -3166,11 +3249,11 @@ void groundOverlay(inout vec3 col) {
       const tr = document.createElement("tr");
       tr.dataset.name = rt.name;
       if (rt.user) tr.className = "mine";
-      const d = rt.found ? (rt.cost - best) / best * 100 : null;
-      tr.innerHTML = `<td><span class="alg"><span class="pos">${i + 1}</span><span class="swatch${rt.dashed ? " dashed" : ""}${rt.dashed || rt.air ? " lit" : ""}"${rt.ai ? ` style="color:${rt.color}"` : ""}></span>${rt.name}</span></td>
-        <td>${rt.found ? fmtTime(rt.cost) : "—"} <span class="delta ${d !== null && d < 0.05 ? "best" : ""}">${fmtDelta(d)}</span></td>
-        <td>${rt.found ? rt.stats.distance_m.toFixed(0) : "—"}</td><td class="hide-sm">${!rt.found ? "—" : rt.air ? rt.seenS.toFixed(1) : rt.ai ? (rt.key === "ai-true" ? "—" : fmtTime(rt.thought)) : rt.stats.climb_m.toFixed(0)}</td>
-        <td>${rt.user ? "—" : rt.nodes.toLocaleString()}</td><td class="hide-sm">${rt.user ? "—" : rt.ms.toFixed(rt.ms < 10 ? 1 : 0)}</td>`;
+      const d = rt.found && !rt.growing ? (rt.cost - best) / best * 100 : null, g = rt.growing;
+      tr.innerHTML = `<td><span class="alg"><span class="pos">${i + 1}</span><span class="swatch${rt.dashed ? " dashed" : ""}${rt.dashed || rt.air ? " lit" : ""}"${rt.ai || rt.own ? ` style="color:${rt.color}"` : ""}></span>${rt.name}</span></td>
+        <td>${g ? '…<span class="delta">driving</span>' : `${rt.found ? fmtTime(rt.cost) : "—"} <span class="delta ${d !== null && d < 0.05 ? "best" : ""}">${fmtDelta(d)}</span>`}</td>
+        <td>${g || !rt.found ? "—" : rt.stats.distance_m.toFixed(0)}</td><td class="hide-sm">${g || !rt.found ? "—" : rt.air ? rt.seenS.toFixed(1) : rt.ai ? (rt.key === "ai-true" ? "—" : fmtTime(rt.thought)) : rt.stats.climb_m.toFixed(0)}</td>
+        <td>${rt.user || g ? "—" : rt.nodes.toLocaleString()}</td><td class="hide-sm">${rt.user || g ? "—" : rt.ms.toFixed(rt.ms < 10 ? 1 : 0)}</td>`;
       if (rt.found) {
         tr.tabIndex = 0;
         tr.addEventListener("click", () => select(rt.name, true));
@@ -3185,11 +3268,13 @@ void groundOverlay(inout vec3 col) {
   }
   const bestPlanner = ranked => (air.on && ranked.find(r => r.key === "stealth" && r.found))
     || (ai.on && (ranked.find(r => r.key === "ai-learned" && r.found) || ranked.find(r => r.key === "ai-builtin" && r.found)))
+    || (eyes.on && ranked.find(r => r.key === "eyes-live" && r.found))
     || ranked.find(r => r.found && r.key !== "short" && r.key !== DSTAR.key) || ranked[0];
   const planners = () => routes.filter(r => r.found && !r.user && r.key !== "short" && r.key !== DSTAR.key);   // the five, full map known
   function renderSaving() {                         // the demo in one line: reading the hills beats the shortest route
     const el = $("board-save"), short = routes.find(r => r.key === "short" && r.found);
     if (ai.on) { const line = aiLine(); el.hidden = !line; el.innerHTML = line; return; }   // AI: what learning bought
+    if (eyes.on) { const line = eyesLine(); el.hidden = !line; el.innerHTML = line; return; }   // the camera: what seeing bought
     const st = routes.find(r => r.key === "stealth" && r.found), di = routes.find(r => r.key === "direct" && r.found);
     if (air.on && st && di) {                       // in the air: staying hidden, for how much flight time
       el.hidden = false;
@@ -3288,7 +3373,7 @@ void groundOverlay(inout vec3 col) {
     const cx0 = (Math.min(...pts.map(p => p[0])) + Math.max(...pts.map(p => p[0]))) / 2;
     const cy0 = (Math.min(...pts.map(p => p[1])) + Math.max(...pts.map(p => p[1]))) / 2;
     const blocks = [[-1e4, -1e4, m, 1e4], [W - m, -1e4, 1e4, 1e4], [-1e4, -1e4, 1e4, m], [-1e4, H - m, 1e4, 1e4]];   // screen edges
-    for (const id of ["title-board", "board", "drone", "paths", "tele", "planbar", "tour-cap", "sense", "ai", "ops-top", "ops-left", "ops-right", "ops-bottom"]) {   // every panel on show
+    for (const id of ["title-board", "board", "drone", "paths", "tele", "planbar", "tour-cap", "sense", "ai", "eyes", "ops-top", "ops-left", "ops-right", "ops-bottom"]) {   // every panel on show
       const el = $(id), r = el.getBoundingClientRect();                                     // (a phone's path list is a
       if (!el.hidden && r.width && !(id === "paths" && narrow())) blocks.push([r.left - m, r.top - m, r.right + m, r.bottom + m]);   // brief overlay)
     }
@@ -3311,7 +3396,8 @@ void groundOverlay(inout vec3 col) {
     return { s: lo, x: cx0 - spot.cx / lo, y: cy0 - spot.cy / lo };
   }
   function easeView(dt) {                           // glide the picture between the overview framing and the plain view
-    const want = mode === "course" && viewFit ? viewFit : { s: 1, x: 0, y: 0 }, k = dt < 0 ? 1 : 1 - Math.exp(-dt * 5);
+    const want = mode === "course" && viewFit ? viewFit : MODES[mode].follow && eyes.on && eyes.lift ? { s: 1, x: 0, y: eyes.lift }
+      : { s: 1, x: 0, y: 0 }, k = dt < 0 ? 1 : 1 - Math.exp(-dt * 5);   // (camera mode: the rover clear of the panel)
     viewNow.s += (want.s - viewNow.s) * k; viewNow.x += (want.x - viewNow.x) * k; viewNow.y += (want.y - viewNow.y) * k;
     if (Math.abs(viewNow.s - 1) < 1e-4 && Math.abs(viewNow.x) < 0.05 && Math.abs(viewNow.y) < 0.05) {
       if (camera.view && camera.view.enabled) camera.clearViewOffset();
@@ -3358,24 +3444,24 @@ void groundOverlay(inout vec3 col) {
     headS.set(T.x, 0, T.z).normalize();
     if (animate && MODES[mode].follow) startFly(2, 10);
   }
+  const pickLabel = rt => { const d = drivenPreset(); return `${d >= 0 ? `P${d + 1} · ` : ""}${rt.name} · ${rt.growing ? "driving…" : fmtTime(rt.cost)}`; };
   function select(name, animate) {
     const next = routes.find(r => r.name === name && r.found);
     if (!next) return;
     if (current && current.tube) current.tube.geometry.setDrawRange(0, Infinity);
     current = next;
     markSelected(name);
-    const d = drivenPreset();
-    $("sum-pick").textContent = `${d >= 0 ? `P${d + 1} · ` : ""}${name} · ${fmtTime(current.cost)}`;
+    $("sum-pick").textContent = pickLabel(current);
     G.alg.textContent = current.gauge || name;
     refreshLayers(); drawMapLayer();
     restartLap(!!animate);
   }
   // Ours, in blue: the selected route and its dashed comparison (the hill-blind shortest route on the ground; in the
   // air both flights, stealth solid and direct dashed). Every other route is a grey line.
-  const routeLit = rt => rt === current || !!rt.dashed || !!rt.air || !!rt.ai;
+  const routeLit = rt => rt === current || !!rt.dashed || !!rt.air || !!rt.ai || !!rt.own;
   const lineCol = new THREE.Color();
   function routeShown(rt) {                         // which routes are on the map outside the planner
-    if (rt.air || rt.ai) return true;                                      // in the air: the stealth and the direct flight; AI: all three
+    if (rt.air || rt.ai || rt.own) return true;                            // in the air: the stealth and the direct flight; AI, camera: all
     if (rt.key === "short") return rt === current || showShort;           // the dashed hill-blind comparison
     if (rt.user) return true;                                              // a route you drew
     if (rt === current) return !(rt.key === "astar" && drivenPreset() >= 0);   // a driven preset's own line already is A*'s path
@@ -3390,18 +3476,18 @@ void groundOverlay(inout vec3 col) {
       rt.tube.visible = on && !thick && !replay.on;
       rt.planTube.visible = on && thick && !replay.on;   // (watching the search draws its own two)
       rt.planMat.depthTest = !planning && !replay.on;   // outside the planner, hills hide the far side of a route
-      lineCol.set(rt.ai ? rt.color : lit ? FRIEND : ROUTE).convertSRGBToLinear();   // AI's three routes keep their own colours
+      lineCol.set(rt.ai || rt.own ? rt.color : lit ? FRIEND : ROUTE).convertSRGBToLinear();   // AI's and the camera's routes keep their colours
       rt.mat.color.copy(lineCol); rt.mat.emissive.copy(lineCol); rt.planMat.color.copy(lineCol);
       rt.planMat.opacity = sel ? 0.95 : lit ? 0.8 : 0.55;
       rt.planTube.renderOrder = sel ? 5.5 : 5;
       rt.mat.opacity = strong ? 1 : lit ? 0.85 : 0.5;
       rt.mat.emissiveIntensity = lit ? 0.55 : 0.2;
       rt.mat.depthWrite = sel;
-      if (!sel || rt.key !== DSTAR.key || planning) { rt.tube.geometry.setDrawRange(0, Infinity); rt.planTube.geometry.setDrawRange(0, Infinity); }
+      if (!sel || (rt.key !== DSTAR.key && !rt.drive) || planning) { rt.tube.geometry.setDrawRange(0, Infinity); rt.planTube.geometry.setDrawRange(0, Infinity); }
     });
     if (extraGroup) {                               // keep the planner view clean
       extraGroup.visible = !planning && !replay.on;
-      const hideFocus = !!current && current.key === DSTAR.key && !planning;
+      const hideFocus = !!current && (current.key === DSTAR.key || !!current.own) && !planning;
       extraGroup.children.forEach(o => { if (o.userData.lod) o.visible = o.userData.lod === (thick ? "far" : "near") && !(hideFocus && o.userData.focus); });
     }
     senseShow(); airShow();
@@ -3419,7 +3505,7 @@ void groundOverlay(inout vec3 col) {
     routes.forEach(disposeRouteVisual);
     START = start.slice(); GOAL = goal.slice(); parked = false;
     sensor.blocks = []; senseClear();               // a new trip: no roadblocks yet
-    routes = air.on || ai.on ? res : res.concat([sensorRoute(start, goal)]); current = null;   // callers select() a route straight after
+    routes = air.on || ai.on || eyes.on ? res : res.concat([sensorRoute(start, goal)]); current = null;   // callers select() a route straight after
     routes.forEach((rt, k) => { if (rt.found) buildRouteVisual(rt, 0.22 + k * 0.06, rt.air ? rt.pts : undefined); });
     resetDraw();
     buildFlags(endpointFlags());
@@ -3443,12 +3529,14 @@ void groundOverlay(inout vec3 col) {
     return best;
   }
   function parkRover() {                            // no route: clear the board and let the rover wait, facing the overview
+    if (eyes.on) eyesStop();
     routes.forEach(disposeRouteVisual);
     routes = []; START = GOAL = null; parked = true;
     const x = toX(home[1]), z = toZ(home[0]), th = MODES.course.theta;
     PARK.curve = new THREE.CatmullRomCurve3([new THREE.Vector3(x, 0, z), new THREE.Vector3(x + Math.sin(th) * 0.5, 0, z + Math.cos(th) * 0.5)]);
     current = PARK;
     resetDraw(); buildFlags([]); buildExtras(); renderPathsList(); renderBoard(); refreshLayers(); drawMapLayer();
+    if (eyes.on) eyesIdle();
     playing = false; syncPlay(); $("play").disabled = $("restart").disabled = true;
     G.alg.textContent = "—";
     restartLap(false);
@@ -3847,7 +3935,8 @@ void main() {
     return Object.assign(rt, { cost: secs, objective: f.cost, idx, cells: idx.map(i => [(i / C) | 0, i % C]), pts, stepT, seenS,
                                stats: { distance_m: dist, climb_m: climb, rough_m: 0, top_m: topH } });
   }
-  const planPair = (s, g) => (air.on ? [airRoute(s, g, true), airRoute(s, g, false)] : ai.on ? aiRoutes(s, g) : runPlanners(s, g));
+  const planPair = (s, g) => (air.on ? [airRoute(s, g, true), airRoute(s, g, false)] : ai.on ? aiRoutes(s, g)
+    : eyes.on ? eyesRoutes(s, g) : runPlanners(s, g));
   function buildCurtain() {                         // thin lines from the route down to the ground: how high it flies
     if (air.curtain) { scene.remove(air.curtain); air.curtain.geometry.dispose(); air.curtain.material.dispose(); air.curtain = null; }
     air.curtainOf = current;
@@ -3873,6 +3962,7 @@ void main() {
   function setAir(on, keepView) {
     if (on === air.on) return;
     if (on && ai.on) setAi(false, true);
+    if (on && eyes.on) setEyes(false, true);
     stopReplay(); if (plan.mode) exitPlan();
     air.on = on;
     airBtn.setAttribute("aria-pressed", String(on)); airBtn.textContent = on ? "■ Ground" : "✈ Air";
@@ -4089,6 +4179,7 @@ void main() {
     if (!AIS || on === ai.on) return;
     stopReplay(); if (plan.mode) exitPlan();
     if (on && air.on) setAir(false, true);
+    if (on && eyes.on) setEyes(false, true);
     ai.on = on;
     aiBtn.setAttribute("aria-pressed", String(on)); aiBtn.textContent = on ? "■ Stop AI" : "◆ AI";
     ["t-watch", "t-short", "t-routes"].forEach(id => { $(id).hidden = on; });
@@ -4105,6 +4196,338 @@ void main() {
     ai.trips = n; aiReplan();
   }));
   const aiBtn = document.createElement("button");    // placed beside the Air button
+
+  // ---------------------------------------------------------------- the camera mode: what Bruce sees (README, stage 4b)
+  // Bruce knows his map's heights here, not its ground (stage 4). A camera on the tank looks the way he is about to go,
+  // a model labels every pixel (the network, classic ML, colour alone, or perfect labels), the ground it sees goes on
+  // his map, and D* Lite plans on that map at every step. robotnav/eyes.js (inlined above as text) is a 1:1 port of
+  // the Python camera, models and seeing drive, run in a worker, so the drive is computed while it is shown: frame by
+  // frame, the panel shows what the camera saw and what the model made of it, and the ground takes the colour of what
+  // he believes it is (dimmed: not seen yet). The board races it against the same trip with no camera, knowing the
+  // ground, and the quickest route there is.
+  const VIS = SCENE.vision || null, EYES_SRC = VIS ? $("eyes-core").textContent : "";
+  const EYE_NAME = { net: "the network", pixel: "classic ML", colour: "colour alone", truth: "perfect labels" };
+  const EYE_ROW = { net: "Camera + network", pixel: "Camera + classic ML", colour: "Camera + colour only", truth: "Camera, perfect labels" };
+  const EYE_CAP = { net: "What the network sees", pixel: "What classic ML sees", colour: "What colour alone sees", truth: "Perfect labels" };
+  const EYE_HASH = { net: "network", pixel: "classic", colour: "colour", truth: "perfect" };
+  const KNOWN_COL = "#74d39a", EYES_PACE = 0.35;      // the drive that knows the ground; playback in camera mode (8× → 2.8×)
+  const eyes = { on: false, eye: "net", truth: false, core: null, scene: null, sceneOf: null, worker: undefined, workerMap: "",
+                 id: 0, live: null, dirty: false, built: 0, tex: null, cv: null, img: null, texMap: null, texOf: null, texK: -1,
+                 texTruth: false, k: 0, line: null, lineOf: null, linePl: null, shown: undefined, shownTruth: false, hudT: 1, note: "",
+                 lift: 0 };
+  const EY = { panel: $("eyes"), cam: $("ey-cam"), lab: $("ey-lab"), labCap: $("ey-lab-cap"), key: $("ey-key"), frame: $("ey-frame"),
+               seen: $("ey-seen"), right: $("ey-right"), vs: $("ey-vs"), msg: $("ey-msg"), study: $("ey-study"), truth: $("ey-truth"),
+               chips: [...document.querySelectorAll("[data-eye]")] };
+  function eyesCore() {                              // the same code on this thread: the drives with no camera, and a fallback
+    if (!eyes.core) { eyes.core = new Function(EYES_SRC + "\nreturn EYES;")(); eyes.core.init(VIS); }
+    return eyes.core;
+  }
+  function eyesPrep() {
+    if (eyes.sceneOf !== MAP) {
+      eyes.scene = Object.assign(eyesCore().makeScene(MAP), { maxGrade: MAP.max_grade, uphill: COST.uphill });
+      eyes.sceneOf = MAP;
+    }
+    return eyes.scene;
+  }
+  const eyesSettings = eye => Object.assign({}, VIS.settings, VIS.chosen[eye] || {});
+  function eyesLook(start, goal) {                   // the light: one per preset trip (as Python draws them), one for trips you set
+    const i = MAP.presets.findIndex(p => sameCell(p.start, start) && sameCell(p.goal, goal)), L = VIS.looks[MAP.key].looks;
+    return L[i >= 0 && i < L.length - 1 ? i : L.length - 1];
+  }
+  function eyesRoute(key, name, gauge, color, si) {
+    return { key, name, gauge, color, si, own: true, drive: true, found: true, growing: true, cost: 0, nodes: 0, peak: 0, ms: 0,
+             idx: [si], cells: [[(si / C) | 0, si % C]], stepT: [0], recs: [], explored: [], stats: statsOf([si]) };
+  }
+  function eyesAdd(rt, s) {                          // one more step of a drive
+    rt.recs.push(s);
+    if (s.k === 0) return;
+    const st = stepCost(rt.idx[rt.idx.length - 1], s.cell);
+    rt.idx.push(s.cell); rt.cells.push([(s.cell / C) | 0, s.cell % C]); rt.stepT.push(st); rt.cost += st; rt.nodes = s.work;
+  }
+  function eyesDone(rt, res) {
+    rt.growing = false; rt.found = res.found; rt.nodes = res.work; rt.ms = res.ms; rt.frames = res.frames;
+    if (!res.found) rt.cost = Infinity;
+    rt.stats = statsOf(rt.idx);
+  }
+  function eyesSync(eye, si, gi, look, key, name, color) {   // a drive with no camera: quick enough to drive whole, here
+    const rt = eyesRoute(key, name, name, color, si), it = eyesCore().drive(eyesPrep(), si, gi, eye, look, eyesSettings(eye));
+    for (;;) { const s = it.next(); if (s.done) { eyesDone(rt, s.value); break; } eyesAdd(rt, s.value); }
+    return rt;
+  }
+  function eyesMapData() {                           // what the worker's camera needs of the map
+    const { key, name, rows, cols, seed, heights, obstacle, surface, surfaces, kind, sea, ponds, max_grade } = MAP;
+    return { key, name, rows, cols, seed, heights, obstacle, surface, surfaces, kind, sea, ponds, max_grade };
+  }
+  function eyesWorker() {
+    if (eyes.worker !== undefined) return eyes.worker;
+    try {
+      const w = new Worker(URL.createObjectURL(new Blob([EYES_SRC], { type: "text/javascript" })));
+      w.onmessage = eyesMessage;
+      w.onerror = ev => {                            // no worker after all: drive on this thread
+        if (ev.preventDefault) ev.preventDefault();
+        if (eyes.worker !== w) return;
+        w.terminate(); eyes.worker = null;
+        const rt = eyes.live;
+        if (rt && rt.growing) eyesFallback(rt);
+      };
+      w.postMessage({ type: "init", vision: VIS });
+      eyes.worker = w;
+    } catch (e) { eyes.worker = null; }
+    return eyes.worker;
+  }
+  function eyesMessage(ev) {
+    const m = ev.data, rt = eyes.live;
+    if (!rt || m.id !== rt.id) return;               // an older drive's
+    if (m.type === "step") { eyesAdd(rt, m.step); eyes.dirty = true; }
+    else if (m.type === "done") eyesFinished(rt, m.result);
+  }
+  function eyesFinished(rt, res) {
+    eyesDone(rt, res); eyes.dirty = true;
+    if (!routes.includes(rt)) return;
+    const ranked = renderBoard();
+    if (current === rt) {
+      if (rt.found) $("sum-pick").textContent = pickLabel(rt);
+      else { disposeRouteVisual(rt); select(bestPlanner(ranked).name, false); }
+    }
+    drawMapLayer();
+  }
+  function eyesFallback(rt) {                        // no worker: drive on this thread, a step at a time
+    Object.assign(rt, { idx: [rt.si], cells: [[(rt.si / C) | 0, rt.si % C]], stepT: [0], recs: [], cost: 0, nodes: 0 });
+    eyes.dirty = true;
+    const it = eyesCore().drive(eyesPrep(), rt.si, rt.gi, rt.eye, rt.look, eyesSettings(rt.eye));
+    const next = () => {
+      if (eyes.live !== rt) return;
+      const s = it.next();
+      if (s.done) { eyesFinished(rt, s.value); return; }
+      eyesAdd(rt, s.value); eyes.dirty = true; setTimeout(next, 0);
+    };
+    setTimeout(next, 0);
+  }
+  function eyesLive(si, gi, look) {                  // the drive with the camera, computed in the worker as it is shown
+    const rt = Object.assign(eyesRoute("eyes-live", EYE_ROW[eyes.eye], "Camera", FRIEND, si), { gi, look, eye: eyes.eye, id: ++eyes.id });
+    eyes.live = rt;
+    const w = eyesWorker();
+    if (w) {
+      if (eyes.workerMap !== MAP.key) { w.postMessage({ type: "map", map: eyesMapData(), uphill: COST.uphill }); eyes.workerMap = MAP.key; }
+      w.postMessage({ type: "drive", id: rt.id, si, gi, eye: rt.eye, look, settings: eyesSettings(rt.eye) });
+    } else eyesFallback(rt);
+    return rt;
+  }
+  function eyesStop() {                              // the worker's drive is no longer wanted
+    if (eyes.worker) eyes.worker.postMessage({ type: "stop", id: ++eyes.id });
+    eyes.live = null;
+  }
+  function eyesRoutes(start, goal) {                 // the trip: with the camera, knowing the ground, with no camera, the quickest
+    const si = start[0] * C + start[1], gi = goal[0] * C + goal[1], look = eyesLook(start, goal);
+    const t0 = performance.now(), res = bestFirst(si, gi, PRIO.astar), ms = performance.now() - t0, idx = [];
+    if (res.found) { for (let i = gi; i !== -1; i = res.parent[i]) idx.push(i); idx.reverse(); }
+    let cost = 0;
+    for (let k = 1; k < idx.length; k++) cost += stepCost(idx[k - 1], idx[k]);
+    const quick = { key: "eyes-quick", name: "Quickest, all known", gauge: "Quickest", color: ACCENT, dashed: true, own: true,
+                    found: res.found, cost: res.found ? cost : Infinity, nodes: res.explored.length, peak: res.peak, ms, idx,
+                    cells: idx.map(i => [(i / C) | 0, i % C]), explored: [], stats: res.found ? statsOf(idx) : null };
+    if (!res.found) { eyesStop(); return [quick]; } // (can't happen on one connected map)
+    eyesPrep();
+    return [eyesLive(si, gi, look), eyesSync("map", si, gi, look, "eyes-map", "Knows the ground", KNOWN_COL),
+            eyesSync("blind", si, gi, look, "eyes-blind", "No camera", CAUTION), quick];
+  }
+  const eyesBy = key => routes.find(r => r.key === key && r.found);
+  const eyesPct = (r, q) => { const d = (r.cost / q.cost - 1) * 100; return d < 0.05 ? "the quickest" : `+${d.toFixed(d < 10 ? 1 : 0)}%`; };
+  function eyesLine() {                              // the board's one line in camera mode
+    const L = eyesBy("eyes-live"), B = eyesBy("eyes-blind"), Q = eyesBy("eyes-quick");
+    if (parked || !L || !Q) return "";
+    if (L.growing) return `Bruce is driving with his camera${B ? `; with none he took ${fmtTime(B.cost)}` : ""}, and the quickest there is takes ${fmtTime(Q.cost)}.`;
+    const vsNone = !B ? "" : fmtTime(B.cost) === fmtTime(L.cost) ? ", as quick as with none here" : B.cost > L.cost ? ` instead of ${fmtTime(B.cost)} with none`
+      : `, slower than with none on this trip (${fmtTime(B.cost)})`;
+    return `With his camera: <b>${fmtTime(L.cost)}</b>${vsNone}; the quickest there is takes ${fmtTime(Q.cost)}.`;
+  }
+  const NOTE_EYES = "Time is what each drive really takes. Bruce knows the heights, not the ground: with the camera he sees it as he goes, with no camera he learns it only by driving over it, and Knows the ground has it from the start. Each finds obstacles within 5 m and re-plans with D* Lite. The quickest (dashed) is A* with everything known.";
+  function eyesPaint(rt, k) {                        // his map as it stood after step k (or the truth): on the ground and the mini-map
+    if (eyes.texMap !== MAP) {
+      if (eyes.tex) eyes.tex.dispose();
+      eyes.tex = cellTexture(() => {});
+      eyes.cv = document.createElement("canvas"); eyes.cv.width = C; eyes.cv.height = R;
+      eyes.img = eyes.cv.getContext("2d").createImageData(C, R);
+      eyes.texMap = MAP; eyes.texOf = null;
+    }
+    const d = eyes.tex.image.data, cols = eyesCore().colours(), truth = eyes.truth, want = Math.min(k, rt.recs.length - 1);
+    let changed = false;
+    if (eyes.texOf !== rt || truth !== eyes.texTruth || want < eyes.texK) {
+      d.fill(0); eyes.texOf = rt; eyes.texTruth = truth; eyes.texK = -1; changed = true;
+      if (truth) for (let i = 0; i < R * C; i++) {
+        const c = cols[MAP.kind[SURF[i]]];
+        d[i * 4] = c[0]; d[i * 4 + 1] = c[1]; d[i * 4 + 2] = c[2]; d[i * 4 + 3] = 255;
+      }
+    }
+    if (truth) eyes.texK = want;
+    else if (want > eyes.texK) {
+      for (let j = eyes.texK + 1; j <= want; j++) {
+        const m = rt.recs[j].map;
+        for (let q = 0; q < m.length; q += 2) {
+          const i = m[q] * 4, kind = m[q + 1];
+          if (kind < 0) { d[i + 3] = 0; continue; }
+          const c = cols[MAP.kind[kind]];
+          d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2]; d[i + 3] = 255;
+        }
+      }
+      eyes.texK = want; changed = true;
+    }
+    if (!changed) return;
+    eyes.tex.needsUpdate = true;
+    const px = eyes.img.data;
+    for (let q = 0; q < R * C * 4; q += 4) {
+      const on = d[q + 3] > 0;
+      px[q] = on ? d[q] * 0.85 : 34; px[q + 1] = on ? d[q + 1] * 0.85 : 38; px[q + 2] = on ? d[q + 2] * 0.85 : 46; px[q + 3] = 255;
+    }
+    eyes.cv.getContext("2d").putImageData(eyes.img, 0, 0);
+  }
+  const eyesShowing = () => eyes.on && !!current && !!current.drive && !plan.mode && !replay.on;
+  function eyesDraw(rec) {                           // the panel's two pictures, and a key to the classes they show
+    const f = rec && rec.frame, cols = eyesCore().colours(), names = eyesCore().classes();
+    const put = (cv, fill) => { const g = cv.getContext("2d"), img = g.createImageData(cv.width, cv.height); fill(img.data); g.putImageData(img, 0, 0); };
+    if (!f) {
+      [EY.cam, EY.lab].forEach(cv => put(cv, d => { for (let i = 0; i < d.length; i += 4) { d[i] = 14; d[i + 1] = 16; d[i + 2] = 19; d[i + 3] = 255; } }));
+      EY.key.innerHTML = "";
+      return;
+    }
+    put(EY.cam, d => { for (let i = 0, n = f.image.length / 3; i < n; i++) { d[i * 4] = f.image[i * 3]; d[i * 4 + 1] = f.image[i * 3 + 1]; d[i * 4 + 2] = f.image[i * 3 + 2]; d[i * 4 + 3] = 255; } });
+    const lab = eyes.truth ? f.label : f.pred;
+    put(EY.lab, d => { for (let i = 0; i < lab.length; i++) { const c = cols[lab[i]]; d[i * 4] = c[0]; d[i * 4 + 1] = c[1]; d[i * 4 + 2] = c[2]; d[i * 4 + 3] = 255; } });
+    const present = [...new Set(lab)].sort((a, b) => a - b);
+    EY.key.innerHTML = present.map(k => `<span><i style="background:rgb(${cols[k].join(",")})"></i>${names[k]}</span>`).join("");
+  }
+  function eyesSay(html) { if (html !== eyes.note) { EY.msg.innerHTML = html; eyes.note = html; } }
+  function eyesPanel(rt, k, waiting) {               // the read-outs and the line under them
+    const Mk = eyesBy("eyes-map"), B = eyesBy("eyes-blind"), Q = eyesBy("eyes-quick"), live = rt.key === "eyes-live";
+    const s = rt.recs ? rt.recs[Math.min(k + 1, rt.recs.length - 1)] : null;
+    let frames = 0;
+    if (live) for (let j = 1; j <= k + 1 && j < rt.recs.length; j++) if (rt.recs[j].frame) frames++;
+    EY.frame.textContent = live ? frames.toLocaleString() : "—";
+    EY.seen.textContent = live && s ? s.seen.toLocaleString() : "—";
+    EY.right.textContent = live && s && s.seen ? Math.round(s.right / s.seen * 100) : "—";
+    EY.vs.textContent = rt.growing ? "driving…" : Q && rt.found && rt !== Q ? eyesPct(rt, Q) : "—";
+    EY.labCap.textContent = eyes.truth ? "What's really there" : EYE_CAP[eyes.eye];
+    const done = !rt.growing && simT >= rt.cost - 1e-9;
+    let html;
+    if (rt === Q) html = "The quickest route there is: A* with everything known, the ground and the obstacles. Each drive is scored against it.";
+    else if (rt === Mk) html = done && Q ? `Knowing the ground, he took <b>${fmtTime(rt.cost)}</b>, ${eyesPct(rt, Q)} on the quickest: all that's left to find is obstacles, within 5 m.`
+      : "Knowing the ground: the only surprises are obstacles, which his short-range sensor finds within 5 m. Coloured: the ground he knows.";
+    else if (rt === B) html = done && Q ? `With no camera he took <b>${fmtTime(rt.cost)}</b>, ${eyesPct(rt, Q)} on the quickest.`
+      : "No camera: he learns a cell's ground only by driving over it, and prices the ground near it by what he found. Coloured: the ground he knows.";
+    else if (done && Q) html = `Arrived in <b>${fmtTime(rt.cost)}</b>, ${eyesPct(rt, Q)} on the quickest there is (${fmtTime(Q.cost)}).`
+      + (B ? ` With no camera: ${fmtTime(B.cost)} (${eyesPct(B, Q)})` : "") + (Mk ? `; knowing the ground: ${fmtTime(Mk.cost)} (${eyesPct(Mk, Q)}).` : ".");
+    else if (frames < 4) html = `He knows the heights, not the ground. His camera looks the way he is about to go, ${EYE_NAME[eyes.eye]} labels every pixel, the ground it sees goes on his map in its colour, and D* Lite plans on that map.`;
+    else html = `Coloured: the ground he has seen, as he believes it to be. Dimmed: not seen yet, priced by the ground round it. Dashed: his plan, which changes as he sees more.${waiting ? " <b>Looking…</b>" : ""}`;
+    eyesSay(html);
+  }
+  function eyesIdle() {                              // the chips, and the panel with no drive to show
+    EY.chips.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.eye === eyes.eye)));
+    EY.truth.setAttribute("aria-pressed", String(eyes.truth));
+    const st = VIS && VIS.study, p = v => `${(100 * st.mean[v]).toFixed(1)}%`;
+    if (st) EY.study.innerHTML = `In the study (${st.trips} trips on 45 maps he never drove) his drives took <b>${p("net")}</b> longer than the quickest with the network, ${p("pixel")} with classic ML, ${p("colour")} with colour alone and ${p("blind")} with no camera. These three maps were never in his training.`;
+    if (parked) { eyesDraw(null); eyes.shown = null; EY.frame.textContent = EY.seen.textContent = EY.right.textContent = EY.vs.textContent = "—";
+      eyesSay("Pick a path in <b>More paths</b> or <b>Set start &amp; finish</b>: Bruce drives it seeing the ground with his camera."); }
+  }
+  function eyesOff() {                               // nothing of a drive on the ground
+    if (OVER.uBeliefP.value.x) OVER.uBeliefP.value.x = 0;
+    if (eyes.line) { eyes.line = dropLine(eyes.line); eyes.lineOf = null; eyes.linePl = null; }
+  }
+  function eyesGrow() {                              // the drive with the camera grew: its line again, a few times a second
+    const rt = eyes.live;
+    if (!rt || !eyes.dirty || !rt.tube || (rt.growing && performance.now() - eyes.built < 150)) return;
+    const k = routes.indexOf(rt);
+    eyes.dirty = false; eyes.built = performance.now();
+    if (k < 0) return;
+    disposeRouteVisual(rt); buildRouteVisual(rt, 0.22 + k * 0.06); refreshLayers();
+    if (rt !== current) drawMapLayer();
+  }
+  function eyesTick(dt, t) {                         // per frame in camera mode: his map, his plan, the camera's view, the panel
+    if (!eyes.on) return;
+    eyesGrow();
+    const rt = current;
+    if (!eyesShowing()) {
+      eyesOff();
+      if (rt && rt.key === "eyes-quick" && !plan.mode && !replay.on && (eyes.hudT += dt) >= 0.12) {
+        eyes.hudT = 0; eyesPanel(rt, 0, false);
+        if (eyes.shown !== null) { eyesDraw(null); eyes.shown = null; }
+      }
+      return;
+    }
+    const tA = rt.tAt, last = tA.length - 1;
+    let k = 0, hi = last;                            // the last cell he has reached by simT
+    while (k < hi) { const mid = (k + hi + 1) >> 1; if (tA[mid] <= simT) k = mid; else hi = mid - 1; }
+    const atEnd = k >= last, waiting = rt.growing && atEnd, done = !rt.growing && atEnd;
+    eyes.k = k;
+    eyesPaint(rt, k + 1);                            // what the frame on the way to the next cell showed is on his map already
+    OVER.uBelief.value = eyes.tex;
+    let shown = null;                                // the latest frame he has taken by now
+    for (let j = Math.min(k + 1, rt.recs.length - 1); j >= 1 && !shown; j--) if (rt.recs[j].frame) shown = rt.recs[j];
+    OVER.uBeliefP.value.set(1, VIS.lidar, 20, shown && !done && !eyes.truth ? 1 : 0);
+    OVER.uEyeXZ.value.set(rover.group.position.x, rover.group.position.z);
+    if (shown) { const h = shown.frame.heading, dx = NB_C[h], dz = NB_R[h], n = Math.hypot(dx, dz); OVER.uEyeDir.value.set(dx / n, dz / n); }
+    const nxt = rt.recs[k + 1], now = rt.recs[Math.min(k, rt.recs.length - 1)];
+    const pl = done ? null : (nxt && nxt.via) || (now && now.plan) || null;   // the plan he is driving on
+    if (eyes.lineOf !== rt || eyes.linePl !== pl) {
+      eyes.line = dropLine(eyes.line);
+      if (pl && pl.length > 1) eyes.line = planLine(pl, rt.color, farView ? 0.3 : 0.14);
+      eyes.lineOf = rt; eyes.linePl = pl;
+    }
+    if (eyes.line) {                                 // hide what he has already driven of it
+      const L = eyes.line.userData, frac = k < last && tA[k + 1] > tA[k] ? clamp((simT - tA[k]) / (tA[k + 1] - tA[k]), 0, 1) : 0;
+      eyes.line.geometry.setDrawRange(Math.floor(clamp(frac / Math.max(1, L.n - 1), 0, 1) * L.segs) * RADIAL * 6, Infinity);
+    }
+    if (eyes.shown !== shown || eyes.shownTruth !== eyes.truth) { eyesDraw(shown); eyes.shown = shown; eyes.shownTruth = eyes.truth; }
+    if ((eyes.hudT += dt) < 0.12) return;
+    eyes.hudT = 0;
+    eyesPanel(rt, k, waiting);
+    eyes.lift = eyesLift();
+  }
+  function eyesLift() {                              // the follow cameras put the rover mid-screen: move the picture so it sits
+    if (EY.panel.hidden) return 0;                   // in the biggest free space down the middle (a little low, to see ahead)
+    const W = innerWidth, H = innerHeight, spans = [];
+    for (const id of ["title-board", "eyes", "board", "drone", "tele"]) {
+      const el = $(id), r = el.getBoundingClientRect();
+      if (!el.hidden && r.height && r.left < W / 2 + 40 && r.right > W / 2 - 40) spans.push([r.top, r.bottom]);
+    }
+    spans.sort((a, b) => a[0] - b[0]);
+    let y = 0, best = [0, H], size = -1;
+    for (const [t, b] of spans.concat([[H, H]])) { if (t - y > size) { size = t - y; best = [y, t]; } y = Math.max(y, b); }
+    return clamp(H / 2 - (best[0] + 0.6 * size), -H * 0.3, H * 0.3);
+  }
+  const eyesProgress = Pw => {                       // how far along a drive still being driven is: as the crow flies
+    const rr = Pw.z + (R - 1) / 2, cc = Pw.x + (C - 1) / 2, all = Math.hypot(START[0] - GOAL[0], START[1] - GOAL[1]) || 1;
+    return clamp(1 - Math.hypot(rr - GOAL[0], cc - GOAL[1]) / all, 0, 1);
+  };
+  function setEyes(on, keepView) {                   // (a press on the button has already handed the tour back)
+    if (!VIS || on === eyes.on) return;
+    stopReplay(); if (plan.mode) exitPlan();
+    if (on && air.on) setAir(false, true);
+    if (on && ai.on) setAi(false, true);
+    eyes.on = on;
+    if (!on) { eyesStop(); eyesOff(); eyes.shown = undefined; eyes.lift = 0; }
+    eyesBtn.setAttribute("aria-pressed", String(on)); eyesBtn.textContent = on ? "■ Stop camera" : "◉ Camera";
+    ["t-watch", "t-short", "t-routes", "t-search"].forEach(id => { $(id).hidden = on; });
+    $("pb-draw").hidden = on;
+    document.querySelector("#board .note").textContent = on ? NOTE_EYES : NOTE_GROUND;
+    EY.panel.hidden = !on || !!tour;
+    eyesReplan();
+    if (!keepView && on) { if (!parked && !MODES[mode].follow) setMode("drone"); else if (mode === "replay") setMode("course"); }
+  }
+  function eyesReplan() {                            // the trip again (a new mode, or another way of reading the camera)
+    if (!parked) {
+      const ranked = installPair(START, GOAL, planPair(START, GOAL));
+      playing = true; syncPlay();
+      select(bestPlanner(ranked).name, false);
+      drawMapLayer();
+    } else { renderBoard(); refreshLayers(); }
+    if (eyes.on) eyesIdle();
+  }
+  EY.chips.forEach(b => b.addEventListener("click", () => {
+    if (b.dataset.eye === eyes.eye) return;
+    eyes.eye = b.dataset.eye; eyesReplan();
+  }));
+  EY.truth.onclick = () => { eyes.truth = !eyes.truth; EY.truth.setAttribute("aria-pressed", String(eyes.truth)); };
+  const eyesBtn = document.createElement("button");  // placed beside the AI button
 
   // ---------------------------------------------------------------- controls
   const modeBtns = [...document.querySelectorAll("[data-mode]")];
@@ -4192,6 +4615,7 @@ void main() {
     select(best.name, false);
     drawMapLayer(); saveState();
     if (ai.on) { say(`${lead}START ${fmtCell(s)} → FINISH ${fmtCell(f)}. ${aiLine().replace(/<\/?b>/g, "")}`, "good"); aiPanel(); return; }
+    if (eyes.on) { say(`${lead}START ${fmtCell(s)} → FINISH ${fmtCell(f)}. Bruce drives it seeing the ground with his camera.`, "good"); eyesIdle(); return; }
     const pct = short ? Math.round((short.cost / best.cost - 1) * 100) : 0;
     say(`${lead}START ${fmtCell(s)} → FINISH ${fmtCell(f)}: quickest ${fmtTime(best.cost)} (${best.name}). `
       + (pct >= 1 ? `The shortest route (dashed) ignores the hills and takes ${pct}% longer.` : "The shortest route is just as quick here."), "good");
@@ -4949,6 +5373,7 @@ void main() {
     if (plan.mode) exitPlan();
     if (!pathsPanel.hidden) showPaths(false);
     if (ai.on) setAi(false, true);
+    if (eyes.on) setEyes(false, true);
     const at = TOUR_MAPS.indexOf(fromMap);
     tour = { k: at >= 0 ? at : 0, t: 0, step: 0 };
     tourBtn.setAttribute("aria-pressed", "true"); tourBtn.textContent = "■ Stop tour";
@@ -4980,6 +5405,11 @@ void main() {
   aiBtn.hidden = !AIS;
   $("maps").insertBefore(aiBtn, tourBtn);
   aiBtn.onclick = () => setAi(!ai.on);
+  eyesBtn.className = "ai-btn eyes-btn"; eyesBtn.id = "eyes-btn"; eyesBtn.setAttribute("aria-pressed", "false"); eyesBtn.textContent = "◉ Camera";
+  eyesBtn.title = "Camera: Bruce knows the heights, not the ground, and sees it with his camera as he drives";
+  eyesBtn.hidden = !VIS;
+  $("maps").insertBefore(eyesBtn, tourBtn);
+  eyesBtn.onclick = () => setEyes(!eyes.on);
   $("tour-stop").onclick = stopTour;
   // anything you do takes over from the tour (the tour's own buttons excepted); the press itself still counts
   const takeOver = ev => { if (tour && !(ev.target.closest && ev.target.closest("#tour-btn, #tour-stop"))) stopTour(); };
@@ -6480,6 +6910,7 @@ ${ops.vehs.map(v => `<li><b>${v.id}</b>: ${v.dist.toFixed(0)} m travelled, ${see
       stopReplay(); if (plan.mode) exitPlan(); if (senseView.arming) armBlock(false); showPaths(false);
       if (air.on) setAir(false, true);
       if (ai.on) setAi(false, true);
+      if (eyes.on) setEyes(false, true);
       parkRover();
       ops.on = true; document.body.classList.add("ops-on"); OE.root.hidden = false;
       opsMapBtns.forEach((b, k) => b.setAttribute("aria-pressed", String(k === mapIdx)));
@@ -6515,7 +6946,9 @@ ${ops.vehs.map(v => `<li><b>${v.id}</b>: ${v.dist.toFixed(0)} m travelled, ${see
       const pm = /^p(\d{1,2})$/.exec(w);
       if (pm) out.path = +pm[1] - 1;
       if (Object.keys(VIEW_WORD).includes(w)) out.view = w;
-      if (w === "search" || w === "sensor" || w === "bench" || w === "air" || w === "ops" || w === "demo" || w === "ai") out[w] = true;
+      if (w === "search" || w === "sensor" || w === "bench" || w === "air" || w === "ops" || w === "demo" || w === "ai" || w === "camera") out[w] = true;
+      const ew = Object.keys(EYE_HASH).find(k => EYE_HASH[k] === w);
+      if (ew) out.eye = ew;
       const tm = /^t(\d{1,3})$/.exec(w);
       if (tm) out.trips = +tm[1];
     }
@@ -6529,6 +6962,7 @@ ${ops.vehs.map(v => `<li><b>${v.id}</b>: ${v.dist.toFixed(0)} m travelled, ${see
     if (ops.on) parts.push("ops");
     else if (air.on) parts.push("air");
     else if (ai.on) { parts.push("ai"); if (ai.trips !== AIS.nets[AIS.nets.length - 1].trips) parts.push(`t${ai.trips}`); }
+    else if (eyes.on) { parts.push("camera"); if (eyes.eye !== "net") parts.push(EYE_HASH[eyes.eye]); }
     else if (replay.on) parts.push("search");
     else if (sensing()) parts.push("sensor");
     if (!plan.mode && !ops.on && VIEW_WORD[mode]) parts.push(VIEW_WORD[mode]);
@@ -6766,13 +7200,14 @@ ${ops.vehs.map(v => `<li><b>${v.id}</b>: ${v.dist.toFixed(0)} m travelled, ${see
     if (tour) tourTick(Math.min(0.25, Math.max(0, (now - prevT) / 1000)));
     syncHash();
     const dt = Math.max(0, Math.min(0.05, (now - prevT) / 1000)); prevT = now;
-    const t = now / 1000, total = current.cost, playback = +speedEl.value * (air.on ? 0.25 : 1), driving = !current.park;
+    const t = now / 1000, total = current.growing ? current.tAt[current.tAt.length - 1] : current.cost, driving = !current.park;
+    const playback = +speedEl.value * (air.on ? 0.25 : eyes.on ? EYES_PACE : 1);   // (the camera's frames need time to read)
 
     // 1. drive by the clock: after simT seconds the rover is where the time model says (parked: it waits)
-    const finishing = driving && simT >= total;
+    const finishing = driving && !current.growing && simT >= total;
     if (playing && driving) {
       if (!finishing) simT = Math.min(total, simT + dt * playback);
-      else if ((finishT += dt) > (current.key === DSTAR.key ? 7 : 3.2)) restartLap(true);   // time to read how the sensor drive went
+      else if ((finishT += dt) > (current.key === DSTAR.key || current.drive ? 7 : 3.2)) restartLap(true);   // time to read how the drive went
     }
     const [s, mps] = sAtTime(current, simT);
     const v = playing && driving && simT < total ? mps * playback : 0;
@@ -6813,7 +7248,7 @@ ${ops.vehs.map(v => `<li><b>${v.id}</b>: ${v.dist.toFixed(0)} m travelled, ${see
     ringMat.opacity = 0.7 + 0.25 * Math.sin(t * 3);
     if (current.tube) {                             // the route ahead of the rover (the planner shows all of it);
       if (plan.mode) current.tube.geometry.setDrawRange(0, Infinity);   // the sensor drive shows where it has been instead
-      else if (current.key === DSTAR.key) {
+      else if (current.key === DSTAR.key || current.drive) {
         const n = Math.floor(u * current.segs) * RADIAL * 6;
         current.tube.geometry.setDrawRange(0, n); current.planTube.geometry.setDrawRange(0, n);
       } else current.tube.geometry.setDrawRange(Math.floor(u * current.segs) * RADIAL * 6, Infinity);
@@ -6883,19 +7318,20 @@ ${ops.vehs.map(v => `<li><b>${v.id}</b>: ${v.dist.toFixed(0)} m travelled, ${see
     // 5. map, tags and telemetry
     if (!plan.mode && !replay.on && !ops.on) drawMinimap(P);
     senseTick(dt, t);
+    eyesTick(dt, t);
     const tagsOn = !plan.mode && !replay.on;        // callsign tags stay out of the planner and the search replay
     roverTag.sprite.visible = tagsOn && (!air.on || ops.on); air.drone.tag.sprite.visible = tagsOn && (air.on || ops.on);
     air.list.forEach(tw => { tw.tag.sprite.visible = tagsOn; });
     if (!air.on && !ops.on) roverTag.sprite.position.set(P.x, gy + 1.45, P.z);
     drawHud();
-    G.bar.style.width = (driving && total ? simT / total * 100 : 0) + "%";
+    G.bar.style.width = (!driving ? 0 : current.growing ? eyesProgress(P) * 100 : total ? simT / total * 100 : 0) + "%";
     if ((hudT += dt) > 0.1) {
       hudT = 0;
       const spd = playing && driving && simT < total ? mps : 0;
       if (ops.on) { /* the console labels its own vehicles */ }
       else if (air.on) air.drone.tag.set(current.park ? "LANDED" : `${(P.y - gy).toFixed(1)} m AGL · ${spd.toFixed(1)} m/s`);
       else roverTag.set(current.park ? "PARKED" : `${spd.toFixed(1)} m/s`);
-      G.time.textContent = driving ? `${fmtTime(simT)} / ${fmtTime(total)}` : "—";
+      G.time.textContent = driving ? `${fmtTime(simT)} / ${current.growing ? "…" : fmtTime(total)}` : "—";
       G.dist.textContent = s.toFixed(0);
       if (air.on) {                                 // height above the ground, climb, and whether a tower sees it
         G.elev.textContent = (current.park ? 0 : P.y - gy).toFixed(1);
@@ -6941,7 +7377,7 @@ ${ops.vehs.map(v => `<li><b>${v.id}</b>: ${v.dist.toFixed(0)} m travelled, ${see
   // changes, the planner bar opens. The picture glides to the new framing (easeView).
   if (window.ResizeObserver) {
     const refit = new ResizeObserver(() => { if (MAP && mode === "course") viewFit = computeOverviewFit(); });
-    for (const id of ["title-board", "board", "drone", "paths", "tele", "planbar", "tour-cap", "sense", "ai", "ops-top", "ops-left", "ops-right", "ops-bottom"]) refit.observe($(id));
+    for (const id of ["title-board", "board", "drone", "paths", "tele", "planbar", "tour-cap", "sense", "ai", "eyes", "ops-top", "ops-left", "ops-right", "ops-bottom"]) refit.observe($(id));
   }
   if (matchMedia("(max-width: 760px)").matches) $("board").open = false;
   resize();
@@ -6957,6 +7393,7 @@ ${ops.vehs.map(v => `<li><b>${v.id}</b>: ${v.dist.toFixed(0)} m travelled, ${see
       if (link.trips === 0 || AIS.nets.some(n => n.trips === link.trips)) ai.trips = link.trips;
       setAi(true, !!link.view);
     }
+    if (link.camera && VIS) { if (link.eye) eyes.eye = link.eye; setEyes(true, !!link.view); }
     if (link.view && mode !== link.view) setMode(link.view);
     if (link.search && !parked) startReplay();
     if (link.ops) { setOps(true); if (link.demo) opsDemo(); }

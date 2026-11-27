@@ -1,7 +1,8 @@
 """Stage 4 (robotnav.learn.vision): the frames are reproducible, a pixel can only be what its map and the geometry
 allow, perfect labels give perfect cells, the belief behaves, and the seeing drive gets there. The trained models'
-own tests are at the end (they read the committed weights; no PyTorch needed)."""
+own tests are next (they read the committed weights; no PyTorch needed), then the page's copy of it all (stage 4b)."""
 import json
+import shutil
 
 import numpy as np
 import pytest
@@ -147,3 +148,68 @@ def test_the_reference_frame_is_what_the_camera_sees(committed):
     f = V.reference_frame()
     assert np.mean(f.label == a["reference.label"]) > 0.995
     assert np.mean(np.abs(f.image.astype(int) - a["reference.image"]) <= 1) > 0.995
+
+
+# ---------------------------------------------------------------- the page's copy (robotnav/eyes.js, stage 4b)
+def test_numpy_random_numbers_step_by_step():
+    """robotnav.learn.rng draws exactly what np.random.default_rng does, uniform and normal (the ziggurat's rare slow
+    paths included): the recipe the page's camera follows for its sensor noise (rng.normal(0, noise, shape))."""
+    from robotnav.learn import rng as RN
+    for seed in (0, 1, 7, 123_456_789, 2**31 + 5, 2**40 + 3):
+        mine, ref = RN.PCG64(seed), np.random.default_rng(seed)
+        assert [mine.random() for _ in range(64)] == ref.random(64).tolist()
+        assert [mine.normal(0.5, 2.0) for _ in range(3000)] == ref.normal(0.5, 2.0, 3000).tolist()
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="needs Node.js")
+def test_the_pages_camera_and_drives_match_python(desert, committed, tmp_path):
+    """robotnav/eyes.js, the page's copy of the camera, the models and the seeing drive, run under Node
+    (tools/eyes_check.js): the camera's frames byte for byte, sensor noise included; the network's scores to the last
+    bit (the card's checksum); the other models' to rounding, with the same likeliest class for every pixel; and a
+    seeing drive's first steps, every way of seeing, step for step."""
+    import base64
+    import math
+    import subprocess
+    from pathlib import Path
+
+    from robotnav.scene3d import map_core, page_look, vision_scene
+    t, sc = desert
+    models, a, card = committed
+    vis = vision_scene([t])
+    b64 = lambda x: base64.b64encode(np.ascontiguousarray(x).tobytes()).decode()   # noqa: E731
+    dec = lambda s, dt: np.frombuffer(base64.b64decode(s), dtype=dt)               # noqa: E731
+    poses, looks = [(50.0, 30.0, 1.2), (70.4, 20.7, 4.1)], [cam.random_look(np.random.default_rng(k)) for k in (1, 2)]
+    s, g, prior, steps = (70, 20), (25, 60), np.array(vis["prior"]["desert"]), 12
+    drives = {eye: V.see_drive(t, sc, s, g, models.get(eye, eye), looks[0], prior, max_steps=steps,
+                               **{**V.SETTINGS, **V.CHOSEN.get(eye, {})}) for eye in V.VARIANTS}
+    eyes = ("net", "pixel", "colour", "truth")
+    cases = dict(vision=vis, uphill=t.uphill_penalty, maps={"desert": map_core(t)},
+                 frames=[dict(map="desert", r=r, c=c, dir=[math.cos(h), math.sin(h)], look=page_look(lk), seed=lk.seed)
+                         for (r, c, h), lk in zip(poses, looks)],
+                 models=[dict(eye=e, theme="desert", image=b64(a["reference.image"]), dcode=b64(a["reference.dist"]),
+                              label=b64(a["reference.label"])) for e in eyes],
+                 drives=[dict(map="desert", si=s[0] * t.cols + s[1], gi=g[0] * t.cols + g[1], eye=eye, look=page_look(looks[0]),
+                              settings=dict(vis["settings"], **vis["chosen"].get(eye, {}), max_steps=steps)) for eye in drives])
+    (tmp_path / "cases.json").write_text(json.dumps(cases))
+    check = Path(__file__).resolve().parents[1] / "tools" / "eyes_check.js"
+    out = json.loads(subprocess.run(["node", str(check), str(tmp_path / "cases.json")], capture_output=True, text=True,
+                                    check=True).stdout)
+    for pose, lk, js in zip(poses, looks, out["frames"]):
+        f = cam.render(sc, pose, lk)
+        assert np.array_equal(dec(js["image"], np.uint8), f.image.ravel())
+        assert np.array_equal(dec(js["label"], np.uint8), f.label.ravel())
+        assert np.array_equal(dec(js["cell"], np.int32), f.cell.ravel())
+        assert np.array_equal(dec(js["dist"], np.float32), f.dist.ravel())
+        assert np.array_equal(dec(js["demCell"], np.int32), f.dem_cell.ravel())
+        assert np.array_equal(dec(js["demDist"], np.float32), f.dem_dist.ravel())
+        assert np.array_equal(dec(js["dcode"], np.uint8), V.encode_dist(f.dem_dist).ravel())
+    assert out["models"][0]["logits"] == card["reference"]["net_logits_sha256"]
+    for eye, js in zip(eyes, out["models"]):
+        want = (V.truth_log_probs(a["reference.label"]) if eye == "truth"
+                else models[eye].log_probs(a["reference.image"], a["reference.dist"], "desert"))
+        got, fin = dec(js["lp"], "<f8").reshape(want.shape), np.isfinite(want)
+        assert np.array_equal(np.isfinite(got), fin) and np.array_equal(got.argmax(-1), want.argmax(-1))
+        assert np.abs(got[fin] - want[fin]).max() < 1e-9
+    for (eye, py), js in zip(drives.items(), out["drives"]):
+        assert js["driven"] == py["driven"] and len(py["driven"]) == steps + 1, eye
+        assert (js["frames"], js["work"], js["seen"], js["seenRight"]) == (py["frames"], py["work"], py["seen"], py["seen_right"]), eye

@@ -44,7 +44,9 @@ network's quick start and the bigger one's finish. Press **◆ AI** in the [live
 to watch him plan with what he learned, against his built-in model and the true speeds. Then, in stage 4, he loses
 his map of the ground (he keeps its heights) and has to see it: a camera, a small U-Net that labels 94% of the ground
 right (colour alone, 84%), and a map that prices unseen ground by the ground round it bring his routes on maps he has
-never seen from 11.6% slower than the quickest, driving blind, to 3.9%.
+never seen from 11.6% slower than the quickest, driving blind, to 3.9%. Press **◉ Camera** in the
+[live demo](https://r0ck574r.github.io/brubus/#desert/p19/camera) to watch him do it: each frame from his camera, what
+the network makes of it, and his map filling in as he drives.
 
 ![Watch the search on the desert: Dijkstra (left) spreads out evenly while A* (right) heads for the finish; both find the same 2:25 route, but A* searches 2.5 times fewer cells](docs/search.gif)
 
@@ -69,6 +71,13 @@ never seen from 11.6% slower than the quickest, driving blind, to 3.9%.
   hidden world give the same routes and times as Python, to the last digit.
   [`#desert/p19/ai`](https://r0ck574r.github.io/brubus/#desert/p19/ai) opens it on the desert's path P19, and
   [`#desert/p19/ai/t10`](https://r0ck574r.github.io/brubus/#desert/p19/ai/t10) after only 10 trips.
+- **◉ Camera** (beside ◆ AI) shows [stage 4](#stage-4-bruce-learns-to-see-the-ground) as it happens: Bruce knows
+  the heights, not the ground, and sees it with his camera as he drives. A panel shows each frame beside what the
+  network makes of it, the ground he has seen takes the colour of what he believes it is, and the stage board races
+  the drive against the same trip with no camera, knowing the ground, and the quickest route there is.
+  [`#desert/p19/camera`](https://r0ck574r.github.io/brubus/#desert/p19/camera) opens it on the desert's path P19;
+  add `/classic`, `/colour` or `/perfect` to read the camera another way. See
+  [Stage 4b](#stage-4b-what-bruce-sees-in-the-live-demo).
 - **Links to a view**: the address keeps up with what's on screen, so you can copy it and send it.
   [`#desert/p19/search`](https://r0ck574r.github.io/brubus/#desert/p19/search) opens the search replay,
   [`#island/p20/sensor`](https://r0ck574r.github.io/brubus/#island/p20/sensor) the sensor drive,
@@ -869,6 +878,36 @@ geometry, the labels, the belief, the drives, and the committed network to the l
 choose` drives the 41 validation runs again, and `python main.py vision eval` the test (about 16 minutes on two
 cores).
 
+### Stage 4b: what Bruce sees, in the live demo
+
+![The camera mode on the desert's path P19, in the drone view: the panel shows Bruce's camera frame, palms by an oasis pool, beside the network's labels for it (firm sand, oasis grass, water, trees, sky), with 17 frames taken, 839 cells of ground seen and 92% of it believed right; on the ground, the cells he has seen are tinted with the kind he believes they are, with his sensor's reach drawn round the tank; the mini-map shows his map filling in along his trail; the stage board has the drive at 2:28, 2.0% over the quickest (2:25), against 2:47 with no camera](docs/camera.png)
+
+Press **◉ Camera** in the [live demo](https://r0ck574r.github.io/brubus/#desert/p19/camera) and Bruce drives the trip
+as in stage 4: he knows the heights, not the ground. A panel shows each frame from his camera beside what the network
+makes of it, pixel by pixel. On the ground, a cell takes the colour of the kind he believes it is as soon as he has
+seen it (dimmed: not seen yet, and priced by the ground round it); the camera's 90° view and his sensor's 5 m reach
+are drawn round the tank, and his plan (dashed) changes as he sees more. The mini-map shows his whole map filling in.
+The stage board races the drive against the same trip with no camera, knowing the ground, and the quickest route
+there is. **Classic ML**, **Colour** and **Perfect** read the camera the other ways instead, and **Show the truth**
+puts the right labels in the panel and the true ground on the map, to compare.
+
+The browser works all of it out itself, from the same numbers as Python. `robotnav/eyes.js` is a line-for-line port
+of the camera, the three models, the map built from what he sees, and D\* Lite, with the sums in the same order (the
+network's in NumPy's, so its scores come out to the last bit) and even NumPy's random numbers for the camera's sensor
+noise: `robotnav/learn/rng.py` writes out what `np.random.default_rng` does (SeedSequence, PCG64, and the ziggurat
+method for normal draws), and the page follows it. So the page's frames are the ones Python renders, byte for byte,
+and a drive in the page is the drive Python makes, step for step. `tests/test_vision.py` runs `tools/eyes_check.js` under Node and holds it to
+Python: the frames byte for byte, the network's scores to the card's checksum, the other models' within 10⁻⁹ with the
+same label for every pixel, and a drive step for step, every way of seeing. On seven trips across the three maps,
+each driven all six ways, every route, frame count and amount of search matched.
+
+A drive is worked out while you watch: the camera, the model and D\* Lite run in a background thread (a Web Worker),
+a step at a time, about 0.17 s a step with the network on the test machine (0.12 s of it the network, 0.05 s the
+camera). The tank drives each step once it is worked out, and playback is slower in this mode so the frames can be
+read; **Restart** replays the same drive. On the board a drive's ms is its thinking (D\* Lite and his map), not the
+camera or the models. The camera mode adds 0.45 MB to the page, most of it the network's 61,564 weights as
+committed (32-bit floats).
+
 ## The rover
 
 The rover is modelled on the British Mark IV/V "male" tank of 1917–18, at about a quarter scale (1.9 m long):
@@ -1166,14 +1205,15 @@ the C++ tests under AddressSanitizer and UndefinedBehaviorSanitizer.
 | `robotnav/replan.py` | Driving with a limited sensor: D\* Lite, the rover's belief about the terrain, roadblocks, and the A\*-from-scratch comparison |
 | `robotnav/airspace.py` | The air route: flight levels, watchtowers and their lines of sight, the stealth and direct flights |
 | `robotnav/sensing.py` | How the towers detect and track, for the operator console: the chance per look against range (Swerling 1), hazard and route risk, the extended Kalman filter, Wilson's interval; the page takes its constants from here |
-| `robotnav/scene3d.py` | Exports the three maps and their preset paths into the self-contained viewer (and the live demo page, with link previews), with Bruce's learned networks and the hidden world for the AI mode |
+| `robotnav/scene3d.py` | Exports the three maps and their preset paths into the self-contained viewer (and the live demo page, with link previews), with Bruce's learned networks and the hidden world for the AI mode, and his camera's models, lights and constants for the camera mode |
 | `robotnav/intro_art.py` | The intro's art: draws the sonar backdrop (range rings, bearing lines and a tick every 5 degrees, in the badge's olive on near-black) as SVG and inlines the badge |
 | `tools/shark_logo.py` | Prepares the badge (`robotnav/assets/logo.webp`) from the logo's artwork: clears its black ground so the backdrop shows around it, and saves a 900 px WebP |
-| `robotnav/viewer3d.html` | Three.js viewer: maps, sky, water, contour lines, palms and trees, planners, D\* Lite and the air route in the browser, watching the search, the sensor drive, the drone and its watchtowers, the operator console (entities, tasking, timeline, report, command bar), the AI mode (Bruce's network and the hidden world, ported from Python digit for digit), MIL-STD-2525 symbols and callsign tags, preset paths, picking, drawing, drone camera and its compass and altitude read-outs, the spiked tank, the tour, links to a view, the frame-rate benchmark |
+| `robotnav/viewer3d.html` | Three.js viewer: maps, sky, water, contour lines, palms and trees, planners, D\* Lite and the air route in the browser, watching the search, the sensor drive, the drone and its watchtowers, the operator console (entities, tasking, timeline, report, command bar), the AI mode (Bruce's network and the hidden world, ported from Python digit for digit), the camera mode (his camera, a model's labels and his map as he drives), MIL-STD-2525 symbols and callsign tags, preset paths, picking, drawing, drone camera and its compass and altitude read-outs, the spiked tank, the tour, links to a view, the frame-rate benchmark |
+| `robotnav/eyes.js` | The camera mode's engine (stage 4b), inlined in the page and run in a Web Worker: the camera, the three models, the map built from what he sees, and D\* Lite, ported from Python; `tools/eyes_check.js` runs it under Node for the tests |
 | `cpp/` | The C++ core: planners, D\* Lite, the air route, the detection field and Monte Carlo trials on a thread pool, map files, the `robotnav` tool, unit tests, the pybind11 module and the WebAssembly build (`cpp/wasm/`, `tools/build_wasm.sh`) ([cpp/README.md](cpp/README.md)) |
-| `robotnav/learn/` | The learning work: the labels (true time to the goal, A\* with a table of estimates, re-expanding A\*), the data set, the baseline, the network's features and inference (`features.py`, `model.py`), training with PyTorch (`train.py`), the benchmark (`evaluate.py`), stage 3's learned terrain speeds (`speeds.py`: the hidden true world, the driving logs, the network and the study), and stage 4's seeing (`camera.py`: the camera and its exact labels; `vision.py`: the frames, the colour and classic baselines, the U-Net and its NumPy inference, the map built from what he sees, the drives and the study) |
+| `robotnav/learn/` | The learning work: the labels (true time to the goal, A\* with a table of estimates, re-expanding A\*), the data set, the baseline, the network's features and inference (`features.py`, `model.py`), training with PyTorch (`train.py`), the benchmark (`evaluate.py`), stage 3's learned terrain speeds (`speeds.py`: the hidden true world, the driving logs, the network and the study), and stage 4's seeing (`camera.py`: the camera and its exact labels; `vision.py`: the frames, the colour and classic baselines, the U-Net and its NumPy inference, the map built from what he sees, the drives and the study; `rng.py`: NumPy's random numbers written out, which the page's camera noise follows) |
 | `robotnav/landmarks.py` | A\* with landmarks (ALT): the landmarks, their fields, the lower bound and the search |
-| `robotnav/assets/heuristic.txt`, `speeds*.txt`, `vision.npz` | The trained networks, with model cards: the A\* estimate, and Bruce's learned speeds (plain text, exact doubles; stage 3c's after 10, 30, 100 and 300 trips, and stage 3's for comparison), and stage 4's three ways of labelling a pixel (the network's weights as 32-bit floats, with the frame they are checked on) |
+| `robotnav/assets/heuristic.txt`, `speeds*.txt`, `vision.npz` | The trained networks, with model cards: the A\* estimate, and Bruce's learned speeds (plain text, exact doubles; stage 3c's after 10, 30, 100 and 300 trips, and stage 3's for comparison), and stage 4's three ways of labelling a pixel (the network's weights as 32-bit floats, with the frame they are checked on); `normal-tables.json` is NumPy's ziggurat tables, for the page's camera noise |
 | `tools/learn_figure.py` | Draws the learning section's four pictures: the labels and the search, the benchmark, the learning curve, and what the camera sees and what it is worth |
 | `robotnav/assign.py` | Who goes where: the Hungarian method for a survey's assignment, and the nearest-first rule it is compared with |
 | `robotnav/cpp.py`, `parity.py`, `mapfile.py` | Run the C++ core from Python, compare it with the reference, and write the map files it reads |
@@ -1181,7 +1221,7 @@ the C++ tests under AddressSanitizer and UndefinedBehaviorSanitizer.
 | `docs/` | The live demo served by GitHub Pages (`index.html`, built by `python main.py course`), its preview image, and the README's pictures |
 | `robotnav/terrain_bench.py` | Sweeps hill height, slope limit and obstacle density |
 | `robotnav/grid.py`, `visualize.py`, `benchmark.py` | Original 2D grid world, plots and benchmark |
-| `tests/` | 381 checks: stage 4's camera (rays against a fine march, labels against the map, a flat field against geometry) and seeing (the frames reproducible, what a pixel can be, the belief and the fields it spreads to, drives that get there, the committed network to the last bit), Bruce's learned speeds (the move tables against the planners, the true world, exploring, choosing the network's size, the committed networks' accuracy and routes, and the copies the viewer carries, weight for weight), landmarks (never too high, consistent, the quickest route), the network (its file, its accuracy on fresh maps, the capped search's promise), the learning data's exact labels and split by map, optimality on every map, the shortest route, all 20 presets per map, the desert's oases, grade limit, water, route rules, D\* Lite (legal routes, optimal repairs, roadblocks), the air route (towers, lines of sight, hiding behind a ridge), the C++ core against Python, map rebuilds, the command line, the page head and link previews, the survey's assignment against every pairing, the console look (fonts, map symbols, tags, read-outs), the intro's flag and logo |
+| `tests/` | 385 checks: stage 4's camera (rays against a fine march, labels against the map, a flat field against geometry) and seeing (the frames reproducible, what a pixel can be, the belief and the fields it spreads to, drives that get there, the committed network to the last bit), the page's camera mode against Python under Node (frames byte for byte, the network to the last bit, drives step for step) and NumPy's random numbers step by step, Bruce's learned speeds (the move tables against the planners, the true world, exploring, choosing the network's size, the committed networks' accuracy and routes, and the copies the viewer carries, weight for weight), landmarks (never too high, consistent, the quickest route), the network (its file, its accuracy on fresh maps, the capped search's promise), the learning data's exact labels and split by map, optimality on every map, the shortest route, all 20 presets per map, the desert's oases, grade limit, water, route rules, D\* Lite (legal routes, optimal repairs, roadblocks), the air route (towers, lines of sight, hiding behind a ridge), the C++ core against Python, map rebuilds, the command line, the page head and link previews, the survey's assignment against every pairing, the console look (fonts, map symbols, tags, read-outs), the intro's flag and logo |
 
 ## Findings
 
@@ -1259,7 +1299,6 @@ The air route, over each map's 20 preset trips (medians; `python main.py fly` fo
 
 - Wrap the C++ planners as a ROS 2 Nav2 planner plugin
 - Moving obstacles, and a rover sensor blocked by hills (the towers already use line of sight)
-- What Bruce sees, in the viewer: the camera frame, the network's labels over it, and his map filling in as he drives
 - Seeing more than one frame a step ahead: turning the camera, or a wider lens, since with perfect labels he still
   loses 2.4%; and finding out why better labels didn't pay in the desert
 - Obstacles from the camera too: trees and rocks it sees long before his 5 m sensor finds them

@@ -116,3 +116,43 @@ def test_the_tour_stops_at_the_ai_mode(tmp_path):
     assert '[14, "ai"], [23, "aiTrue"], [34, "air"]' in page                   # on the grassland, before the air route
     assert "ai() {" in page and "aiTrue() {" in page and "setAi(true, true);" in page
     assert "setAir(false, true); setAi(false, true);" in page                  # each map's act starts on the ground
+
+
+def test_viewer_carries_bruces_camera_exactly(tmp_path):
+    """The camera mode's data (stage 4b): the network's weights decode to the committed 32-bit floats, bit for bit,
+    layer by layer; everything else is vision_scene's, and each preset trip has the light the study's recipe draws."""
+    import base64
+    import json
+    import re
+    import numpy as np
+    from robotnav.learn import camera as cam
+    from robotnav.learn import vision as V
+    from robotnav.scene3d import LOOKS, page_look, vision_scene
+    from robotnav.terrain import THEMES
+    page = _page(tmp_path)
+    vis = json.loads(re.search(r"const SCENE = (\{.*?\});\n", page, re.S).group(1))["vision"]
+    t = solvable_map("grassland", seed=3, size=48)
+    assert vis == json.loads(json.dumps(vision_scene([t])))
+    a, blob, at = V.arrays_from(), base64.b64decode(vis["net"]["data"]), 0
+    for name, shape in vis["net"]["layers"]:
+        w = np.asarray(a[f"net.{name}"], dtype="<f4")
+        assert list(w.shape) == shape and blob[at:at + w.nbytes] == w.tobytes()
+        at += w.nbytes
+    assert at == len(blob) and sum(np.prod(s) for _, s in vis["net"]["layers"]) == 61_564   # every weight, nothing else
+    looks = vis["looks"]["grassland"]["looks"]
+    assert len(looks) == LOOKS == 21                                             # one a preset, one for trips you set
+    for i in (0, 20):
+        rng = np.random.default_rng([V.TRIP_SALT, THEMES.index("grassland"), 3, i])
+        assert looks[i] == json.loads(json.dumps(page_look(cam.random_look(rng))))
+    assert len(vis["normal"]["wi"]) == len(vis["normal"]["ki"]) == len(vis["normal"]["fi"]) == 256   # NumPy's ziggurat
+
+
+def test_viewer_has_the_camera_mode(tmp_path):
+    from robotnav.scene3d import eyes_js
+    page = _page(tmp_path)
+    assert 'id="eyes"' in page and 'data-eye="net"' in page and 'eyesBtn.textContent = "◉ Camera"' in page   # panel, chips, button
+    assert 'id="ey-cam"' in page and 'id="ey-lab"' in page and 'id="ey-truth"' in page    # his camera, the labels, the truth
+    assert eyes_js() in page and "/*__EYES__*/" not in page    # the camera, models and drive, as tested under Node
+    for fn in ("function eyesRoutes(", "function eyesTick(", "function setEyes(", "new Worker(URL.createObjectURL("):
+        assert fn in page                                                       # the trip, each frame, the mode, the worker
+    assert 'w === "camera"' in page and 'pixel: "classic"' in page             # #desert/p19/camera, /classic for classic ML
